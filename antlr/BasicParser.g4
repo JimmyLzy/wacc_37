@@ -117,7 +117,6 @@ array_liter: OPEN_SQUARE_BRACKET (expr (COMMA expr)*)? CLOSE_SQUARE_BRACKET ;
 
 pair_liter: NULL ;
 
-comment: SHARP ~(EOL)* EOL ;
 
 
 

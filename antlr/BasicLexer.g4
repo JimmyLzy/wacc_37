@@ -55,7 +55,7 @@ NULL_TERMINATOR : '/0' ;
 
 BACKSPACE : '\b' ;
 HORIZONTAL_TAB : '\t' ;
-LINE_FEED : '\n' ;
+LINE_FEED : '\n' -> skip;
 FORM_FEED : '\f' ;
 CARRIAGE_RETURN : '\r' ;
 SINGLE_QUOTE : '\'' ;
@@ -65,7 +65,7 @@ BACKSLASH : '\\' ;
 //unknown
 UNDERSCORE : '_' ;
 NULL: 'null' ;
-SHARP: '/#' ;
+SHARP: '#' ;
 TRUE: 'true' ;
 FALSE: 'false' ;
 //wrong
@@ -97,5 +97,6 @@ INTEGER: DIGIT+ ;
 LOWER_CASE_ALPHABET : 'a'..'z' ;
 UPPER_CASE_ALPHABET : 'A'..'Z' ;
 
+COMMENT: SHARP ~('\n')* '\n' -> skip;
 
 
