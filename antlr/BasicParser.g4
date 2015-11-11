@@ -11,7 +11,7 @@ binary_oper : PLUS | MINUS | MULT | DIV | MOD | GREATER | GREATER_OR_EQUAL | SMA
 //| INTEGER
 //| OPEN_PARENTHESES expr CLOSE_PARENTHESES;
 
-program: BEGIN (func)* stat END;
+prog: BEGIN (func)* stat END;
 
 func: type ident OPEN_PARENTHESES (param_list)? CLOSE_PARENTHESES IS stat END;
 
@@ -20,8 +20,8 @@ param_list: param (COMMA param)*;
 param: type ident;
 
 stat: SKIP
-| type ident EQUAL assign_rhs
-| assign_lhs EQUAL assign_rhs
+| type ident ASSIGN_EQUAL assign_rhs
+| assign_lhs ASSIGN_EQUAL assign_rhs
 | READ assign_lhs
 | FREE expr
 | RETURN expr
@@ -29,7 +29,7 @@ stat: SKIP
 | PRINT expr
 | PRINTLN expr
 | IF expr THEN expr ELSE expr FI
-| WHILE expr DO expr DONE
+| WHILE expr DO stat DONE
 | BEGIN expr END
 | stat SEMICOLON stat;
 
@@ -98,9 +98,9 @@ bool_liter: TRUE | FALSE ;
 
 char_liter: SINGLE_QUOTE character SINGLE_QUOTE ;
 
-str_liter: DOUBLE_QUOTE character DOUBLE_QUOTE ;
+//str_liter: DOUBLE_QUOTE (character)* DOUBLE_QUOTE ;
 
-character: ~(BACKSLASH | SINGLE_QUOTE | DOUBLE_QUOTE)*
+character: ~(BACKSLASH | SINGLE_QUOTE | DOUBLE_QUOTE)
 | BACKSLASH escaped_char;
 
 escaped_char: NULL_TERMINATOR
@@ -121,4 +121,4 @@ pair_liter: NULL ;
 
 
 // EOF indicates that the program must consume to the end of the input.
-prog: (expr)*  EOF ;
+//prog: (expr)*  EOF ;
