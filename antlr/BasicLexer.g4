@@ -11,6 +11,7 @@ GREATER_OR_EQUAL : '>=' ;
 SMALLER : '<' ;
 SMALLER_OR_EQUAL : '<=' ;
 EQUAL : '==' ;
+ASSIGN_EQUAL : '=' ;
 NOT_EQUAL : '!=' ;
 LOGICAL_AND : '&&' ;
 LOGICAL_OR : '||' ;
@@ -51,13 +52,12 @@ SND : 'snd' ;
 //escaped char
 
 //might be wrong
-NULL_TERMINATOR : '/0' ;
-
-BACKSPACE : '\b' ;
-HORIZONTAL_TAB : '\t' ;
-LINE_FEED : '\n' -> skip;
-FORM_FEED : '\f' ;
-CARRIAGE_RETURN : '\r' ;
+NULL_TERMINATOR : '0' ;
+BACKSPACE : 'b' ;
+HORIZONTAL_TAB : 't' ;
+LINE_FEED : 'n' ;
+FORM_FEED : 'f' ;
+CARRIAGE_RETURN : 'r' ;
 SINGLE_QUOTE : '\'' ;
 DOUBLE_QUOTE : '\"' ;
 BACKSLASH : '\\' ;
@@ -98,5 +98,22 @@ LOWER_CASE_ALPHABET : 'a'..'z' ;
 UPPER_CASE_ALPHABET : 'A'..'Z' ;
 
 COMMENT: SHARP ~('\n')* '\n' -> skip;
+WS: (' ' | '\t') -> skip;
+ESCAPED_CHAR: BACKSLASH (HORIZONTAL_TAB | LINE_FEED | CARRIAGE_RETURN) -> skip;
 
+//NULL_TERMINATOR : '\\0';
+//BACKSPACE : '\b' ;
+//HORIZONTAL_TAB : '\t' -> skip ;
+//LINE_FEED : '\n' -> skip;
+//FORM_FEED : '\f' ;
+//CARRIAGE_RETURN : '\r' -> skip;
+//SINGLE_QUOTE : '\'' ;
+//DOUBLE_QUOTE : '\"' ;
 
+//KEYWORD: PLUS
+//| MINUS
+//|
+
+STR_LITER : DOUBLE_QUOTE (CHARACTER)* DOUBLE_QUOTE ;
+CHARACTER: ~(BACKSLASH | SINGLE_QUOTE | DOUBLE_QUOTE)
+| BACKSLASH escaped_char;
