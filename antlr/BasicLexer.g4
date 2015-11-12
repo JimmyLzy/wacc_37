@@ -1,29 +1,8 @@
 lexer grammar BasicLexer;
 
-//binary operators
-PLUS : '+' ;
-MINUS : '-' ;
-MULT : '*' ;
-DIV : '/' ;
-MOD : '%' ;
-GREATER : '>' ;
-GREATER_OR_EQUAL : '>=' ;
-SMALLER : '<' ;
-SMALLER_OR_EQUAL : '<=' ;
-EQUAL : '==' ;
-ASSIGN_EQUAL : '=' ;
-NOT_EQUAL : '!=' ;
-LOGICAL_AND : '&&' ;
-LOGICAL_OR : '||' ;
 
-//unary operator
-LOGICAL_NOT : '!' ;
-NEGATE : '-' ;
-LEN : 'len' ;
-ORD : 'ord' ;
-CHR : 'chr' ;
+COMMENT: SHARP ~('\n')* '\n' -> skip;
 
-//unnamed keywords(from stat)
 SKIP : 'skip' ;
 READ : 'read' ;
 FREE : 'free' ;
@@ -42,6 +21,8 @@ BEGIN : 'begin' ;
 END : 'end' ;
 IS : 'is' ;
 
+//unnamed keywords(from stat)
+
 CALL : 'call' ;
 NEWPAIR : 'newpair' ;
 PAIR : 'pair' ;
@@ -49,18 +30,34 @@ PAIR : 'pair' ;
 FST : 'fst' ;
 SND : 'snd' ;
 
-//escaped char
+//binary operators
+LOGICAL_AND : '&&' ;
+PLUS : '+' ;
+MINUS : '-' ;
+MULT : '*' ;
+DIV : '/' ;
+MOD : '%' ;
+GREATER : '>' ;
+GREATER_OR_EQUAL : '>=' ;
+SMALLER : '<' ;
+SMALLER_OR_EQUAL : '<=' ;
+EQUAL : '==' ;
+ASSIGN_EQUAL : '=' ;
+NOT_EQUAL : '!=' ;
+LOGICAL_OR : '||' ;
 
-//might be wrong
-NULL_TERMINATOR : '0' ;
-BACKSPACE : 'b' ;
-HORIZONTAL_TAB : 't' ;
-LINE_FEED : 'n' ;
-FORM_FEED : 'f' ;
-CARRIAGE_RETURN : 'r' ;
-SINGLE_QUOTE : '\'' ;
-DOUBLE_QUOTE : '\"' ;
-BACKSLASH : '\\' ;
+//unary operator
+LOGICAL_NOT : '!' ;
+NEGATE : '-' ;
+LEN : 'len' ;
+ORD : 'ord' ;
+CHR : 'chr' ;
+
+//types
+INT : 'int' ;
+BOOL : 'bool' ;
+CHAR : 'char' ;
+STRING : 'string' ;
 
 //unknown
 UNDERSCORE : '_' ;
@@ -68,14 +65,7 @@ NULL: 'null' ;
 SHARP: '#' ;
 TRUE: 'true' ;
 FALSE: 'false' ;
-//wrong
-EOL: LINE_FEED ;
 
-//types
-INT : 'int' ;
-BOOL : 'bool' ;
-CHAR : 'char' ;
-STRING : 'string' ;
 
 //brackets
 OPEN_PARENTHESES : '(' ;
@@ -97,23 +87,55 @@ INTEGER: DIGIT+ ;
 LOWER_CASE_ALPHABET : 'a'..'z' ;
 UPPER_CASE_ALPHABET : 'A'..'Z' ;
 
-COMMENT: SHARP ~('\n')* '\n' -> skip;
-WS: (' ' | '\t') -> skip;
-ESCAPED_CHAR: BACKSLASH (HORIZONTAL_TAB | LINE_FEED | CARRIAGE_RETURN) -> skip;
 
-//NULL_TERMINATOR : '\\0';
-//BACKSPACE : '\b' ;
-//HORIZONTAL_TAB : '\t' -> skip ;
-//LINE_FEED : '\n' -> skip;
-//FORM_FEED : '\f' ;
-//CARRIAGE_RETURN : '\r' -> skip;
-//SINGLE_QUOTE : '\'' ;
-//DOUBLE_QUOTE : '\"' ;
+DOUBLE_QUOTE : '"' ;
+
+//OPENSTRING:  DOUBLE_QUOTE -> more, pushMode(STRINGMODE) ;
+WS: (' ' | '\t' | '\r' | '\n') -> skip;
+NEW_LINE: '\n' -> skip;
+
+//mode STRINGMODE;
+//SPECIAL: '\\"' -> more;
+//TEXT: CHARACTER -> more;
+//ESCAPE: ('\t' | '\r' | '\n') -> popMode;
+//CLOSESTRING: DOUBLE_QUOTE -> popMode ;
+
+
+
+STR_LITER: '"' (CHARACTER)* '"';
+
+//ESCAPED_CHAR: NULL_TERMINATOR | BACKSPACE | FORM_FEED | SINGLE_QUOTE | DOUBLE_QUOTE
+ //            | HORIZONTAL_TAB | LINE_FEED | CARRIAGE_RETURN | '\\';
+
+/*NULL_TERMINATOR : '\\0';
+BACKSPACE : '\b' ;
+HORIZONTAL_TAB : '\t'  ;
+LINE_FEED : '\n' ;
+FORM_FEED : '\f' ;
+CARRIAGE_RETURN : '\r' ;
+SINGLE_QUOTE : '\'' ;*/
+
+
 
 //KEYWORD: PLUS
 //| MINUS
 //|
 
-STR_LITER : DOUBLE_QUOTE (CHARACTER)* DOUBLE_QUOTE ;
-CHARACTER: ~(BACKSLASH | SINGLE_QUOTE | DOUBLE_QUOTE)
-| BACKSLASH escaped_char;
+//STR_LITER : DOUBLE_QUOTE (CHARACTER)* DOUBLE_QUOTE ;
+//CHARACTER: ~('\\' | '\'' | '\"')
+//| BACKSLASH ESCAPED_CHAR;
+
+CHAR_LITER: '\'' CHARACTER '\'' ;
+
+CHARACTER: ~('\\' | '\'' | '"')
+| '\\' ESCAPED_CHAR;
+
+ESCAPED_CHAR : '0'
+| 'b'
+| 't'
+| 'n'
+| 'f'
+| 'r'
+| '"'
+| '\''
+| '\\' ;
