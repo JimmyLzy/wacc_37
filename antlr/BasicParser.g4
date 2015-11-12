@@ -5,13 +5,13 @@ options {
 }
 
 binary_oper : PLUS | MINUS | MULT | DIV | MOD | GREATER | GREATER_OR_EQUAL | SMALLER |
-             SMALLER_OR_EQUAL | EQUAL | NOT_EQUAL | LOGICAL_AND | LOGICAL_OR;
+             SMALLER_OR_EQUAL | EQUAL | NOT_EQUAL | LOGICAL_AND |LOGICAL_OR;
 
 //expr: expr binaryOper expr
 //| INTEGER
 //| OPEN_PARENTHESES expr CLOSE_PARENTHESES;
 
-prog: BEGIN (func)* stat END;
+program: BEGIN (func)* stat END EOF;
 
 func: type ident OPEN_PARENTHESES (param_list)? CLOSE_PARENTHESES IS stat END;
 
@@ -28,9 +28,9 @@ stat: SKIP
 | EXIT expr
 | PRINT expr
 | PRINTLN expr
-| IF expr THEN expr ELSE expr FI
+| IF expr THEN stat ELSE stat FI
 | WHILE expr DO stat DONE
-| BEGIN expr END
+| BEGIN stat END
 | stat SEMICOLON stat;
 
 assign_lhs: ident
@@ -96,29 +96,34 @@ int_sign: PLUS | MINUS ;
 
 bool_liter: TRUE | FALSE ;
 
-char_liter: SINGLE_QUOTE character SINGLE_QUOTE ;
+char_liter: CHAR_LITER ;
 
-//str_liter: DOUBLE_QUOTE (character)* DOUBLE_QUOTE ;
+str_liter: STR_LITER;
 
-character: ~(BACKSLASH | SINGLE_QUOTE | DOUBLE_QUOTE)
-| BACKSLASH escaped_char;
+//character: ~(BACKSLASH | SINGLE_QUOTE | DOUBLE_QUOTE)
+//| BACKSLASH ESCAPED_CHAR;
 
-escaped_char: NULL_TERMINATOR
-| BACKSPACE
-| HORIZONTAL_TAB
-| LINE_FEED
-| FORM_FEED
-| CARRIAGE_RETURN
-| SINGLE_QUOTE
-| DOUBLE_QUOTE
-| BACKSLASH;
+//escaped_char: NULL_TERMINATOR
+//| BACKSPACE
+//| HORIZONTAL_TAB
+//| LINE_FEED
+//| FORM_FEED
+//| CARRIAGE_RETURN
+//| SINGLE_QUOTE
+//| DOUBLE_QUOTE
+//| BACKSLASH;
 
 array_liter: OPEN_SQUARE_BRACKET (expr (COMMA expr)*)? CLOSE_SQUARE_BRACKET ;
 
 pair_liter: NULL ;
 
+//escaped_char: NULL_TERMINATOR | BACKSPACE | FORM_FEED | SINGLE_QUOTE | DOUBLE_QUOTE
+//             | HORIZONTAL_TAB | LINE_FEED | CARRIAGE_RETURN | '\\';
 
+//str_liter : DOUBLE_QUOTE (CHARACTER)* DOUBLE_QUOTE ;
+//character: ~('\\' | '\'' | '\"')
+//| BACKSLASH ESCAPED_CHAR;
 
 
 // EOF indicates that the program must consume to the end of the input.
-//prog: (expr)*  EOF ;
+//prog: (expr)*   ;
