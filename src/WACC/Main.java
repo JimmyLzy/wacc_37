@@ -28,10 +28,10 @@ public class Main {
         System.out.println(tree.toStringTree(parser));
 
         // build and run my custom visitor
-        //System.out.println("====");
         MyVisitor visitor = new MyVisitor();
-        visitor.visit(tree);
-        //System.out.println("====");
+        AST.ASTNode astNode = visitor.visit(tree);
+        astNode.check();
+
 
     }
 }
