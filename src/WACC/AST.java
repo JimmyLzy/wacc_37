@@ -45,9 +45,9 @@ public class AST {
     public class ProgramNode extends ASTNode {
 
         private List<FuncNode> functionNodes;
-        private Sub_StatNode sub_statNode;
+        private StatNode sub_statNode;
 
-        public ProgramNode(List<FuncNode> functionNodes, Sub_StatNode sub_statNode) {
+        public ProgramNode(List<FuncNode> functionNodes, StatNode sub_statNode) {
 
             this.functionNodes = functionNodes;
             for (FuncNode funcNode : functionNodes) {
@@ -105,14 +105,14 @@ public class AST {
     public class StatNode extends ASTNode {
 
         protected String command;
-        protected Sub_StatNode sub_statNode;
+        protected StatNode sub_statNode;
         protected ASTNode returnNode;
 
         public StatNode() {
             command = "";
         }
 
-        public StatNode(Sub_StatNode sub_statNode, ASTNode returnNode) {
+        public StatNode(StatNode sub_statNode, ASTNode returnNode) {
             this.sub_statNode = sub_statNode;
             this.returnNode = returnNode;
         }
@@ -246,7 +246,7 @@ public class AST {
 
     }
 
-    public class ExitNode extends ASTNode {
+    public class ExitNode extends StatNode {
 
         private ExprNode exprNode;
 
@@ -374,7 +374,7 @@ public class AST {
 
     }
 
-    public class MultipleStatNode extends Sub_StatNode {
+    public class MultipleStatNode extends StatNode {
 
         private StatNode sub_statNodeFirst;
         private StatNode sub_statNodeSecond;

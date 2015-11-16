@@ -25,7 +25,7 @@ public class MyVisitor extends BasicParserBaseVisitor<AST.ASTNode> {
             functionNodes.add(funcNode);
         }
 
-        AST.Sub_StatNode sub_statNode = (AST.Sub_StatNode) visit(ctx.sub_stat());
+        AST.StatNode sub_statNode = (AST.StatNode) visit(ctx.sub_stat());
 
         programNode = ast.new ProgramNode(functionNodes, sub_statNode);
         return programNode;
@@ -393,10 +393,10 @@ public class MyVisitor extends BasicParserBaseVisitor<AST.ASTNode> {
     @Override public AST.ASTNode visitStat(@NotNull BasicParser.StatContext ctx) {
 
         AST.ASTNode returnNode = null;
-        AST.Sub_StatNode sub_statNode = null;
+        AST.StatNode sub_statNode = null;
 
         if (ctx.sub_stat() != null) {
-            sub_statNode = (AST.Sub_StatNode)visit(ctx.sub_stat());
+            sub_statNode = (AST.StatNode)visit(ctx.sub_stat());
         }
         if (ctx.RETURN() != null) {
             returnNode = visit(ctx.RETURN());
@@ -417,17 +417,19 @@ public class MyVisitor extends BasicParserBaseVisitor<AST.ASTNode> {
     public AST.ASTNode visitSub_stat(@NotNull BasicParser.Sub_statContext ctx) {
         //TODO symbol table config
         if (ctx.SEMICOLON() != null) {
-            return ast.new MultipleStatNode((AST.Sub_StatNode) visit(ctx.sub_stat(0)), (AST.Sub_StatNode) visit(ctx.sub_stat(1)));
+            return ast.new MultipleStatNode((AST.StatNode) visit(ctx.sub_stat(0)), (AST.StatNode) visit(ctx.sub_stat(1)));
         } else if (ctx.BEGIN() != null) {
             return visit(ctx.sub_stat(0));
         } else if (ctx.WHILE() != null) {
-            return ast.new WhileNode((AST.ExprNode) visit(ctx.expr()), (AST.Sub_StatNode) visit(ctx.sub_stat(0)));
+            return ast.new WhileNode((AST.ExprNode) visit(ctx.expr()), (AST.StatNode) visit(ctx.sub_stat(0)));
         } else if (ctx.IF() != null) {
             return ast.new IfNode((AST.ExprNode) visit(ctx.expr()), (AST.StatNode) visit(ctx.if_sub_stat(0)), (AST.StatNode) visit(ctx.if_sub_stat(1)));
         } else if (ctx.PRINTLN() != null) {
             return ast.new PrintlnNode((AST.ExprNode) visit(ctx.expr()));
         } else if (ctx.PRINT() != null) {
             return ast.new PrintNode((AST.ExprNode) visit(ctx.expr()));
+        } else if (ctx.EXIT() != null) {
+            return ast.new ExitNode((AST.ExprNode)visit(ctx.expr()));
         } else if (ctx.FREE() != null) {
             return ast.new FreeNode((AST.ExprNode) visit(ctx.expr()));
         } else if (ctx.READ() != null) {
