@@ -25,9 +25,9 @@ public class MyVisitor extends BasicParserBaseVisitor<AST.ASTNode> {
             functionNodes.add(funcNode);
         }
 
-        AST.StatNode statNode = (AST.StatNode) visit(ctx.stat());
+        AST.Sub_StatNode sub_statNode = (AST.Sub_StatNode) visit(ctx.sub_stat());
 
-        programNode = ast.new ProgramNode(functionNodes, statNode);
+        programNode = ast.new ProgramNode(functionNodes, sub_statNode);
         return programNode;
     }
 
@@ -379,7 +379,28 @@ public class MyVisitor extends BasicParserBaseVisitor<AST.ASTNode> {
         System.out.println("Error");
         return visitChildren(ctx);
     }
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation returns the result of calling
+     * {@link #visitChildren} on {@code ctx}.</p>
+     */
+    @Override public AST.ASTNode visitStat(@NotNull BasicParser.StatContext ctx) {
 
+        AST.ASTNode returnNode = null;
+        AST.Sub_StatNode sub_statNode = null;
+
+        if (ctx.sub_stat() != null) {
+            sub_statNode = (AST.Sub_StatNode)visit(ctx.sub_stat());
+        }
+        if (ctx.RETURN() != null) {
+            returnNode = visit(ctx.RETURN());
+        }else if (ctx.EXIT() != null) {
+            returnNode = visit(ctx.EXIT());
+        }
+
+        return ast.new StatNode(sub_statNode, returnNode);
+    }
     /**
      * {@inheritDoc}
      *
@@ -388,24 +409,20 @@ public class MyVisitor extends BasicParserBaseVisitor<AST.ASTNode> {
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public AST.ASTNode visitStat(@NotNull BasicParser.StatContext ctx) {
+    public AST.ASTNode visitSub_stat(@NotNull BasicParser.Sub_statContext ctx) {
         //TODO symbol table config
         if (ctx.SEMICOLON() != null) {
-            return ast.new MultipleStatNode((AST.StatNode) visit(ctx.stat(0)), (AST.StatNode) visit(ctx.stat(1)));
+            return ast.new MultipleStatNode((AST.Sub_StatNode) visit(ctx.sub_stat(0)), (AST.Sub_StatNode) visit(ctx.sub_stat(1)));
         } else if (ctx.BEGIN() != null) {
-            return visit(ctx.stat(0));
+            return visit(ctx.sub_stat(0));
         } else if (ctx.WHILE() != null) {
-            return ast.new WhileNode((AST.ExprNode) visit(ctx.expr()), (AST.StatNode) visit(ctx.stat(0)));
+            return ast.new WhileNode((AST.ExprNode) visit(ctx.expr()), (AST.Sub_StatNode) visit(ctx.sub_stat(0)));
         } else if (ctx.IF() != null) {
             return ast.new IfNode((AST.ExprNode) visit(ctx.expr()), (AST.StatNode) visit(ctx.stat(0)), (AST.StatNode) visit(ctx.stat(1)));
         } else if (ctx.PRINTLN() != null) {
             return ast.new PrintlnNode((AST.ExprNode) visit(ctx.expr()));
         } else if (ctx.PRINT() != null) {
             return ast.new PrintNode((AST.ExprNode) visit(ctx.expr()));
-        } else if (ctx.EXIT() != null) {
-            return ast.new ExitNode((AST.ExprNode) visit(ctx.expr()));
-        } else if (ctx.RETURN() != null) {
-            return ast.new ReturnNode((AST.ExprNode) visit(ctx.expr()));
         } else if (ctx.FREE() != null) {
             return ast.new FreeNode((AST.ExprNode) visit(ctx.expr()));
         } else if (ctx.READ() != null) {

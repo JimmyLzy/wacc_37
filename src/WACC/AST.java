@@ -42,16 +42,16 @@ public class AST {
     public class ProgramNode extends ASTNode {
 
         private List<FuncNode> functionNodes;
-        private StatNode statNode;
+        private Sub_StatNode sub_statNode;
 
-        public ProgramNode(List<FuncNode> functionNodes, StatNode statNode) {
+        public ProgramNode(List<FuncNode> functionNodes, Sub_StatNode sub_statNode) {
 
             this.functionNodes = functionNodes;
             for (FuncNode funcNode : functionNodes) {
                 funcNode.setParent(this);
             }
-            this.statNode = statNode;
-            statNode.setParent(this);
+            this.sub_statNode = sub_statNode;
+            sub_statNode.setParent(this);
         }
 
         @Override
@@ -60,7 +60,7 @@ public class AST {
             for (FuncNode funcNode : functionNodes) {
                 funcNode.check();
             }
-            statNode.check();
+            sub_statNode.check();
         }
 
     }
@@ -99,11 +99,32 @@ public class AST {
     }
 
 
-    public abstract class StatNode extends ASTNode {
+    public class StatNode extends ASTNode {
+
+        protected String command;
+        protected Sub_StatNode sub_statNode;
+        protected ASTNode returnNode;
+
+        public StatNode() {
+            command = "";
+        }
+
+        public StatNode(Sub_StatNode sub_statNode, ASTNode returnNode) {
+            this.sub_statNode = sub_statNode;
+            this.returnNode = returnNode;
+        }
+
+        public String getCommand() {
+            return command;
+        }
+
+    }
+
+    public class Sub_StatNode extends StatNode {
 
         protected String command;
 
-        public StatNode() {
+        public Sub_StatNode() {
             command = "";
         }
 
@@ -113,7 +134,7 @@ public class AST {
 
     }
 
-    public class SkipNode extends StatNode {
+    public class SkipNode extends Sub_StatNode {
 
         public SkipNode() {
             command = "skip";
@@ -121,7 +142,7 @@ public class AST {
 
     }
 
-    public class DeclarationNode extends StatNode {
+    public class DeclarationNode extends Sub_StatNode {
 
         private TypeNode typeNode;
         private IdentNode identNode;
@@ -144,7 +165,7 @@ public class AST {
         }
     }
 
-    public class AssignmentNode extends StatNode {
+    public class AssignmentNode extends Sub_StatNode {
 
         private ASTNode assign_lhsNode;
         private ASTNode assign_rhsNode;
@@ -166,7 +187,7 @@ public class AST {
 
     }
 
-    public class ReadNode extends StatNode {
+    public class ReadNode extends Sub_StatNode {
 
         private ASTNode assign_lhsNode;
 
@@ -185,7 +206,7 @@ public class AST {
 
     }
 
-    public class FreeNode extends StatNode {
+    public class FreeNode extends Sub_StatNode {
 
         private ExprNode exprNode;
 
@@ -204,13 +225,12 @@ public class AST {
 
     }
 
-    public class ReturnNode extends StatNode {
+    public class ReturnNode extends ASTNode {
 
         private ExprNode exprNode;
 
         public ReturnNode(ExprNode exprNode) {
 
-            command = "return";
             this.exprNode = exprNode;
             exprNode.setParent(this);
 
@@ -223,13 +243,12 @@ public class AST {
 
     }
 
-    public class ExitNode extends StatNode {
+    public class ExitNode extends ASTNode {
 
         private ExprNode exprNode;
 
         public ExitNode(ExprNode exprNode) {
 
-            command = "exit";
             this.exprNode = exprNode;
             exprNode.setParent(this);
 
@@ -242,7 +261,7 @@ public class AST {
 
     }
 
-    public class PrintNode extends StatNode {
+    public class PrintNode extends Sub_StatNode {
 
         private ExprNode exprNode;
 
@@ -261,7 +280,7 @@ public class AST {
 
     }
 
-    public class PrintlnNode extends StatNode {
+    public class PrintlnNode extends Sub_StatNode {
 
         private ExprNode exprNode;
 
@@ -280,7 +299,7 @@ public class AST {
 
     }
 
-    public class IfNode extends StatNode {
+    public class IfNode extends Sub_StatNode {
 
         private ExprNode exprNode;
         private StatNode statNodeTrue;
@@ -305,18 +324,18 @@ public class AST {
 
     }
 
-    public class WhileNode extends StatNode {
+    public class WhileNode extends Sub_StatNode {
 
         private ExprNode exprNode;
-        private StatNode statNode;
+        private Sub_StatNode sub_statNode;
 
-        public WhileNode(ExprNode exprNode, StatNode statNode) {
+        public WhileNode(ExprNode exprNode, Sub_StatNode sub_statNode) {
 
             command = "while";
             this.exprNode = exprNode;
             exprNode.setParent(this);
-            this.statNode = statNode;
-            statNode.setParent(this);
+            this.sub_statNode = sub_statNode;
+            sub_statNode.setParent(this);
 
         }
 
@@ -327,15 +346,15 @@ public class AST {
 
     }
 
-    public class BeginNode extends StatNode {
+    public class BeginNode extends Sub_StatNode {
 
-        private StatNode statNode;
+        private Sub_StatNode sub_statNode;
 
-        public BeginNode(StatNode statNode) {
+        public BeginNode(Sub_StatNode sub_statNode) {
 
             command = "begin";
-            this.statNode = statNode;
-            statNode.setParent(this);
+            this.sub_statNode = sub_statNode;
+            sub_statNode.setParent(this);
 
         }
 
@@ -346,18 +365,18 @@ public class AST {
 
     }
 
-    public class MultipleStatNode extends StatNode {
+    public class MultipleStatNode extends Sub_StatNode {
 
-        private StatNode statNodeFirst;
-        private StatNode statNodeSecond;
+        private Sub_StatNode sub_statNodeFirst;
+        private Sub_StatNode sub_statNodeSecond;
 
-        public MultipleStatNode(StatNode statNodeFirst, StatNode statNodeSecond) {
+        public MultipleStatNode(Sub_StatNode sub_statNodeFirst, Sub_StatNode sub_statNodeSecond) {
 
             command = "multiple";
-            this.statNodeFirst = statNodeFirst;
-            statNodeFirst.setParent(this);
-            this.statNodeSecond = statNodeSecond;
-            statNodeSecond.setParent(this);
+            this.sub_statNodeFirst = sub_statNodeFirst;
+            sub_statNodeFirst.setParent(this);
+            this.sub_statNodeSecond = sub_statNodeSecond;
+            sub_statNodeSecond.setParent(this);
 
         }
 

@@ -7,7 +7,7 @@ options {
 binary_oper : PLUS | MINUS | MULT | DIV | MOD | GREATER | GREATER_OR_EQUAL | SMALLER |
              SMALLER_OR_EQUAL | EQUAL | NOT_EQUAL | LOGICAL_AND |LOGICAL_OR;
 
-program: BEGIN (func)* stat END EOF;
+program: BEGIN (func)* sub_stat END EOF;
 
 func: type ident OPEN_PARENTHESES (param_list)? CLOSE_PARENTHESES IS stat END;
 
@@ -15,19 +15,19 @@ param_list: param (COMMA param)*;
 
 param: type ident;
 
-stat: SKIP
+stat: (sub_stat SEMICOLON)? (RETURN expr| EXIT expr) ;
+
+sub_stat: SKIP
 | type ident ASSIGN_EQUAL assign_rhs
 | assign_lhs ASSIGN_EQUAL assign_rhs
 | READ assign_lhs
 | FREE expr
-| RETURN expr
-| EXIT expr
 | PRINT expr
 | PRINTLN expr
 | IF expr THEN stat ELSE stat FI
-| WHILE expr DO stat DONE
-| BEGIN stat END
-| stat SEMICOLON stat;
+| WHILE expr DO sub_stat DONE
+| BEGIN sub_stat END
+| sub_stat SEMICOLON sub_stat;
 
 assign_lhs: ident
 | array_elem
