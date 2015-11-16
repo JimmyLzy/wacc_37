@@ -61,15 +61,15 @@ pair_elem_type: base_type
 | array_type
 | PAIR;
 
-expr: int_liter
+expr: unary_oper expr
 | bool_liter
 | char_liter
 | str_liter
 | pair_liter
 | ident
 | array_elem
-| unary_oper expr
 | expr binary_oper expr
+| int_liter
 | OPEN_PARENTHESES expr CLOSE_PARENTHESES;
 
 unary_oper: LOGICAL_NOT

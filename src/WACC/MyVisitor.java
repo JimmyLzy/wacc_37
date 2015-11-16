@@ -4,6 +4,7 @@ import java.util.*;
 
 import antlr.*;
 import org.antlr.v4.runtime.misc.NotNull;
+import org.antlr.v4.runtime.tree.ParseTree;
 
 public class MyVisitor extends BasicParserBaseVisitor<AST.ASTNode> {
 
@@ -39,28 +40,27 @@ public class MyVisitor extends BasicParserBaseVisitor<AST.ASTNode> {
     @Override
     public AST.ASTNode visitFunc(@NotNull BasicParser.FuncContext ctx) {
 
-        AST.TypeNode typeNode = (AST.TypeNode) visit(ctx.type());
-
-        AST.IdentNode identNode = (AST.IdentNode) visit(ctx.ident());
-
         List<AST.ParamNode> paramNodeList = new ArrayList<>();
-        if (ctx.param_list() != null) {
-            for (int i = 0; i < ctx.param_list().getChildCount(); i++) {
-                AST.ParamNode paramNode = (AST.ParamNode) visit(ctx.param_list().getChild(i));
-                paramNodeList.add(paramNode);
-            }
-        }
-
-        AST.StatNode statNode = (AST.StatNode) visit(ctx.stat());
-
-        AST.FuncNode funcNode = ast.new FuncNode(typeNode, identNode, paramNodeList, statNode);
+        List<ParseTree> paramContextList = new ArrayList<>();
 
         if (ctx.param_list() != null) {
-            for (int i = 0; i < ctx.param_list().getChildCount(); i++) {
-                BasicParser.ParamContext paramContext = (BasicParser.ParamContext) ctx.param_list().getChild(i);
-                funcNode.getSymbolTable().put(paramContext.ident().getText(), paramNodeList.get(i).getTypeNode());
+            for (int i = 0; i < ctx.param_list().getChildCount(); i = i + 2) {
+                paramContextList.add(ctx.param_list().getChild(i));
             }
+
         }
+
+        for (ParseTree param : paramContextList) {
+            paramNodeList.add((AST.ParamNode) visit(param));
+        }
+
+        AST.FuncNode funcNode = ast.new FuncNode((AST.TypeNode) visit(ctx.type()), (AST.IdentNode) visit(ctx.ident()), paramNodeList, (AST.StatNode) visit(ctx.stat()));
+
+        for (int i = 0; i < paramContextList.size(); i++) {
+            BasicParser.ParamContext paramContext = (BasicParser.ParamContext) paramContextList.get(i);
+            funcNode.getSymbolTable().put(paramContext.ident().getText(), paramNodeList.get(i).getTypeNode());
+        }
+
 
 
 //        if (funcNode.getParent().getSymbolTable().containsKey(ctx.ident().getText())) {
@@ -259,7 +259,7 @@ public class MyVisitor extends BasicParserBaseVisitor<AST.ASTNode> {
     @Override
     public AST.ASTNode visitArray_type(@NotNull BasicParser.Array_typeContext ctx) {
 
-        return ast.new Array_typeNode((AST.Array_typeNode) visit(ctx.type()));
+        return ast.new Array_typeNode((AST.TypeNode) visit(ctx.type()));
     }
 
     /**
@@ -369,7 +369,7 @@ public class MyVisitor extends BasicParserBaseVisitor<AST.ASTNode> {
 
         } else if (ctx.array_liter() != null) {
             List<AST.ASTNode> exprNodeList = new ArrayList<>();
-            for (int i = 0; i < ctx.array_liter().getChildCount() - 2; i++) {
+            for (int i = 0; i < ctx.array_liter().expr().size(); i++) {
                 exprNodeList.add(visit(ctx.array_liter().expr(i)));
             }
             return ast.new Array_literNode(exprNodeList);
