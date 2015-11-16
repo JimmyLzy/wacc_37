@@ -1,13 +1,17 @@
 lexer grammar BasicLexer;
 
+//tokens{
+//    OPENSTRING,
+//    CLOSESTRING
+//}
 
 COMMENT: SHARP ~('\n')* '\n' -> skip;
 
 SKIP : 'skip' ;
 READ : 'read' ;
-FREE : 'free' ;
-RETURN : 'return' ;
-EXIT : 'exit' ;
+FREE: 'free' ;
+RETURN: 'return' ;
+EXIT: 'exit' ;
 PRINT : 'print' ;
 PRINTLN : 'println' ;
 IF : 'if' ;
@@ -29,7 +33,7 @@ PAIR : 'pair' ;
 
 FST : 'fst' ;
 SND : 'snd' ;
-
+NEGATE : '-' ;
 //binary operators
 LOGICAL_AND : '&&' ;
 PLUS : '+' ;
@@ -48,7 +52,7 @@ LOGICAL_OR : '||' ;
 
 //unary operator
 LOGICAL_NOT : '!' ;
-NEGATE : '-' ;
+
 LEN : 'len' ;
 ORD : 'ord' ;
 CHR : 'chr' ;
@@ -60,7 +64,6 @@ CHAR : 'char' ;
 STRING : 'string' ;
 
 //unknown
-UNDERSCORE : '_' ;
 NULL: 'null' ;
 SHARP: '#' ;
 TRUE: 'true' ;
@@ -78,56 +81,32 @@ COMMA : ',';
 SEMICOLON : ';';
 
 //numbers
-//removed fragment
-DIGIT : '0'..'9' ;
+fragment DIGIT : '0'..'9' ;
 
 INTEGER: DIGIT+ ;
+
+SINGLE_DIGIT: DIGIT ;
+
+fragment SINGLE_IDENT: (UNDERSCORE | LOWER_CASE_ALPHABET | UPPER_CASE_ALPHABET | SINGLE_DIGIT);
+
+IDENT:  (UNDERSCORE | LOWER_CASE_ALPHABET | UPPER_CASE_ALPHABET) SINGLE_IDENT*;
+
+UNDERSCORE : '_' ;
+
 
 //letters
 LOWER_CASE_ALPHABET : 'a'..'z' ;
 UPPER_CASE_ALPHABET : 'A'..'Z' ;
 
 
-DOUBLE_QUOTE : '"' ;
+//DOUBLE_QUOTE : '"' -> pushMode(STRINGMODE) ;
 
-//OPENSTRING:  DOUBLE_QUOTE -> more, pushMode(STRINGMODE) ;
 WS: (' ' | '\t' | '\r' | '\n') -> skip;
 NEW_LINE: '\n' -> skip;
 
-//mode STRINGMODE;
-//SPECIAL: '\\"' -> more;
-//TEXT: CHARACTER -> more;
-//ESCAPE: ('\t' | '\r' | '\n') -> popMode;
-//CLOSESTRING: DOUBLE_QUOTE -> popMode ;
-
-
-
-STR_LITER: '"' (CHARACTER)* '"';
-
-//ESCAPED_CHAR: NULL_TERMINATOR | BACKSPACE | FORM_FEED | SINGLE_QUOTE | DOUBLE_QUOTE
- //            | HORIZONTAL_TAB | LINE_FEED | CARRIAGE_RETURN | '\\';
-
-/*NULL_TERMINATOR : '\\0';
-BACKSPACE : '\b' ;
-HORIZONTAL_TAB : '\t'  ;
-LINE_FEED : '\n' ;
-FORM_FEED : '\f' ;
-CARRIAGE_RETURN : '\r' ;
-SINGLE_QUOTE : '\'' ;*/
-
-
-
-//KEYWORD: PLUS
-//| MINUS
-//|
-
-//STR_LITER : DOUBLE_QUOTE (CHARACTER)* DOUBLE_QUOTE ;
-//CHARACTER: ~('\\' | '\'' | '\"')
-//| BACKSLASH ESCAPED_CHAR;
-
 CHAR_LITER: '\'' CHARACTER '\'' ;
 
-CHARACTER: ~('\\' | '\'' | '"')
+CHARACTER: ~('\\' | '\'' | '\"')
 | '\\' ESCAPED_CHAR;
 
 ESCAPED_CHAR : '0'
@@ -139,3 +118,49 @@ ESCAPED_CHAR : '0'
 | '"'
 | '\''
 | '\\' ;
+
+
+STR_LITER: '"' (CHARACTER)* '"';
+//mode STRINGMODE;
+
+
+
+//SCHARACTER: ~('\\' | '\'' | '"')
+//| '\\' ESCAPED_CHAR ;
+
+//STR: SCHARACTER+ ;
+
+//CLOSESTRING: '"' -> popMode ;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//BACKSLASH: '\\' -> Mode(SLASHMODE);
+//mode SLASHMODE;
+//
+//fragment SLASH: '\\' ;
+//
+//SINGLESLASH: SLASH -> skip;
+//
+//ESCAPEDCHAR : ESCAPED_CHAR -> popMode ;
+

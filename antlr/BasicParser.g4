@@ -7,10 +7,6 @@ options {
 binary_oper : PLUS | MINUS | MULT | DIV | MOD | GREATER | GREATER_OR_EQUAL | SMALLER |
              SMALLER_OR_EQUAL | EQUAL | NOT_EQUAL | LOGICAL_AND |LOGICAL_OR;
 
-//expr: expr binaryOper expr
-//| INTEGER
-//| OPEN_PARENTHESES expr CLOSE_PARENTHESES;
-
 program: BEGIN (func)* stat END EOF;
 
 func: type ident OPEN_PARENTHESES (param_list)? CLOSE_PARENTHESES IS stat END;
@@ -65,16 +61,15 @@ pair_elem_type: base_type
 | array_type
 | PAIR;
 
-expr: int_liter
+expr: unary_oper expr
 | bool_liter
 | char_liter
 | str_liter
 | pair_liter
 | ident
 | array_elem
-| unary_oper expr
 | expr binary_oper expr
-| INTEGER
+| int_liter
 | OPEN_PARENTHESES expr CLOSE_PARENTHESES;
 
 unary_oper: LOGICAL_NOT
@@ -83,14 +78,13 @@ unary_oper: LOGICAL_NOT
 | ORD
 | CHR;
 
-ident: (UNDERSCORE | LOWER_CASE_ALPHABET | UPPER_CASE_ALPHABET)
-(UNDERSCORE | LOWER_CASE_ALPHABET | UPPER_CASE_ALPHABET | DIGIT)* ;
+ident: IDENT;
 
 array_elem: ident (OPEN_SQUARE_BRACKET expr CLOSE_SQUARE_BRACKET)+ ;
 
-int_liter: (int_sign)? (digit)+ ;
+digit: SINGLE_DIGIT ;
 
-digit: DIGIT ;
+int_liter: (int_sign)? INTEGER ;
 
 int_sign: PLUS | MINUS ;
 
@@ -99,31 +93,15 @@ bool_liter: TRUE | FALSE ;
 char_liter: CHAR_LITER ;
 
 str_liter: STR_LITER;
-
-//character: ~(BACKSLASH | SINGLE_QUOTE | DOUBLE_QUOTE)
-//| BACKSLASH ESCAPED_CHAR;
-
-//escaped_char: NULL_TERMINATOR
-//| BACKSPACE
-//| HORIZONTAL_TAB
-//| LINE_FEED
-//| FORM_FEED
-//| CARRIAGE_RETURN
-//| SINGLE_QUOTE
-//| DOUBLE_QUOTE
-//| BACKSLASH;
+//str_liter: DOUBLE_QUOTE STR CLOSESTRING;
 
 array_liter: OPEN_SQUARE_BRACKET (expr (COMMA expr)*)? CLOSE_SQUARE_BRACKET ;
 
 pair_liter: NULL ;
 
-//escaped_char: NULL_TERMINATOR | BACKSPACE | FORM_FEED | SINGLE_QUOTE | DOUBLE_QUOTE
-//             | HORIZONTAL_TAB | LINE_FEED | CARRIAGE_RETURN | '\\';
 
 //str_liter : DOUBLE_QUOTE (CHARACTER)* DOUBLE_QUOTE ;
 //character: ~('\\' | '\'' | '\"')
 //| BACKSLASH ESCAPED_CHAR;
 
 
-// EOF indicates that the program must consume to the end of the input.
-//prog: (expr)*   ;
