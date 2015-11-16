@@ -25,13 +25,17 @@ public class Main {
 
         ParseTree tree = parser.program(); // begin parsing at program rule
 
+        if (parser.getNumberOfSyntaxErrors() > 0) {
+            System.exit(100);
+        }
+
         System.out.println(tree.toStringTree(parser));
 
         // build and run my custom visitor
         MyVisitor visitor = new MyVisitor();
         AST.ASTNode astNode = visitor.visit(tree);
         astNode.check();
-
+        System.out.println("Semantic check finish!");
 
     }
 }

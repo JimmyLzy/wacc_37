@@ -3,6 +3,6 @@
 # You are free to change the language used for this script,
 # but do *not* change its name.
 
-puts "#{ARGV[0]}"
-value = `java -cp bin:lib/antlr-4.4-complete.jar Main <#{ARGV[0]}`
+puts `java -cp bin:lib/antlr-4.4-complete.jar WACC/Main <#{ARGV[0]}`
+puts `echo $?`
 

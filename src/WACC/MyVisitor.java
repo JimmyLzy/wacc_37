@@ -5,6 +5,7 @@ import java.util.*;
 import antlr.*;
 import org.antlr.v4.runtime.misc.NotNull;
 
+
 public class MyVisitor extends BasicParserBaseVisitor<AST.ASTNode> {
 
     AST ast = new AST();
@@ -20,13 +21,11 @@ public class MyVisitor extends BasicParserBaseVisitor<AST.ASTNode> {
         AST.ProgramNode programNode = null;
         List<AST.FuncNode> functionNodes = new ArrayList<>();
         for (BasicParser.FuncContext functionContext : ctx.func()) {
-            AST.FuncNode funcNode = (AST.FuncNode)visit(functionContext);
-            funcNode.setParent((AST.ASTNode)programNode);
+            AST.FuncNode funcNode = (AST.FuncNode) visit(functionContext);
             functionNodes.add(funcNode);
         }
 
         AST.StatNode statNode = (AST.StatNode) visit(ctx.stat());
-        statNode.setParent(programNode);
 
         programNode = ast.new ProgramNode(functionNodes, statNode);
         return programNode;
@@ -44,37 +43,40 @@ public class MyVisitor extends BasicParserBaseVisitor<AST.ASTNode> {
         AST.FuncNode funcNode = null;
 
         AST.TypeNode typeNode = (AST.TypeNode) visit(ctx.type());
-        typeNode.setParent(funcNode);
 
         AST.IdentNode identNode = (AST.IdentNode) visit(ctx.ident());
-        identNode.setParent(funcNode);
 
         List<AST.ParamNode> paramNodeList = null;
-        if (ctx.param_list() != null ) {
+        if (ctx.param_list() != null) {
             for (int i = 0; i < ctx.param_list().getChildCount(); i++) {
-                AST.ParamNode paramNode = (AST.ParamNode)visit(ctx.param_list().getChild(i));
-                paramNode.setParent(funcNode);
+                AST.ParamNode paramNode = (AST.ParamNode) visit(ctx.param_list().getChild(i));
                 paramNodeList.add(paramNode);
             }
         }
 
         AST.StatNode statNode = (AST.StatNode) visit(ctx.stat());
-        statNode.setParent(funcNode);
 
         funcNode = ast.new FuncNode(typeNode, identNode, paramNodeList, statNode);
 
         for (int i = 0; i < ctx.param_list().getChildCount(); i++) {
             BasicParser.ParamContext paramContext = (BasicParser.ParamContext) ctx.param_list().getChild(i);
-            funcNode.getSymbolTable().put(paramContext.ident().getText(), paramNodeList.get(i).getTypeNode());
+            if (funcNode.getSymbolTable().containsKey(paramContext.ident().getText())) {
+                System.out.println("Semantic error");
+                System.exit(200);
+            }else {
+                funcNode.getSymbolTable().put(paramContext.ident().getText(), paramNodeList.get(i).getTypeNode());
+            }
         }
         if (funcNode.getParent().getSymbolTable().containsKey(ctx.ident().getText())) {
-            System.out.println("error");
-        }else {
+            System.out.println("Semantic error");
+            System.exit(200);
+        } else {
             funcNode.getParent().getSymbolTable().put(ctx.ident().getText(), funcNode);
         }
 
         return funcNode;
     }
+
     /**
      * {@inheritDoc}
      *
@@ -85,10 +87,9 @@ public class MyVisitor extends BasicParserBaseVisitor<AST.ASTNode> {
     @Override
     public AST.ASTNode visitIdent(@NotNull BasicParser.IdentContext ctx) {
 
-        AST.IdentNode identNode = ast.new IdentNode(ctx.getText());
-
-        return identNode;
+        return ast.new IdentNode(ctx.getText());
     }
+
     /**
      * {@inheritDoc}
      *
@@ -98,8 +99,8 @@ public class MyVisitor extends BasicParserBaseVisitor<AST.ASTNode> {
      */
     @Override
     public AST.ASTNode visitPair_liter(@NotNull BasicParser.Pair_literContext ctx) {
-        System.out.println("I found a Pair_liter");
-        return visitChildren(ctx);
+
+        return ast.new Pair_literNode();
     }
 
     /**
@@ -111,8 +112,15 @@ public class MyVisitor extends BasicParserBaseVisitor<AST.ASTNode> {
      */
     @Override
     public AST.ASTNode visitParam(@NotNull BasicParser.ParamContext ctx) {
-        System.out.println("found param");
-        return visitChildren(ctx);
+        AST.ParamNode paramNode = null;
+
+        AST.TypeNode typeNode = (AST.TypeNode) visit(ctx.type());
+
+        AST.IdentNode identNode = (AST.IdentNode) visit(ctx.ident());
+
+        paramNode = ast.new ParamNode(typeNode, identNode);
+
+        return paramNode;
     }
 
     /**
@@ -124,23 +132,77 @@ public class MyVisitor extends BasicParserBaseVisitor<AST.ASTNode> {
      */
     @Override
     public AST.ASTNode visitExpr(@NotNull BasicParser.ExprContext ctx) {
-        System.out.println("I found an Expr");
-        System.out.println(ctx.depth());
-        //System.out.println(ctx.getChild(0).getChild(0).getChild(0).getChild(0).getChild(0).getText());
-//        if (ctx.getChildCount() == 3) {
-//            if (!ctx.getChild(0).getText().equals('(')) {
-//                if (ctx.getChild(0).equals(ctx.getChild(2))) {
-//                    System.out.println("same type");
-//                    System.out.println(ctx.getText());
-//                }else{
-//                    System.out.println("different type");
-//                    System.out.println(ctx.getText());
-//                }
-//            }
-//        }
-//        System.out.println(ctx.getChildCount());
-//        System.out.println(ctx.getChild(0).getText());
-        return visitChildren(ctx);
+        if (ctx.OPEN_PARENTHESES() != null) {
+            return visit(ctx.expr(0));
+
+        } else if (ctx.binary_oper() != null) {
+            switch (ctx.binary_oper().getText()) {
+                case "*":
+                    return ast.new MultNode(visit(ctx.expr(0)), visit(ctx.expr(1)));
+                case "/":
+                    return ast.new DivNode(visit(ctx.expr(0)), visit(ctx.expr(1)));
+                case "%":
+                    return ast.new ModNode(visit(ctx.expr(0)), visit(ctx.expr(1)));
+                case "+":
+                    return ast.new PlusNode(visit(ctx.expr(0)), visit(ctx.expr(1)));
+                case "-":
+                    return ast.new MinusNode(visit(ctx.expr(0)), visit(ctx.expr(1)));
+                case ">":
+                    return ast.new GreaterNode(visit(ctx.expr(0)), visit(ctx.expr(1)));
+                case ">=":
+                    return ast.new GreaterOrEqualNode(visit(ctx.expr(0)), visit(ctx.expr(1)));
+                case "<":
+                    return ast.new SmallerNode(visit(ctx.expr(0)), visit(ctx.expr(1)));
+                case "<=":
+                    return ast.new SmallerOrEqualNode(visit(ctx.expr(0)), visit(ctx.expr(1)));
+                case "==":
+                    return ast.new EqualNode(visit(ctx.expr(0)), visit(ctx.expr(1)));
+                case "!=":
+                    return ast.new NotEqualNode(visit(ctx.expr(0)), visit(ctx.expr(1)));
+                case "&&":
+                    return ast.new LogicalAndNode(visit(ctx.expr(0)), visit(ctx.expr(1)));
+                case "||":
+                    return ast.new LogicalOrNode(visit(ctx.expr(0)), visit(ctx.expr(1)));
+            }
+
+        } else if (ctx.unary_oper() != null) {
+            switch (ctx.unary_oper().getText()) {
+                case "!":
+                    return ast.new NotOperNode((AST.ExprNode) visit(ctx.expr(0)));
+                case "-":
+                    return ast.new NegateOperNode((AST.ExprNode) visit(ctx.expr(0)));
+                case "len":
+                    return ast.new LenOperNode((AST.ExprNode) visit(ctx.expr(0)));
+                case "ord":
+                    return ast.new OrdOperNode((AST.ExprNode) visit(ctx.expr(0)));
+                case "chr":
+                    return ast.new CharOperNode((AST.ExprNode) visit(ctx.expr(0)));
+            }
+
+        } else if (ctx.array_elem() != null) {
+            return visit(ctx.array_elem());
+
+        } else if (ctx.ident() != null) {
+            return visit(ctx.ident());
+
+        } else if (ctx.int_liter() != null) {
+            return visit(ctx.int_liter());
+
+        } else if (ctx.bool_liter() != null) {
+            return visit(ctx.bool_liter());
+
+        } else if (ctx.char_liter() != null) {
+            return visit(ctx.char_liter());
+
+        } else if (ctx.str_liter() != null) {
+            return visit(ctx.str_liter());
+
+        } else if (ctx.pair_liter() != null) {
+            return visit(ctx.pair_liter());
+
+        }
+        System.out.println("Error");
+        return null;
     }
 
     /**
@@ -152,7 +214,13 @@ public class MyVisitor extends BasicParserBaseVisitor<AST.ASTNode> {
      */
     @Override
     public AST.ASTNode visitType(@NotNull BasicParser.TypeContext ctx) {
-        System.out.println("found type");
+        if (ctx.base_type() != null) {
+            visit(ctx.base_type());
+        } else if (ctx.OPEN_SQUARE_BRACKET() != null) {
+            return ast.new Array_typeNode((AST.TypeNode) visit(ctx.type()));
+        } else if (ctx.pair_type() != null) {
+            return visit(ctx.pair_type());
+        }
         return visitChildren(ctx);
     }
 
@@ -165,10 +233,10 @@ public class MyVisitor extends BasicParserBaseVisitor<AST.ASTNode> {
      */
     @Override
     public AST.ASTNode visitUnary_oper(@NotNull BasicParser.Unary_operContext ctx) {
+        //TODO
+        System.out.println("Not Implemented");
         return visitChildren(ctx);
     }
-
-
 
     /**
      * {@inheritDoc}
@@ -179,7 +247,11 @@ public class MyVisitor extends BasicParserBaseVisitor<AST.ASTNode> {
      */
     @Override
     public AST.ASTNode visitPair_elem(@NotNull BasicParser.Pair_elemContext ctx) {
-        return visitChildren(ctx);
+        if (ctx.FST() != null) {
+            return ast.new FSTNode((AST.ExprNode) visit(ctx.expr()));
+        } else {
+            return ast.new SNDNode((AST.ExprNode) visit(ctx.expr()));
+        }
     }
 
     /**
@@ -191,7 +263,8 @@ public class MyVisitor extends BasicParserBaseVisitor<AST.ASTNode> {
      */
     @Override
     public AST.ASTNode visitArray_type(@NotNull BasicParser.Array_typeContext ctx) {
-        return visitChildren(ctx);
+
+        return ast.new Array_typeNode((AST.Array_typeNode) visit(ctx.type()));
     }
 
     /**
@@ -203,7 +276,15 @@ public class MyVisitor extends BasicParserBaseVisitor<AST.ASTNode> {
      */
     @Override
     public AST.ASTNode visitBase_type(@NotNull BasicParser.Base_typeContext ctx) {
-        return visitChildren(ctx);
+        if (ctx.BOOL() != null) {
+            return ast.new BoolTypeNode();
+        } else if (ctx.CHAR() != null) {
+            return ast.new CharTypeNode();
+        } else if (ctx.INT() != null) {
+            return ast.new IntTypeNode();
+        } else {
+            return ast.new StringTypeNode();
+        }
     }
 
     /**
@@ -215,7 +296,9 @@ public class MyVisitor extends BasicParserBaseVisitor<AST.ASTNode> {
      */
     @Override
     public AST.ASTNode visitPair_type(@NotNull BasicParser.Pair_typeContext ctx) {
-        return visitChildren(ctx);
+
+        return ast.new Pair_typeNode((AST.Pair_elem_typeNode) visit(ctx.pair_elem_type(0)),
+                (AST.Pair_elem_typeNode) visit(ctx.pair_elem_type(1)));
     }
 
     /**
@@ -227,7 +310,8 @@ public class MyVisitor extends BasicParserBaseVisitor<AST.ASTNode> {
      */
     @Override
     public AST.ASTNode visitStr_liter(@NotNull BasicParser.Str_literContext ctx) {
-        return visitChildren(ctx);
+
+        return ast.new Str_literNode(ctx.STR_LITER().getText());
     }
 
     /**
@@ -239,6 +323,8 @@ public class MyVisitor extends BasicParserBaseVisitor<AST.ASTNode> {
      */
     @Override
     public AST.ASTNode visitInt_sign(@NotNull BasicParser.Int_signContext ctx) {
+        //TODO
+        System.out.println("Not Implemented");
         return visitChildren(ctx);
     }
 
@@ -251,127 +337,14 @@ public class MyVisitor extends BasicParserBaseVisitor<AST.ASTNode> {
      */
     @Override
     public AST.ASTNode visitAssign_lhs(@NotNull BasicParser.Assign_lhsContext ctx) {
-        return visitChildren(ctx);
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * @author YinJun
-     * <p>The default implementation returns the result of calling
-     * {@link #visitChildren} on {@code ctx}.</p>
-     */
-    @Override
-    public AST.StatNode visitStat(@NotNull BasicParser.StatContext ctx) {
-        return null;
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * @author YinJun
-     * <p>The default implementation returns the result of calling
-     * {@link #visitChildren} on {@code ctx}.</p>
-     */
-    @Override
-    public AST.ASTNode visitBool_liter(@NotNull BasicParser.Bool_literContext ctx) {
-        return visitChildren(ctx);
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * @author YinJun
-     * <p>The default implementation returns the result of calling
-     * {@link #visitChildren} on {@code ctx}.</p>
-     */
-    @Override
-    public AST.ASTNode visitParam_list(@NotNull BasicParser.Param_listContext ctx) {
-        System.out.println("Found param list");
-        return visitChildren(ctx);
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * @author WangJiaYing & Jimmy
-     * <p>The default implementation returns the result of calling
-     * {@link #visitChildren} on {@code ctx}.</p>
-     */
-    @Override
-    public AST.ASTNode visitDigit(@NotNull BasicParser.DigitContext ctx) {
-        return visitChildren(ctx);
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * @author WangJiaYing & Jimmy
-     * <p>The default implementation returns the result of calling
-     * {@link #visitChildren} on {@code ctx}.</p>
-     */
-    @Override
-    public AST.ASTNode visitArg_list(@NotNull BasicParser.Arg_listContext ctx) {
-        return visitChildren(ctx);
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * @author WangJiaYing & Jimmy
-     * <p>The default implementation returns the result of calling
-     * {@link #visitChildren} on {@code ctx}.</p>
-     */
-    @Override
-    public AST.ASTNode visitArray_elem(@NotNull BasicParser.Array_elemContext ctx) {
-        return visitChildren(ctx);
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * @author WangJiaYing & Jimmy
-     * <p>The default implementation returns the result of calling
-     * {@link #visitChildren} on {@code ctx}.</p>
-     */
-    @Override
-    public AST.ASTNode visitBinary_oper(@NotNull BasicParser.Binary_operContext ctx) {
-        return visitChildren(ctx);
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * @author WangJiaYing & Jimmy
-     * <p>The default implementation returns the result of calling
-     * {@link #visitChildren} on {@code ctx}.</p>
-     */
-    @Override
-    public AST.ASTNode visitPair_elem_type(@NotNull BasicParser.Pair_elem_typeContext ctx) {
-        return visitChildren(ctx);
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * @author WangJiaYing & Jimmy
-     * <p>The default implementation returns the result of calling
-     * {@link #visitChildren} on {@code ctx}.</p>
-     */
-    @Override
-    public AST.ASTNode visitChar_liter(@NotNull BasicParser.Char_literContext ctx) {
-        return visitChildren(ctx);
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * @author WangJiaYing & Jimmy
-     * <p>The default implementation returns the result of calling
-     * {@link #visitChildren} on {@code ctx}.</p>
-     */
-    @Override
-    public AST.ASTNode visitArray_liter(@NotNull BasicParser.Array_literContext ctx) {
+        if (ctx.array_elem() != null) {
+            return visit(ctx.array_elem());
+        } else if (ctx.ident() != null) {
+            return visit(ctx.ident());
+        } else if (ctx.pair_elem() != null) {
+            return visit(ctx.pair_elem());
+        }
+        System.out.println("Error");
         return visitChildren(ctx);
     }
 
@@ -384,6 +357,97 @@ public class MyVisitor extends BasicParserBaseVisitor<AST.ASTNode> {
      */
     @Override
     public AST.ASTNode visitAssign_rhs(@NotNull BasicParser.Assign_rhsContext ctx) {
+        if (ctx.CALL() != null) {
+            List<AST.ExprNode> argNodeList = new ArrayList<>();
+            if (ctx.arg_list() != null) {
+                for (int i = 0; i < ctx.arg_list().getChildCount(); i++) {
+                    argNodeList.add((AST.ExprNode) visit(ctx.arg_list().expr(i)));
+                }
+            }
+            return ast.new CallNode((AST.IdentNode) visit(ctx.ident()), argNodeList);
+
+        } else if (ctx.NEWPAIR() != null) {
+            return ast.new NewPairNode((AST.ExprNode) visit(ctx.expr(0)), (AST.ExprNode) visit(ctx.expr(1)));
+
+        } else if (ctx.pair_elem() != null) {
+            return visit(ctx.pair_elem());
+
+        } else if (ctx.array_liter() != null) {
+            List<AST.ASTNode> exprNodeList = new ArrayList<>();
+            for (int i = 0; i < ctx.array_liter().getChildCount() - 2; i++) {
+                exprNodeList.add(visit(ctx.array_liter().expr(i)));
+            }
+            return ast.new Array_literNode(exprNodeList);
+        } else if (ctx.expr(0) != null) {
+            return visit(ctx.expr(0));
+        }
+        System.out.println("Error");
+        return visitChildren(ctx);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @author YinJun
+     * <p>The default implementation returns the result of calling
+     * {@link #visitChildren} on {@code ctx}.</p>
+     */
+    @Override
+    public AST.ASTNode visitStat(@NotNull BasicParser.StatContext ctx) {
+        //TODO symbol table config
+        if (ctx.SEMICOLON() != null) {
+            return ast.new MultipleStatNode((AST.StatNode) visit(ctx.stat(0)), (AST.StatNode) visit(ctx.stat(1)));
+        } else if (ctx.BEGIN() != null) {
+            return visit(ctx.stat(0));
+        } else if (ctx.WHILE() != null) {
+            return ast.new WhileNode((AST.ExprNode) visit(ctx.expr()), (AST.StatNode) visit(ctx.stat(0)));
+        } else if (ctx.IF() != null) {
+            return ast.new IfNode((AST.ExprNode) visit(ctx.expr()), (AST.StatNode) visit(ctx.stat(0)), (AST.StatNode) visit(ctx.stat(1)));
+        } else if (ctx.PRINTLN() != null) {
+            return ast.new PrintlnNode((AST.ExprNode) visit(ctx.expr()));
+        } else if (ctx.PRINT() != null) {
+            return ast.new PrintNode((AST.ExprNode) visit(ctx.expr()));
+        } else if (ctx.EXIT() != null) {
+            return ast.new ExitNode((AST.ExprNode) visit(ctx.expr()));
+        } else if (ctx.RETURN() != null) {
+            return ast.new ReturnNode((AST.ExprNode) visit(ctx.expr()));
+        } else if (ctx.FREE() != null) {
+            return ast.new FreeNode((AST.ExprNode) visit(ctx.expr()));
+        } else if (ctx.SKIP() != null) {
+            return ast.new SkipNode();
+        } else if (ctx.assign_lhs() != null) {
+            return ast.new AssignmentNode((AST.Assign_lhsNode) visit(ctx.assign_lhs()), (AST.Assign_rhsNode) visit(ctx.assign_rhs()));
+        } else if (ctx.type() != null) {
+            return ast.new DeclarationNode((AST.TypeNode) visit(ctx.type()), (AST.IdentNode) visit(ctx.ident()), (AST.Assign_rhsNode) visit(ctx.assign_rhs()));
+        }
+        System.out.println("Error");
+        return visitChildren(ctx);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @author YinJun
+     * <p>The default implementation returns the result of calling
+     * {@link #visitChildren} on {@code ctx}.</p>
+     */
+    @Override
+    public AST.ASTNode visitBool_liter(@NotNull BasicParser.Bool_literContext ctx) {
+
+        return ast.new Bool_literNode(ctx.getText());
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @author YinJun
+     * <p>The default implementation returns the result of calling
+     * {@link #visitChildren} on {@code ctx}.</p>
+     */
+    @Override
+    public AST.ASTNode visitParam_list(@NotNull BasicParser.Param_listContext ctx) {
+        //TODO
+        System.out.println("Not Implemented");
         return visitChildren(ctx);
     }
 
@@ -395,7 +459,126 @@ public class MyVisitor extends BasicParserBaseVisitor<AST.ASTNode> {
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public AST.ASTNode visitInt_liter(@NotNull BasicParser.Int_literContext ctx) {
+    public AST.ASTNode visitDigit(@NotNull BasicParser.DigitContext ctx) {
+        //TODO
+        System.out.println("Error");
         return visitChildren(ctx);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @author WangJiaYing & Jimmy
+     * <p>The default implementation returns the result of calling
+     * {@link #visitChildren} on {@code ctx}.</p>
+     */
+    @Override
+    public AST.ASTNode visitArg_list(@NotNull BasicParser.Arg_listContext ctx) {
+
+        //TODO
+        System.out.println("Not Implemented");
+        return visitChildren(ctx);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @author WangJiaYing & Jimmy
+     * <p>The default implementation returns the result of calling
+     * {@link #visitChildren} on {@code ctx}.</p>
+     */
+    @Override
+    public AST.ASTNode visitArray_elem(@NotNull BasicParser.Array_elemContext ctx) {
+
+        List<AST.ExprNode> exprNodeList = new ArrayList<>();
+        for (BasicParser.ExprContext exprContext : ctx.expr()) {
+            exprNodeList.add((AST.ExprNode) visit(exprContext));
+        }
+        return ast.new Array_elemNode((AST.IdentNode) visit(ctx.ident()), exprNodeList);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @author WangJiaYing & Jimmy
+     * <p>The default implementation returns the result of calling
+     * {@link #visitChildren} on {@code ctx}.</p>
+     */
+    @Override
+    public AST.ASTNode visitBinary_oper(@NotNull BasicParser.Binary_operContext ctx) {
+
+        //TODO
+        System.out.println("Not Implemented");
+        return visitChildren(ctx);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @author WangJiaYing & Jimmy
+     * <p>The default implementation returns the result of calling
+     * {@link #visitChildren} on {@code ctx}.</p>
+     */
+    @Override
+    public AST.ASTNode visitPair_elem_type(@NotNull BasicParser.Pair_elem_typeContext ctx) {
+        if (ctx.base_type() != null) {
+            return visit(ctx.base_type());
+        } else if (ctx.array_type() != null) {
+            return visit(ctx.array_type());
+        } else if (ctx.PAIR() != null) {
+            return ast.new PairNode();
+        }
+        System.out.println("Error");
+        return null;
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @author WangJiaYing & Jimmy
+     * <p>The default implementation returns the result of calling
+     * {@link #visitChildren} on {@code ctx}.</p>
+     */
+    @Override
+    public AST.ASTNode visitChar_liter(@NotNull BasicParser.Char_literContext ctx) {
+
+        return ast.new Char_literNode(ctx.CHAR_LITER().getText());
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @author WangJiaYing & Jimmy
+     * <p>The default implementation returns the result of calling
+     * {@link #visitChildren} on {@code ctx}.</p>
+     */
+    @Override
+    public AST.ASTNode visitArray_liter(@NotNull BasicParser.Array_literContext ctx) {
+
+        //TODO
+        System.out.println("Not Implemented");
+        return visitChildren(ctx);
+    }
+
+
+    /**
+     * {@inheritDoc}
+     *
+     * @author WangJiaYing & Jimmy
+     * <p>The default implementation returns the result of calling
+     * {@link #visitChildren} on {@code ctx}.</p>
+     */
+    @Override
+    public AST.ASTNode visitInt_liter(@NotNull BasicParser.Int_literContext ctx) {
+
+        String sign = "+";
+        String number = "";
+        if (ctx.int_sign() != null) {
+            sign = ctx.int_sign().getText();
+        }
+        if (ctx.INTEGER() != null) {
+            number = ctx.INTEGER().getText();
+        }
+        return ast.new Int_literNode(sign, number);
     }
 }
