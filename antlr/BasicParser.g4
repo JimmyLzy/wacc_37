@@ -24,7 +24,7 @@ sub_stat: SKIP
 | FREE expr
 | PRINT expr
 | PRINTLN expr
-| IF expr THEN stat ELSE stat FI
+| IF expr THEN sub_stat ELSE sub_stat FI
 | WHILE expr DO sub_stat DONE
 | BEGIN sub_stat END
 | sub_stat SEMICOLON sub_stat;

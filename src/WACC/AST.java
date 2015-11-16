@@ -302,18 +302,18 @@ public class AST {
     public class IfNode extends Sub_StatNode {
 
         private ExprNode exprNode;
-        private StatNode statNodeTrue;
-        private StatNode statNodeFalse;
+        private Sub_StatNode sub_statNodeTrue;
+        private Sub_StatNode sub_statNodeFalse;
 
-        public IfNode(ExprNode exprNode, StatNode statNodeTrue, StatNode statNodeFalse) {
+        public IfNode(ExprNode exprNode, Sub_StatNode sub_statNodeTrue, Sub_StatNode sub_statNodeFalse) {
 
             command = "if";
             this.exprNode = exprNode;
             exprNode.setParent(this);
-            this.statNodeTrue = statNodeTrue;
-            statNodeTrue.setParent(this);
-            this.statNodeFalse = statNodeFalse;
-            statNodeFalse.setParent(this);
+            this.sub_statNodeTrue = sub_statNodeTrue;
+            sub_statNodeTrue.setParent(this);
+            this.sub_statNodeFalse = sub_statNodeFalse;
+            sub_statNodeFalse.setParent(this);
 
         }
 

@@ -418,7 +418,7 @@ public class MyVisitor extends BasicParserBaseVisitor<AST.ASTNode> {
         } else if (ctx.WHILE() != null) {
             return ast.new WhileNode((AST.ExprNode) visit(ctx.expr()), (AST.Sub_StatNode) visit(ctx.sub_stat(0)));
         } else if (ctx.IF() != null) {
-            return ast.new IfNode((AST.ExprNode) visit(ctx.expr()), (AST.StatNode) visit(ctx.stat(0)), (AST.StatNode) visit(ctx.stat(1)));
+            return ast.new IfNode((AST.ExprNode) visit(ctx.expr()), (AST.Sub_StatNode) visit(ctx.sub_stat(0)), (AST.Sub_StatNode) visit(ctx.sub_stat(1)));
         } else if (ctx.PRINTLN() != null) {
             return ast.new PrintlnNode((AST.ExprNode) visit(ctx.expr()));
         } else if (ctx.PRINT() != null) {
