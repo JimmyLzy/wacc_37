@@ -32,6 +32,7 @@ public class Main {
         ParseTree tree = parser.program(); // begin parsing at program rule
 
         if(parser.getNumberOfSyntaxErrors() > 0) {
+            System.out.println("#syntax_error#");
             System.exit(100);
         }
 
