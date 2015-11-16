@@ -1,8 +1,5 @@
 package WACC;
 
-import antlr.BasicParser;
-import org.antlr.v4.runtime.misc.NotNull;
-
 import java.util.HashMap;
 import java.util.List;
 
@@ -45,16 +42,16 @@ public class AST {
     public class ProgramNode extends ASTNode {
 
         private List<FuncNode> functionNodes;
-        private StatNode sub_statNode;
+        private StatNode statNode;
 
-        public ProgramNode(List<FuncNode> functionNodes, StatNode sub_statNode) {
+        public ProgramNode(List<FuncNode> functionNodes, StatNode statNode) {
 
             this.functionNodes = functionNodes;
             for (FuncNode funcNode : functionNodes) {
                 funcNode.setParent(this);
             }
-            this.sub_statNode = sub_statNode;
-            sub_statNode.setParent(this);
+            this.statNode = statNode;
+            statNode.setParent(this);
         }
 
         @Override
@@ -63,7 +60,7 @@ public class AST {
             for (FuncNode funcNode : functionNodes) {
                 funcNode.check();
             }
-            sub_statNode.check();
+            statNode.check();
         }
 
     }
@@ -102,42 +99,21 @@ public class AST {
     }
 
 
-    public class StatNode extends ASTNode {
+    public abstract class StatNode extends ASTNode {
 
         protected String command;
-        protected StatNode sub_statNode;
-        protected ASTNode returnNode;
 
         public StatNode() {
             command = "";
         }
 
-        public StatNode(StatNode sub_statNode, ASTNode returnNode) {
-            this.sub_statNode = sub_statNode;
-            this.returnNode = returnNode;
-        }
-
         public String getCommand() {
             return command;
         }
 
     }
 
-    public class Sub_StatNode extends StatNode {
-
-        protected String command;
-
-        public Sub_StatNode() {
-            command = "";
-        }
-
-        public String getCommand() {
-            return command;
-        }
-
-    }
-
-    public class SkipNode extends Sub_StatNode {
+    public class SkipNode extends StatNode {
 
         public SkipNode() {
             command = "skip";
@@ -145,7 +121,7 @@ public class AST {
 
     }
 
-    public class DeclarationNode extends Sub_StatNode {
+    public class DeclarationNode extends StatNode {
 
         private TypeNode typeNode;
         private IdentNode identNode;
@@ -168,7 +144,7 @@ public class AST {
         }
     }
 
-    public class AssignmentNode extends Sub_StatNode {
+    public class AssignmentNode extends StatNode {
 
         private ASTNode assign_lhsNode;
         private ASTNode assign_rhsNode;
@@ -190,7 +166,7 @@ public class AST {
 
     }
 
-    public class ReadNode extends Sub_StatNode {
+    public class ReadNode extends StatNode {
 
         private ASTNode assign_lhsNode;
 
@@ -209,7 +185,7 @@ public class AST {
 
     }
 
-    public class FreeNode extends Sub_StatNode {
+    public class FreeNode extends StatNode {
 
         private ExprNode exprNode;
 
@@ -234,6 +210,7 @@ public class AST {
 
         public ReturnNode(ExprNode exprNode) {
 
+            command = "return";
             this.exprNode = exprNode;
             exprNode.setParent(this);
 
@@ -252,6 +229,7 @@ public class AST {
 
         public ExitNode(ExprNode exprNode) {
 
+            command = "exit";
             this.exprNode = exprNode;
             exprNode.setParent(this);
 
@@ -264,7 +242,7 @@ public class AST {
 
     }
 
-    public class PrintNode extends Sub_StatNode {
+    public class PrintNode extends StatNode {
 
         private ExprNode exprNode;
 
@@ -283,7 +261,7 @@ public class AST {
 
     }
 
-    public class PrintlnNode extends Sub_StatNode {
+    public class PrintlnNode extends StatNode {
 
         private ExprNode exprNode;
 
@@ -302,21 +280,21 @@ public class AST {
 
     }
 
-    public class IfNode extends Sub_StatNode {
+    public class IfNode extends StatNode {
 
         private ExprNode exprNode;
-        private StatNode if_sub_statNodeTrue;
-        private StatNode if_sub_statNodeFalse;
+        private StatNode statNodeTrue;
+        private StatNode statNodeFalse;
 
-        public IfNode(ExprNode exprNode, StatNode if_sub_statNodeTrue, StatNode if_sub_statNodeFalse) {
+        public IfNode(ExprNode exprNode, StatNode statNodeTrue, StatNode statNodeFalse) {
 
             command = "if";
             this.exprNode = exprNode;
             exprNode.setParent(this);
-            this.if_sub_statNodeTrue = if_sub_statNodeTrue;
-            if_sub_statNodeTrue.setParent(this);
-            this.if_sub_statNodeFalse = if_sub_statNodeFalse;
-            if_sub_statNodeFalse.setParent(this);
+            this.statNodeTrue = statNodeTrue;
+            statNodeTrue.setParent(this);
+            this.statNodeFalse = statNodeFalse;
+            statNodeFalse.setParent(this);
 
         }
 
@@ -326,25 +304,19 @@ public class AST {
         }
 
     }
-
-    public class If_Sub_StatNode extends Sub_StatNode {
-
-
-    }
-
 
     public class WhileNode extends StatNode {
 
         private ExprNode exprNode;
-        private StatNode sub_statNode;
+        private StatNode statNode;
 
-        public WhileNode(ExprNode exprNode, StatNode sub_statNode) {
+        public WhileNode(ExprNode exprNode, StatNode statNode) {
 
             command = "while";
             this.exprNode = exprNode;
             exprNode.setParent(this);
-            this.sub_statNode = sub_statNode;
-            sub_statNode.setParent(this);
+            this.statNode = statNode;
+            statNode.setParent(this);
 
         }
 
@@ -355,15 +327,15 @@ public class AST {
 
     }
 
-    public class BeginNode extends Sub_StatNode {
+    public class BeginNode extends StatNode {
 
-        private Sub_StatNode sub_statNode;
+        private StatNode statNode;
 
-        public BeginNode(Sub_StatNode sub_statNode) {
+        public BeginNode(StatNode statNode) {
 
             command = "begin";
-            this.sub_statNode = sub_statNode;
-            sub_statNode.setParent(this);
+            this.statNode = statNode;
+            statNode.setParent(this);
 
         }
 
@@ -376,16 +348,16 @@ public class AST {
 
     public class MultipleStatNode extends StatNode {
 
-        private StatNode sub_statNodeFirst;
-        private StatNode sub_statNodeSecond;
+        private StatNode statNodeFirst;
+        private StatNode statNodeSecond;
 
-        public MultipleStatNode(StatNode sub_statNodeFirst, StatNode sub_statNodeSecond) {
+        public MultipleStatNode(StatNode statNodeFirst, StatNode statNodeSecond) {
 
             command = "multiple";
-            this.sub_statNodeFirst = sub_statNodeFirst;
-            sub_statNodeFirst.setParent(this);
-            this.sub_statNodeSecond = sub_statNodeSecond;
-            sub_statNodeSecond.setParent(this);
+            this.statNodeFirst = statNodeFirst;
+            statNodeFirst.setParent(this);
+            this.statNodeSecond = statNodeSecond;
+            statNodeSecond.setParent(this);
 
         }
 

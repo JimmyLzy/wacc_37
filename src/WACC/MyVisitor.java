@@ -25,9 +25,9 @@ public class MyVisitor extends BasicParserBaseVisitor<AST.ASTNode> {
             functionNodes.add(funcNode);
         }
 
-        AST.StatNode sub_statNode = (AST.StatNode) visit(ctx.sub_stat());
+        AST.StatNode statNode = (AST.StatNode) visit(ctx.stat());
 
-        programNode = ast.new ProgramNode(functionNodes, sub_statNode);
+        programNode = ast.new ProgramNode(functionNodes, statNode);
         return programNode;
     }
 
@@ -42,7 +42,7 @@ public class MyVisitor extends BasicParserBaseVisitor<AST.ASTNode> {
 
         List<AST.ParamNode> paramNodeList = new ArrayList<>();
         List<ParseTree> paramContextList = new ArrayList<>();
-        AST.StatNode stateNode = null;
+
         if (ctx.param_list() != null) {
             for (int i = 0; i < ctx.param_list().getChildCount(); i = i + 2) {
                 paramContextList.add(ctx.param_list().getChild(i));
@@ -53,13 +53,8 @@ public class MyVisitor extends BasicParserBaseVisitor<AST.ASTNode> {
         for (ParseTree param : paramContextList) {
             paramNodeList.add((AST.ParamNode) visit(param));
         }
-        if (ctx.if_sub_stat() != null) {
-            stateNode = (AST.StatNode)visit(ctx.if_sub_stat());
-        }else if (ctx.stat() != null) {
-            stateNode = (AST.StatNode) visit(ctx.stat());
-        }
 
-        AST.FuncNode funcNode = ast.new FuncNode((AST.TypeNode) visit(ctx.type()), (AST.IdentNode) visit(ctx.ident()), paramNodeList, stateNode);
+        AST.FuncNode funcNode = ast.new FuncNode((AST.TypeNode) visit(ctx.type()), (AST.IdentNode) visit(ctx.ident()), paramNodeList, (AST.StatNode) visit(ctx.stat()));
 
         for (int i = 0; i < paramContextList.size(); i++) {
             BasicParser.ParamContext paramContext = (BasicParser.ParamContext) paramContextList.get(i);
@@ -384,28 +379,7 @@ public class MyVisitor extends BasicParserBaseVisitor<AST.ASTNode> {
         System.out.println("Error");
         return visitChildren(ctx);
     }
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation returns the result of calling
-     * {@link #visitChildren} on {@code ctx}.</p>
-     */
-    @Override public AST.ASTNode visitStat(@NotNull BasicParser.StatContext ctx) {
 
-        AST.ASTNode returnNode = null;
-        AST.StatNode sub_statNode = null;
-
-        if (ctx.sub_stat() != null) {
-            sub_statNode = (AST.StatNode)visit(ctx.sub_stat());
-        }
-        if (ctx.RETURN() != null) {
-            returnNode = visit(ctx.RETURN());
-        }else if (ctx.EXIT() != null) {
-            returnNode = visit(ctx.EXIT());
-        }
-
-        return ast.new StatNode(sub_statNode, returnNode);
-    }
     /**
      * {@inheritDoc}
      *
@@ -414,53 +388,16 @@ public class MyVisitor extends BasicParserBaseVisitor<AST.ASTNode> {
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public AST.ASTNode visitSub_stat(@NotNull BasicParser.Sub_statContext ctx) {
+    public AST.ASTNode visitStat(@NotNull BasicParser.StatContext ctx) {
         //TODO symbol table config
         if (ctx.SEMICOLON() != null) {
-            return ast.new MultipleStatNode((AST.StatNode) visit(ctx.sub_stat(0)), (AST.StatNode) visit(ctx.sub_stat(1)));
+            return ast.new MultipleStatNode((AST.StatNode) visit(ctx.stat(0)), (AST.StatNode) visit(ctx.stat(1)));
         } else if (ctx.BEGIN() != null) {
-            return visit(ctx.sub_stat(0));
+            return visit(ctx.stat(0));
         } else if (ctx.WHILE() != null) {
-            return ast.new WhileNode((AST.ExprNode) visit(ctx.expr()), (AST.StatNode) visit(ctx.sub_stat(0)));
+            return ast.new WhileNode((AST.ExprNode) visit(ctx.expr()), (AST.StatNode) visit(ctx.stat(0)));
         } else if (ctx.IF() != null) {
-            return ast.new IfNode((AST.ExprNode) visit(ctx.expr()), (AST.StatNode) visit(ctx.if_sub_stat(0)), (AST.StatNode) visit(ctx.if_sub_stat(1)));
-        } else if (ctx.PRINTLN() != null) {
-            return ast.new PrintlnNode((AST.ExprNode) visit(ctx.expr()));
-        } else if (ctx.PRINT() != null) {
-            return ast.new PrintNode((AST.ExprNode) visit(ctx.expr()));
-        } else if (ctx.EXIT() != null) {
-            return ast.new ExitNode((AST.ExprNode)visit(ctx.expr()));
-        } else if (ctx.FREE() != null) {
-            return ast.new FreeNode((AST.ExprNode) visit(ctx.expr()));
-        } else if (ctx.READ() != null) {
-            return ast.new ReadNode(visit(ctx.assign_lhs()));
-        } else if (ctx.SKIP() != null) {
-            return ast.new SkipNode();
-        } else if (ctx.assign_lhs() != null) {
-            return ast.new AssignmentNode(visit(ctx.assign_lhs()), visit(ctx.assign_rhs()));
-        } else if (ctx.type() != null) {
-            return ast.new DeclarationNode((AST.TypeNode) visit(ctx.type()), (AST.IdentNode) visit(ctx.ident()), visit(ctx.assign_rhs()));
-        }
-        System.out.println("Error");
-        return visitChildren(ctx);
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation returns the result of calling
-     * {@link #visitChildren} on {@code ctx}.</p>
-     */
-    @Override public AST.ASTNode visitIf_sub_stat (@NotNull BasicParser.If_sub_statContext ctx) {
-
-        if (ctx.SEMICOLON() != null) {
-            return ast.new MultipleStatNode((AST.StatNode) visit(ctx.if_sub_stat(0)), (AST.StatNode) visit(ctx.if_sub_stat(1)));
-        } else if (ctx.BEGIN() != null) {
-            return visit(ctx.if_sub_stat(0));
-        } else if (ctx.WHILE() != null) {
-            return ast.new WhileNode((AST.ExprNode) visit(ctx.expr()), (AST.StatNode) visit(ctx.if_sub_stat(0)));
-        } else if (ctx.IF() != null) {
-            return ast.new IfNode((AST.ExprNode) visit(ctx.expr()), (AST.StatNode) visit(ctx.if_sub_stat(0)), (AST.StatNode) visit(ctx.if_sub_stat(1)));
+            return ast.new IfNode((AST.ExprNode) visit(ctx.expr()), (AST.StatNode) visit(ctx.stat(0)), (AST.StatNode) visit(ctx.stat(1)));
         } else if (ctx.PRINTLN() != null) {
             return ast.new PrintlnNode((AST.ExprNode) visit(ctx.expr()));
         } else if (ctx.PRINT() != null) {
@@ -483,6 +420,7 @@ public class MyVisitor extends BasicParserBaseVisitor<AST.ASTNode> {
         System.out.println("Error");
         return visitChildren(ctx);
     }
+
     /**
      * {@inheritDoc}
      *

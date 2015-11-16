@@ -7,30 +7,15 @@ options {
 binary_oper : PLUS | MINUS | MULT | DIV | MOD | GREATER | GREATER_OR_EQUAL | SMALLER |
              SMALLER_OR_EQUAL | EQUAL | NOT_EQUAL | LOGICAL_AND |LOGICAL_OR;
 
-program: BEGIN (func)* sub_stat END EOF;
+program: BEGIN (func)* stat END EOF;
 
-func: type ident OPEN_PARENTHESES (param_list)? CLOSE_PARENTHESES IS (stat | if_sub_stat) END;
+func: type ident OPEN_PARENTHESES (param_list)? CLOSE_PARENTHESES IS stat END;
 
 param_list: param (COMMA param)*;
 
 param: type ident;
 
-stat: (sub_stat SEMICOLON)? (RETURN expr| EXIT expr) ;
-
-sub_stat: SKIP
-| type ident ASSIGN_EQUAL assign_rhs
-| assign_lhs ASSIGN_EQUAL assign_rhs
-| READ assign_lhs
-| FREE expr
-| PRINT expr
-| PRINTLN expr
-| EXIT expr
-| IF expr THEN if_sub_stat ELSE if_sub_stat FI
-| WHILE expr DO sub_stat DONE
-| BEGIN sub_stat END
-| sub_stat SEMICOLON sub_stat;
-
-if_sub_stat: SKIP
+stat: SKIP
 | type ident ASSIGN_EQUAL assign_rhs
 | assign_lhs ASSIGN_EQUAL assign_rhs
 | READ assign_lhs
@@ -39,11 +24,10 @@ if_sub_stat: SKIP
 | EXIT expr
 | PRINT expr
 | PRINTLN expr
-| IF expr THEN if_sub_stat ELSE if_sub_stat FI
-| WHILE expr DO if_sub_stat DONE
-| BEGIN if_sub_stat END
-| if_sub_stat SEMICOLON if_sub_stat;
-
+| IF expr THEN stat ELSE stat FI
+| WHILE expr DO stat DONE
+| BEGIN stat END
+| stat SEMICOLON stat;
 
 assign_lhs: ident
 | array_elem
@@ -109,15 +93,10 @@ bool_liter: TRUE | FALSE ;
 char_liter: CHAR_LITER ;
 
 str_liter: STR_LITER;
-//str_liter: DOUBLE_QUOTE STR CLOSESTRING;
 
 array_liter: OPEN_SQUARE_BRACKET (expr (COMMA expr)*)? CLOSE_SQUARE_BRACKET ;
 
 pair_liter: NULL ;
 
-
-//str_liter : DOUBLE_QUOTE (CHARACTER)* DOUBLE_QUOTE ;
-//character: ~('\\' | '\'' | '\"')
-//| BACKSLASH ESCAPED_CHAR;
 
 
