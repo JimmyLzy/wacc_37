@@ -88,7 +88,7 @@ public class AST {
         }
 
         @Override
-        public void check() {
+        public void check()  {
             typeNode.check();
             identNode.check();
             for (ParamNode paramNode : paramNodes) {
@@ -141,8 +141,6 @@ public class AST {
 
         @Override
         public void check() {
-
-            typeNode.check();
         }
     }
 
