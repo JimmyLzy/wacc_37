@@ -1,5 +1,8 @@
 package WACC;
 
+import antlr.BasicParser;
+import org.antlr.v4.runtime.misc.NotNull;
+
 import java.util.HashMap;
 import java.util.List;
 
@@ -225,7 +228,7 @@ public class AST {
 
     }
 
-    public class ReturnNode extends ASTNode {
+    public class ReturnNode extends StatNode {
 
         private ExprNode exprNode;
 
@@ -302,18 +305,18 @@ public class AST {
     public class IfNode extends Sub_StatNode {
 
         private ExprNode exprNode;
-        private Sub_StatNode sub_statNodeTrue;
-        private Sub_StatNode sub_statNodeFalse;
+        private StatNode if_sub_statNodeTrue;
+        private StatNode if_sub_statNodeFalse;
 
-        public IfNode(ExprNode exprNode, Sub_StatNode sub_statNodeTrue, Sub_StatNode sub_statNodeFalse) {
+        public IfNode(ExprNode exprNode, StatNode if_sub_statNodeTrue, StatNode if_sub_statNodeFalse) {
 
             command = "if";
             this.exprNode = exprNode;
             exprNode.setParent(this);
-            this.sub_statNodeTrue = sub_statNodeTrue;
-            sub_statNodeTrue.setParent(this);
-            this.sub_statNodeFalse = sub_statNodeFalse;
-            sub_statNodeFalse.setParent(this);
+            this.if_sub_statNodeTrue = if_sub_statNodeTrue;
+            if_sub_statNodeTrue.setParent(this);
+            this.if_sub_statNodeFalse = if_sub_statNodeFalse;
+            if_sub_statNodeFalse.setParent(this);
 
         }
 
@@ -324,12 +327,18 @@ public class AST {
 
     }
 
-    public class WhileNode extends Sub_StatNode {
+    public class If_Sub_StatNode extends Sub_StatNode {
+
+
+    }
+
+
+    public class WhileNode extends StatNode {
 
         private ExprNode exprNode;
-        private Sub_StatNode sub_statNode;
+        private StatNode sub_statNode;
 
-        public WhileNode(ExprNode exprNode, Sub_StatNode sub_statNode) {
+        public WhileNode(ExprNode exprNode, StatNode sub_statNode) {
 
             command = "while";
             this.exprNode = exprNode;
@@ -367,10 +376,10 @@ public class AST {
 
     public class MultipleStatNode extends Sub_StatNode {
 
-        private Sub_StatNode sub_statNodeFirst;
-        private Sub_StatNode sub_statNodeSecond;
+        private StatNode sub_statNodeFirst;
+        private StatNode sub_statNodeSecond;
 
-        public MultipleStatNode(Sub_StatNode sub_statNodeFirst, Sub_StatNode sub_statNodeSecond) {
+        public MultipleStatNode(StatNode sub_statNodeFirst, StatNode sub_statNodeSecond) {
 
             command = "multiple";
             this.sub_statNodeFirst = sub_statNodeFirst;

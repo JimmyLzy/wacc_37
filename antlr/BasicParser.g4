@@ -9,7 +9,7 @@ binary_oper : PLUS | MINUS | MULT | DIV | MOD | GREATER | GREATER_OR_EQUAL | SMA
 
 program: BEGIN (func)* sub_stat END EOF;
 
-func: type ident OPEN_PARENTHESES (param_list)? CLOSE_PARENTHESES IS stat END;
+func: type ident OPEN_PARENTHESES (param_list)? CLOSE_PARENTHESES IS (stat | if_sub_stat) END;
 
 param_list: param (COMMA param)*;
 
@@ -24,10 +24,25 @@ sub_stat: SKIP
 | FREE expr
 | PRINT expr
 | PRINTLN expr
-| IF expr THEN sub_stat ELSE sub_stat FI
+| IF expr THEN if_sub_stat ELSE if_sub_stat FI
 | WHILE expr DO sub_stat DONE
 | BEGIN sub_stat END
 | sub_stat SEMICOLON sub_stat;
+
+if_sub_stat: SKIP
+| type ident ASSIGN_EQUAL assign_rhs
+| assign_lhs ASSIGN_EQUAL assign_rhs
+| READ assign_lhs
+| FREE expr
+| RETURN expr
+| EXIT expr
+| PRINT expr
+| PRINTLN expr
+| IF expr THEN if_sub_stat ELSE if_sub_stat FI
+| WHILE expr DO if_sub_stat DONE
+| BEGIN if_sub_stat END
+| if_sub_stat SEMICOLON if_sub_stat;
+
 
 assign_lhs: ident
 | array_elem
