@@ -797,7 +797,7 @@ public class AST {
 
     }
 
-    public abstract class ExprNode extends ASTNode {
+    public abstract class ExprNode extends StatNode {
 
     }
 
