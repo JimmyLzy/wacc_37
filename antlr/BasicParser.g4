@@ -12,8 +12,8 @@ program: BEGIN (func)* stat END EOF;
 func: type ident OPEN_PARENTHESES (param_list)? CLOSE_PARENTHESES IS func_return END;
 
 func_return: RETURN expr
-| stat SEMICOLON RETURN expr
-| IF expr THEN func_return ELSE func_return;
+| IF expr THEN func_return ELSE func_return FI
+| stat SEMICOLON RETURN expr ;
 
 param_list: param (COMMA param)*;
 
