@@ -78,15 +78,17 @@ public class AST {
             this.statNode = statNode;
             statNode.setParent(this);
             this.paramNodes = paramNodes;
-            for(ParamNode paramNode : paramNodes) {
-                paramNode.setParent(this);
+            if (!paramNodes.isEmpty()) {
+                for (ParamNode paramNode : paramNodes) {
+                    paramNode.setParent(this);
+                }
             }
             this.identNode = identNode;
             identNode.setParent(this);
         }
 
         @Override
-        public void check() {
+        public void check()  {
             typeNode.check();
             identNode.check();
             for (ParamNode paramNode : paramNodes) {
@@ -123,9 +125,9 @@ public class AST {
 
         private TypeNode typeNode;
         private IdentNode identNode;
-        private Assign_rhsNode assign_rhsNode;
+        private ASTNode assign_rhsNode;
 
-        public DeclarationNode(TypeNode typeNode, IdentNode identNode, Assign_rhsNode assign_rhsNode) {
+        public DeclarationNode(TypeNode typeNode, IdentNode identNode, ASTNode assign_rhsNode) {
 
             command = "declaration";
             this.typeNode = typeNode;
@@ -144,10 +146,10 @@ public class AST {
 
     public class AssignmentNode extends StatNode {
 
-        private Assign_lhsNode assign_lhsNode;
-        private Assign_rhsNode assign_rhsNode;
+        private ASTNode assign_lhsNode;
+        private ASTNode assign_rhsNode;
 
-        public AssignmentNode(Assign_lhsNode assign_lhsNode, Assign_rhsNode assign_rhsNode) {
+        public AssignmentNode(ASTNode assign_lhsNode, ASTNode assign_rhsNode) {
 
             command = "assignment";
             this.assign_lhsNode = assign_lhsNode;
@@ -166,9 +168,9 @@ public class AST {
 
     public class ReadNode extends StatNode {
 
-        private Assign_lhsNode assign_lhsNode;
+        private ASTNode assign_lhsNode;
 
-        public ReadNode(Assign_lhsNode assign_lhsNode) {
+        public ReadNode(ASTNode assign_lhsNode) {
 
             command = "read";
             this.assign_lhsNode = assign_lhsNode;
@@ -298,11 +300,7 @@ public class AST {
 
         @Override
         public void check() {
-            if (exprNode.getClass().getName() != "Bool_literNode") {
-                System.exit(200);
-            }
-            statNodeTrue.check();
-            statNodeFalse.check();
+
         }
 
     }
@@ -370,28 +368,13 @@ public class AST {
 
     }
 
-    public class Assign_lhsNode extends ASTNode {
-
-        @Override
-        public void check() {
-
-        }
-    }
-
-    public class Assign_rhsNode extends ASTNode {
-
-        @Override
-        public void check() {
-
-        }
-    }
-
     public class Arg_listNode extends ASTNode {
 
         @Override
         public void check() {
 
         }
+
     }
 
     public abstract class Pair_elemNode extends ASTNode {
@@ -411,6 +394,8 @@ public class AST {
 
         }
     }
+
+
 
     public class FSTNode extends Pair_elemNode {
 
@@ -446,13 +431,14 @@ public class AST {
 
     }
 
-    public abstract class TypeNode extends Pair_elem_typeNode {
+    public abstract class TypeNode extends ASTNode {
 
         protected String type;
 
         public TypeNode() {
             type = "";
         }
+
         @Override
         public void check() {
 
@@ -471,7 +457,7 @@ public class AST {
         }
     }
 
-    public class IntTypeNode extends Base_typeNode{
+    public class IntTypeNode extends Base_typeNode {
 
         public IntTypeNode() {
             type = "int";
@@ -479,14 +465,15 @@ public class AST {
 
     }
 
-    public class BoolTypeNode extends Base_typeNode{
+    public class BoolTypeNode extends Base_typeNode {
 
         public BoolTypeNode() {
             type = "bool";
         }
 
     }
-    public class CharTypeNode extends Base_typeNode{
+
+    public class CharTypeNode extends Base_typeNode {
 
         public CharTypeNode() {
             type = "char";
@@ -494,7 +481,7 @@ public class AST {
 
     }
 
-    public class StringTypeNode extends Base_typeNode{
+    public class StringTypeNode extends Base_typeNode {
 
         public StringTypeNode() {
             type = "string";
@@ -514,6 +501,7 @@ public class AST {
             type = "array";
 
         }
+
         @Override
         public void check() {
 
@@ -545,10 +533,10 @@ public class AST {
     public class Pair_typeNode extends TypeNode {
 
 
-        private Pair_elem_typeNode pair_elem_typeNode1;
-        private Pair_elem_typeNode pair_elem_typeNode2;
+        private TypeNode pair_elem_typeNode1;
+        private TypeNode pair_elem_typeNode2;
 
-        public Pair_typeNode (Pair_elem_typeNode pair_elem_typeNode1, Pair_elem_typeNode pair_elem_typeNode2) {
+        public Pair_typeNode(TypeNode pair_elem_typeNode1, TypeNode pair_elem_typeNode2) {
             this.pair_elem_typeNode1 = pair_elem_typeNode1;
             pair_elem_typeNode1.setParent(this);
             this.pair_elem_typeNode2 = pair_elem_typeNode2;
@@ -570,7 +558,14 @@ public class AST {
         }
     }
 
-    public class PairNode extends Pair_elem_typeNode {
+    public class PairNode extends TypeNode {
+
+        private String command;
+
+        public PairNode() {
+            command = "pair";
+        }
+
 
         @Override
         public void check() {
@@ -591,7 +586,9 @@ public class AST {
 
         }
 
-        public String getUnOp() { return unOp; }
+        public String getUnOp() {
+            return unOp;
+        }
 
         @Override
         public void check() {
@@ -688,7 +685,6 @@ public class AST {
             super(exp1, exp2);
             binOp = "*";
         }
-
 
 
     }
@@ -834,7 +830,7 @@ public class AST {
             this.identNode = identNode;
             identNode.setParent(this);
             this.exprNodes = exprNodes;
-            for(ExprNode exprNode : exprNodes) {
+            for (ExprNode exprNode : exprNodes) {
                 exprNode.setParent(this);
             }
 
@@ -867,21 +863,7 @@ public class AST {
         }
     }
 
-    public class DigitNode extends ASTNode {
 
-        @Override
-        public void check() {
-
-        }
-    }
-
-    public class Int_signNode extends ASTNode {
-
-        @Override
-        public void check() {
-
-        }
-    }
 
     public class Bool_literNode extends ExprNode {
 
@@ -937,21 +919,6 @@ public class AST {
         }
     }
 
-    public class CharacterNode extends ASTNode {
-
-        @Override
-        public void check() {
-
-        }
-    }
-
-    public class Escaped_charNode extends ASTNode {
-
-        @Override
-        public void check() {
-
-        }
-    }
 
     public class Array_literNode extends ASTNode {
 
@@ -976,7 +943,7 @@ public class AST {
         }
     }
 
-    public class NewPairNode extends  ASTNode {
+    public class NewPairNode extends ASTNode {
 
         private ExprNode exprNode1;
         private ExprNode exprNode2;
@@ -996,7 +963,7 @@ public class AST {
 
     }
 
-    public class CallNode extends  ASTNode {
+    public class CallNode extends ASTNode {
 
         private IdentNode identNode;
         private List<ExprNode> exprNodeList;
@@ -1006,7 +973,7 @@ public class AST {
             this.identNode = identNode;
             identNode.setParent(this);
             this.exprNodeList = exprNodeList;
-            for(ExprNode exprNode : exprNodeList) {
+            for (ExprNode exprNode : exprNodeList) {
                 exprNode.setParent(this);
             }
 

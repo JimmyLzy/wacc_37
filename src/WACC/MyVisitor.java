@@ -5,7 +5,6 @@ import java.util.*;
 import antlr.*;
 import org.antlr.v4.runtime.misc.NotNull;
 
-
 public class MyVisitor extends BasicParserBaseVisitor<AST.ASTNode> {
 
     AST ast = new AST();
@@ -38,15 +37,13 @@ public class MyVisitor extends BasicParserBaseVisitor<AST.ASTNode> {
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public AST.FuncNode visitFunc(@NotNull BasicParser.FuncContext ctx) {
-
-        AST.FuncNode funcNode = null;
+    public AST.ASTNode visitFunc(@NotNull BasicParser.FuncContext ctx) {
 
         AST.TypeNode typeNode = (AST.TypeNode) visit(ctx.type());
 
         AST.IdentNode identNode = (AST.IdentNode) visit(ctx.ident());
 
-        List<AST.ParamNode> paramNodeList = null;
+        List<AST.ParamNode> paramNodeList = new ArrayList<>();
         if (ctx.param_list() != null) {
             for (int i = 0; i < ctx.param_list().getChildCount(); i++) {
                 AST.ParamNode paramNode = (AST.ParamNode) visit(ctx.param_list().getChild(i));
@@ -56,23 +53,21 @@ public class MyVisitor extends BasicParserBaseVisitor<AST.ASTNode> {
 
         AST.StatNode statNode = (AST.StatNode) visit(ctx.stat());
 
-        funcNode = ast.new FuncNode(typeNode, identNode, paramNodeList, statNode);
+        AST.FuncNode funcNode = ast.new FuncNode(typeNode, identNode, paramNodeList, statNode);
 
-        for (int i = 0; i < ctx.param_list().getChildCount(); i++) {
-            BasicParser.ParamContext paramContext = (BasicParser.ParamContext) ctx.param_list().getChild(i);
-            if (funcNode.getSymbolTable().containsKey(paramContext.ident().getText())) {
-                System.out.println("Semantic error");
-                System.exit(200);
-            }else {
+        if (ctx.param_list() != null) {
+            for (int i = 0; i < ctx.param_list().getChildCount(); i++) {
+                BasicParser.ParamContext paramContext = (BasicParser.ParamContext) ctx.param_list().getChild(i);
                 funcNode.getSymbolTable().put(paramContext.ident().getText(), paramNodeList.get(i).getTypeNode());
             }
         }
-        if (funcNode.getParent().getSymbolTable().containsKey(ctx.ident().getText())) {
-            System.out.println("Semantic error");
-            System.exit(200);
-        } else {
-            funcNode.getParent().getSymbolTable().put(ctx.ident().getText(), funcNode);
-        }
+
+
+//        if (funcNode.getParent().getSymbolTable().containsKey(ctx.ident().getText())) {
+//            System.out.println("error");
+//        } else {
+//            funcNode.getParent().getSymbolTable().put(ctx.ident().getText(), funcNode);
+//        }
 
         return funcNode;
     }
@@ -297,8 +292,8 @@ public class MyVisitor extends BasicParserBaseVisitor<AST.ASTNode> {
     @Override
     public AST.ASTNode visitPair_type(@NotNull BasicParser.Pair_typeContext ctx) {
 
-        return ast.new Pair_typeNode((AST.Pair_elem_typeNode) visit(ctx.pair_elem_type(0)),
-                (AST.Pair_elem_typeNode) visit(ctx.pair_elem_type(1)));
+        return ast.new Pair_typeNode((AST.TypeNode) visit(ctx.pair_elem_type(0)),
+                (AST.TypeNode) visit(ctx.pair_elem_type(1)));
     }
 
     /**
@@ -360,7 +355,7 @@ public class MyVisitor extends BasicParserBaseVisitor<AST.ASTNode> {
         if (ctx.CALL() != null) {
             List<AST.ExprNode> argNodeList = new ArrayList<>();
             if (ctx.arg_list() != null) {
-                for (int i = 0; i < ctx.arg_list().getChildCount(); i++) {
+                for (int i = 0; i < (ctx.arg_list().getChildCount() + 1) / 2; i++) {
                     argNodeList.add((AST.ExprNode) visit(ctx.arg_list().expr(i)));
                 }
             }
@@ -413,12 +408,14 @@ public class MyVisitor extends BasicParserBaseVisitor<AST.ASTNode> {
             return ast.new ReturnNode((AST.ExprNode) visit(ctx.expr()));
         } else if (ctx.FREE() != null) {
             return ast.new FreeNode((AST.ExprNode) visit(ctx.expr()));
+        } else if (ctx.READ() != null) {
+            return ast.new ReadNode(visit(ctx.assign_lhs()));
         } else if (ctx.SKIP() != null) {
             return ast.new SkipNode();
         } else if (ctx.assign_lhs() != null) {
-            return ast.new AssignmentNode((AST.Assign_lhsNode) visit(ctx.assign_lhs()), (AST.Assign_rhsNode) visit(ctx.assign_rhs()));
+            return ast.new AssignmentNode(visit(ctx.assign_lhs()), visit(ctx.assign_rhs()));
         } else if (ctx.type() != null) {
-            return ast.new DeclarationNode((AST.TypeNode) visit(ctx.type()), (AST.IdentNode) visit(ctx.ident()), (AST.Assign_rhsNode) visit(ctx.assign_rhs()));
+            return ast.new DeclarationNode((AST.TypeNode) visit(ctx.type()), (AST.IdentNode) visit(ctx.ident()), visit(ctx.assign_rhs()));
         }
         System.out.println("Error");
         return visitChildren(ctx);

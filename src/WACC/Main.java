@@ -5,7 +5,7 @@ import org.antlr.v4.runtime.tree.*;
 
 // import antlr package (your code)
 import antlr.*;
-import org.antlr.v4.runtime.tree.gui.SystemFontMetrics;
+
 
 public class Main {
 
@@ -25,7 +25,9 @@ public class Main {
 
         ParseTree tree = parser.program(); // begin parsing at program rule
 
-        if (parser.getNumberOfSyntaxErrors() > 0) {
+
+        if(parser.getNumberOfSyntaxErrors() > 0) {
+            System.out.println("#syntax_error#");
             System.exit(100);
         }
 
