@@ -33,6 +33,8 @@ public class Main {
 
         if(parser.getNumberOfSyntaxErrors() > 0) {
             System.out.println("#syntax_error#");
+            System.out.println("exit: ");
+            System.out.println(100);
             System.exit(100);
         }
 
