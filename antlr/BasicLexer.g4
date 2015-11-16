@@ -33,7 +33,7 @@ PAIR : 'pair' ;
 
 FST : 'fst' ;
 SND : 'snd' ;
-NEGATE : '-' ;
+
 //binary operators
 LOGICAL_AND : '&&' ;
 PLUS : '+' ;

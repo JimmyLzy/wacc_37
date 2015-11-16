@@ -73,7 +73,7 @@ expr: unary_oper expr
 | OPEN_PARENTHESES expr CLOSE_PARENTHESES;
 
 unary_oper: LOGICAL_NOT
-| NEGATE
+| MINUS
 | LEN
 | ORD
 | CHR;
