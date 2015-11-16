@@ -54,7 +54,7 @@ public class MyVisitor extends BasicParserBaseVisitor<AST.ASTNode> {
             paramNodeList.add((AST.ParamNode) visit(param));
         }
 
-        AST.FuncNode funcNode = ast.new FuncNode((AST.TypeNode) visit(ctx.type()), (AST.IdentNode) visit(ctx.ident()), paramNodeList, (AST.StatNode) visit(ctx.stat()));
+        AST.FuncNode funcNode = ast.new FuncNode((AST.TypeNode) visit(ctx.type()), (AST.IdentNode) visit(ctx.ident()), paramNodeList, (AST.StatNode) visit(ctx.func_return()));
 
         for (int i = 0; i < paramContextList.size(); i++) {
             BasicParser.ParamContext paramContext = (BasicParser.ParamContext) paramContextList.get(i);
@@ -72,6 +72,23 @@ public class MyVisitor extends BasicParserBaseVisitor<AST.ASTNode> {
         return funcNode;
     }
 
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation returns the result of calling
+     * {@link #visitChildren} on {@code ctx}.</p>
+     */
+    @Override public AST.ASTNode visitFunc_return(@NotNull BasicParser.Func_returnContext ctx) {
+        if (ctx.IF() != null) {
+            return ast.new IfNode((AST.ExprNode)visit(ctx.expr()), (AST.StatNode)visit(ctx.func_return(0)), (AST.StatNode)visit(ctx.func_return(1)));
+        }else if (ctx.SEMICOLON() != null) {
+            return ast.new MultipleStatNode((AST.StatNode)visit(ctx.stat()), (AST.StatNode)visit(ctx.expr()));
+        }else if (ctx.expr() != null) {
+            return ast.new ReturnNode((AST.ExprNode)visit(ctx.expr()));
+        }
+        System.out.println("Error");
+        return visitChildren(ctx);
+    }
     /**
      * {@inheritDoc}
      *

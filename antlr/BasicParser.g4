@@ -9,7 +9,11 @@ binary_oper : PLUS | MINUS | MULT | DIV | MOD | GREATER | GREATER_OR_EQUAL | SMA
 
 program: BEGIN (func)* stat END EOF;
 
-func: type ident OPEN_PARENTHESES (param_list)? CLOSE_PARENTHESES IS stat END;
+func: type ident OPEN_PARENTHESES (param_list)? CLOSE_PARENTHESES IS func_return END;
+
+func_return: RETURN expr
+| stat SEMICOLON RETURN expr
+| IF expr THEN func_return ELSE func_return;
 
 param_list: param (COMMA param)*;
 

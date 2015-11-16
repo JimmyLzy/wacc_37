@@ -70,13 +70,13 @@ public class AST {
         private TypeNode typeNode;
         private IdentNode identNode;
         private List<ParamNode> paramNodes;
-        private StatNode statNode;
+        private StatNode func_returnNode;
 
-        public FuncNode(TypeNode typeNode, IdentNode identNode, List<ParamNode> paramNodes, StatNode statNode) {
+        public FuncNode(TypeNode typeNode, IdentNode identNode, List<ParamNode> paramNodes, StatNode func_returnNode) {
             this.typeNode = typeNode;
             typeNode.setParent(this);
-            this.statNode = statNode;
-            statNode.setParent(this);
+            this.func_returnNode = func_returnNode;
+            func_returnNode.setParent(this);
             this.paramNodes = paramNodes;
             if (!paramNodes.isEmpty()) {
                 for (ParamNode paramNode : paramNodes) {
@@ -94,7 +94,7 @@ public class AST {
             for (ParamNode paramNode : paramNodes) {
                 paramNode.check();
             }
-            statNode.check();
+            func_returnNode.check();
         }
     }
 
