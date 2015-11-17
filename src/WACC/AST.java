@@ -1113,25 +1113,6 @@ public class AST {
 
         }
 
-   /*     @Override
-        public String getType() {
-
-            ASTNode parent = getParent();
-            ASTNode typeNode = null;
-            while (parent != null && typeNode == null) {
-                if (typeNode instanceof FuncNode) {
-                    return (typeNode).getType();
-                }
-                typeNode = parent.getSymbolTable().get(ident);
-                parent = parent.getParent();
-            }
-            if(typeNode == null) {
-                return "";
-            }
-            return typeNode.getType();
-
-        }
-*/
         @Override
         public void check() {
             checkIfVaribleExist(this);
@@ -1360,8 +1341,6 @@ public class AST {
             for (ExprNode exprNode : exprNodeList) {
                 exprNode.setParent(this);
             }
-
-
         }
 
         public String getType() {
@@ -1372,11 +1351,10 @@ public class AST {
         @Override
         public void check() {
 
-            identNode.check();
             for(ExprNode exprNode : exprNodeList) {
                 exprNode.check();
             }
-            if (!getRoot().getSymbolTable().containsKey(identNode.getIdent())) {
+            if (!getRoot().getFunctionSymbolTable().containsKey(identNode.getIdent())) {
                 throwSemanticError(this.getClass().toString());
             }
         }
