@@ -1,5 +1,6 @@
 package WACC;
 
+import javax.lang.model.type.ArrayType;
 import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -668,6 +669,12 @@ public class AST {
             return typeNode.getType() + "array";
         }
 
+        public String getElemType() {
+            return typeNode.getType();
+        }
+
+
+
     }
 
     public class ParamNode extends ASTNode {
@@ -1141,7 +1148,6 @@ public class AST {
         public void check() {
 
             identNode.check();
-            type = identNode.getType();
             for (ExprNode exprNode : exprNodes) {
                 exprNode.check();
             }
@@ -1153,7 +1159,7 @@ public class AST {
             if (identNode.getType().equals("string")) {
                 return "char";
             }
-            return identNode.getType();
+            return ((Array_typeNode) identNode.getTypeNode()).getElemType();
         }
     }
 
@@ -1266,11 +1272,11 @@ public class AST {
 
         @Override
         public String getType() {
-            return ((ExprNode) exprNodeList.get(0)).getType() + "array";
+            return exprNodeList.get(0).getType() + "array";
         }
 
         private String getElemType() {
-            return ((ExprNode) exprNodeList.get(0)).getType();
+            return exprNodeList.get(0).getType();
         }
 
         @Override
