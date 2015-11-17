@@ -41,7 +41,7 @@ public class Main {
         // build and run my custom visitor
         MyVisitor visitor = new MyVisitor();
         AST.ASTNode astNode = visitor.visit(tree);
-        // astNode.check();
+        astNode.check();
         System.out.println("Semantic check finish!");
 
     }
