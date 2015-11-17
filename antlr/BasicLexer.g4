@@ -1,12 +1,9 @@
 lexer grammar BasicLexer;
 
-//tokens{
-//    OPENSTRING,
-//    CLOSESTRING
-//}
-
+//Skip comments
 COMMENT: SHARP ~('\n')* '\n' -> skip;
 
+//Statements
 SKIP : 'skip' ;
 READ : 'read' ;
 FREE: 'free' ;
@@ -25,16 +22,16 @@ BEGIN : 'begin' ;
 END : 'end' ;
 IS : 'is' ;
 
-//unnamed keywords(from stat)
-
+//Other keywords(from assign-rhs / pair-type)
 CALL : 'call' ;
 NEWPAIR : 'newpair' ;
 PAIR : 'pair' ;
 
+//Pair elem
 FST : 'fst' ;
 SND : 'snd' ;
 
-//binary operators
+//Binary operators
 LOGICAL_AND : '&&' ;
 PLUS : '+' ;
 MINUS : '-' ;
@@ -50,60 +47,55 @@ ASSIGN_EQUAL : '=' ;
 NOT_EQUAL : '!=' ;
 LOGICAL_OR : '||' ;
 
-//unary operator
+//Unary operator
 LOGICAL_NOT : '!' ;
-
 LEN : 'len' ;
 ORD : 'ord' ;
 CHR : 'chr' ;
 
-//types
+//Types
 INT : 'int' ;
 BOOL : 'bool' ;
 CHAR : 'char' ;
 STRING : 'string' ;
 
-//unknown
+//Null & comment symbol
 NULL: 'null' ;
 SHARP: '#' ;
+
+//Boolean type
 TRUE: 'true' ;
 FALSE: 'false' ;
 
-
-//brackets
+//Brackets
 OPEN_PARENTHESES : '(' ;
 CLOSE_PARENTHESES : ')' ;
 OPEN_SQUARE_BRACKET : '[' ;
 CLOSE_SQUARE_BRACKET : ']' ;
 
-//separators
+//Separators
 COMMA : ',';
 SEMICOLON : ';';
 
-//numbers
+//Numbers
 fragment DIGIT : '0'..'9' ;
-
 INTEGER: DIGIT+ ;
-
 SINGLE_DIGIT: DIGIT ;
 
+//Ident
 fragment SINGLE_IDENT: (UNDERSCORE | LOWER_CASE_ALPHABET | UPPER_CASE_ALPHABET | SINGLE_DIGIT);
-
 IDENT:  (UNDERSCORE | LOWER_CASE_ALPHABET | UPPER_CASE_ALPHABET) SINGLE_IDENT*;
-
 UNDERSCORE : '_' ;
-
 
 //letters
 LOWER_CASE_ALPHABET : 'a'..'z' ;
 UPPER_CASE_ALPHABET : 'A'..'Z' ;
 
-
-//DOUBLE_QUOTE : '"' -> pushMode(STRINGMODE) ;
-
+//Skip whitespaces
 WS: (' ' | '\t' | '\r' | '\n') -> skip;
 NEW_LINE: '\n' -> skip;
 
+//Characters & Strings
 CHAR_LITER: '\'' CHARACTER '\'' ;
 
 CHARACTER: ~('\\' | '\'' | '\"')
@@ -119,20 +111,7 @@ ESCAPED_CHAR : '0'
 | '\''
 | '\\' ;
 
-
 STR_LITER: '"' (CHARACTER)* '"';
-//mode STRINGMODE;
-
-
-
-//SCHARACTER: ~('\\' | '\'' | '"')
-//| '\\' ESCAPED_CHAR ;
-
-//STR: SCHARACTER+ ;
-
-//CLOSESTRING: '"' -> popMode ;
-
-
 
 
 

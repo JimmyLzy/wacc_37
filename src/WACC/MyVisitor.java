@@ -28,6 +28,10 @@ public class MyVisitor extends BasicParserBaseVisitor<AST.ASTNode> {
         AST.StatNode statNode = (AST.StatNode) visit(ctx.stat());
 
         programNode = ast.new ProgramNode(functionNodes, statNode);
+
+        for (int i = 0; i < functionNodes.size(); i++) {
+            programNode.getSymbolTable().put(ctx.func().get(i).getText(), functionNodes.get(i));
+        }
         return programNode;
     }
 
@@ -47,12 +51,12 @@ public class MyVisitor extends BasicParserBaseVisitor<AST.ASTNode> {
             for (int i = 0; i < ctx.param_list().getChildCount(); i = i + 2) {
                 paramContextList.add(ctx.param_list().getChild(i));
             }
-
         }
 
         for (ParseTree param : paramContextList) {
             paramNodeList.add((AST.ParamNode) visit(param));
         }
+
 
         AST.FuncNode funcNode = ast.new FuncNode((AST.TypeNode) visit(ctx.type()), (AST.IdentNode) visit(ctx.ident()),
                 paramNodeList, (AST.StatNode) visit(ctx.func_return()));
@@ -61,7 +65,6 @@ public class MyVisitor extends BasicParserBaseVisitor<AST.ASTNode> {
             BasicParser.ParamContext paramContext = (BasicParser.ParamContext) paramContextList.get(i);
             funcNode.getSymbolTable().put(paramContext.ident().getText(), paramNodeList.get(i).getTypeNode());
         }
-
         return funcNode;
     }
 
@@ -424,7 +427,11 @@ public class MyVisitor extends BasicParserBaseVisitor<AST.ASTNode> {
         } else if (ctx.assign_lhs() != null) {
             return ast.new AssignmentNode(visit(ctx.assign_lhs()), visit(ctx.assign_rhs()));
         } else if (ctx.type() != null) {
-            return ast.new DeclarationNode((AST.TypeNode) visit(ctx.type()), (AST.IdentNode) visit(ctx.ident()), visit(ctx.assign_rhs()));
+            AST.TypeNode typeNode = (AST.TypeNode) visit(ctx.type());
+            AST.IdentNode identNode = (AST.IdentNode) visit(ctx.ident());
+            AST.DeclarationNode declarationNode = ast.new DeclarationNode(typeNode, identNode, visit(ctx.assign_rhs()));
+            declarationNode.getSymbolTable().put(ctx.ident().getText(), typeNode);
+            return declarationNode;
         }
         System.out.println("Error");
         return visitChildren(ctx);
