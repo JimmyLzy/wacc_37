@@ -36,7 +36,7 @@ public class Main {
             System.exit(100);
         }
 
-        System.out.println(tree.toStringTree(parser));
+//        System.out.println(tree.toStringTree(parser));
 
         // build and run my custom visitor
         MyVisitor visitor = new MyVisitor();

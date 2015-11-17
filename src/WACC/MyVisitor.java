@@ -30,7 +30,8 @@ public class MyVisitor extends BasicParserBaseVisitor<AST.ASTNode> {
         programNode = ast.new ProgramNode(functionNodes, statNode);
 
         for (int i = 0; i < functionNodes.size(); i++) {
-            programNode.getSymbolTable().put(ctx.func().get(i).getText(), functionNodes.get(i));
+            programNode.getSymbolTable().put(ctx.func().get(i).ident().getText(), functionNodes.get(i));
+            System.out.println(ctx.func().get(i).ident().getText());
         }
         return programNode;
     }
@@ -430,7 +431,6 @@ public class MyVisitor extends BasicParserBaseVisitor<AST.ASTNode> {
             AST.TypeNode typeNode = (AST.TypeNode) visit(ctx.type());
             AST.IdentNode identNode = (AST.IdentNode) visit(ctx.ident());
             AST.DeclarationNode declarationNode = ast.new DeclarationNode(typeNode, identNode, visit(ctx.assign_rhs()));
-            declarationNode.getSymbolTable().put(ctx.ident().getText(), typeNode);
             return declarationNode;
         }
         System.out.println("Error");

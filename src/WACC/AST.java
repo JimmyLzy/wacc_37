@@ -27,6 +27,17 @@ public class AST {
 
         protected ASTNode parent;
 
+        public boolean getScope() {
+            return scope;
+        }
+
+
+        public void setScope(boolean scope) {
+            this.scope = scope;
+        }
+
+        protected boolean scope = false;
+
         public ASTNode getParent() {
             return parent;
         }
@@ -35,23 +46,29 @@ public class AST {
             this.parent = parent;
         }
 
+
+
         public HashMap<String, ASTNode> getSymbolTable() {
             return symbolTable;
         }
 
         public void checkIfVaribleExist(IdentNode identNode) {
-            ASTNode astNode = null;
             ASTNode parent = getParent();
-            while (parent != null && astNode == null) {
-                astNode = parent.getSymbolTable().get(identNode.getIdent());
+            boolean found = false;
+            while (parent != null) {
+//                astNode = parent.getSymbolTable().get(identNode.getIdent());
+                if (parent.getSymbolTable().containsKey(identNode.getIdent())) {
+                    found = true;
+                }
                 parent = parent.getParent();
             }
-            if (astNode == null) {
-                throwSemanticError();
+            if (found == false) {
+                throwSemanticError(this.getClass().toString());
             }
         }
 
-        public void throwSemanticError() {
+        public void throwSemanticError(String errorMessage) {
+            System.out.println(errorMessage);
             System.out.println("#semantic_error#");
             System.exit(200);
         }
@@ -71,6 +88,7 @@ public class AST {
         private List<FuncNode> functionNodes;
         private StatNode statNode;
 
+
         public ProgramNode(List<FuncNode> functionNodes, StatNode statNode) {
 
             this.functionNodes = functionNodes;
@@ -84,10 +102,10 @@ public class AST {
 
         @Override
         public void check() {
+            setScope(true);
             for (FuncNode funcNode : functionNodes) {
                 funcNode.check();
             }
-
             statNode.check();
 
         }
@@ -112,7 +130,6 @@ public class AST {
             for (ParamNode paramNode : paramNodes) {
                 paramNode.setParent(this);
             }
-
             this.identNode = identNode;
             identNode.setParent(this);
         }
@@ -128,13 +145,12 @@ public class AST {
 
         @Override
         public void check() {
-            typeNode.check();
-            identNode.check();
+            setScope(true);
             /*Checking paramNodeList*/
             LinkedList<ParamNode> checklist = new LinkedList<>();
             for (ParamNode paramNode : paramNodes) {
                 if (checklist.contains(paramNode)) {
-                    throwSemanticError();
+                    throwSemanticError(this.getClass().toString());
                 }
                 checklist.add(paramNode);
                 paramNode.check();
@@ -191,12 +207,23 @@ public class AST {
 
         @Override
         public void check() {
-
-            typeNode.check();
-            identNode.check();
+            putIntoSymbolTable(this, identNode.getIdent(), typeNode);
             assign_rhsNode.check();
             if (!typeNode.getType().equals(assign_rhsNode.getType())) {
-                throwSemanticError();
+                System.out.println(typeNode.getType());
+                System.out.println(assign_rhsNode.getType());
+                throwSemanticError(this.getClass().toString());
+            }
+        }
+
+        private void putIntoSymbolTable(ASTNode currentScope, String string, TypeNode node) {
+            while (!currentScope.getScope()) {
+                currentScope = currentScope.getParent();
+            }
+            if (currentScope.getSymbolTable().containsKey(string)) {
+                throwSemanticError(currentScope.getClass().toString());
+            }else {
+                currentScope.getSymbolTable().put(string, node);
             }
 
         }
@@ -224,7 +251,7 @@ public class AST {
             assign_lhsNode.check();
             assign_rhsNode.check();
             if (!assign_lhsNode.getType().equals(assign_rhsNode.getType())) {
-                throwSemanticError();
+                throwSemanticError(this.getClass().toString());
             }
 
 
@@ -244,6 +271,8 @@ public class AST {
 
         }
 
+
+
         @Override
         public void check() {
             assign_lhsNode.check();
@@ -256,7 +285,7 @@ public class AST {
                 case "null":
                     break;
                 default:
-                    throwSemanticError();
+                    throwSemanticError(this.getClass().toString());
             }
 
         }
@@ -281,7 +310,7 @@ public class AST {
             exprNode.check();
             String type = exprNode.getType();
             if (!type.contains("pair(") || type.contains("array")) {
-                throwSemanticError();
+                throwSemanticError(this.getClass().toString());
             }
 
         }
@@ -301,6 +330,11 @@ public class AST {
         }
 
         @Override
+        public String getType() {
+            return ((FuncNode) parent).getTypeNode().getType();
+        }
+
+        @Override
         public void check() {
 
             exprNode.check();
@@ -308,9 +342,8 @@ public class AST {
             while (!(parent instanceof FuncNode)) {
                 parent.getParent();
             }
-            String type = ((FuncNode) parent).getTypeNode().getType();
-            if (!type.equals(exprNode.getType())) {
-                throwSemanticError();
+            if (!getType().equals(exprNode.getType())) {
+                throwSemanticError(this.getClass().toString());
             }
 
         }
@@ -334,7 +367,7 @@ public class AST {
 
             exprNode.check();
             if (!exprNode.getType().equals("int")) {
-                throwSemanticError();
+                throwSemanticError(this.getClass().toString());
             }
 
         }
@@ -401,10 +434,11 @@ public class AST {
 
         @Override
         public void check() {
-
+            statNodeTrue.setScope(true);
+            statNodeFalse.setScope(true);
             exprNode.check();
             if (!exprNode.getType().equals("bool")) {
-                throwSemanticError();
+                throwSemanticError(this.getClass().toString());
             }
             statNodeTrue.check();
             if (statNodeFalse != null) {
@@ -434,7 +468,7 @@ public class AST {
 
             exprNode.check();
             if (!exprNode.getType().equals("bool")) {
-                throwSemanticError();
+                throwSemanticError(this.getClass().toString());
             }
             statNode.check();
         }
@@ -517,7 +551,7 @@ public class AST {
 
             exprNode.check();
             if (!exprNode.getType().contains("pair(")) {
-                throwSemanticError();
+                throwSemanticError(this.getClass().toString());
             }
 
         }
@@ -544,7 +578,7 @@ public class AST {
 
             exprNode.check();
             if (!exprNode.getType().contains("pair(")) {
-                throwSemanticError();
+                throwSemanticError(this.getClass().toString());
             }
 
         }
@@ -622,11 +656,8 @@ public class AST {
         }
 
         @Override
-        public void check() {
-
-            typeNode.check();
-            type = typeNode.getType() + "array";
-
+        public String getType() {
+            return typeNode.getType() + "array";
         }
 
     }
@@ -664,11 +695,10 @@ public class AST {
         }
 
         @Override
-        public void check() {
-            pair_elem_typeNode1.check();
-            pair_elem_typeNode2.check();
-            type = "pair(" + pair_elem_typeNode1.getType() + ", " + pair_elem_typeNode2.getType() + ")";
+        public String getType() {
+            return "pair(" + pair_elem_typeNode1.getType() + ", " + pair_elem_typeNode2.getType() + ")";
         }
+
 
     }
 
@@ -721,7 +751,7 @@ public class AST {
 
             exprNode.check();
             if (!exprNode.getType().equals("bool")) {
-                throwSemanticError();
+                throwSemanticError(this.getClass().toString());
             }
 
         }
@@ -747,7 +777,7 @@ public class AST {
 
             exprNode.check();
             if (!exprNode.getType().equals("int")) {
-                throwSemanticError();
+                throwSemanticError(this.getClass().toString());
             }
 
         }
@@ -773,7 +803,7 @@ public class AST {
 
             exprNode.check();
             if (!exprNode.getType().contains("array")) {
-                throwSemanticError();
+                throwSemanticError(this.getClass().toString());
             }
 
         }
@@ -798,7 +828,7 @@ public class AST {
 
             exprNode.check();
             if (!exprNode.getType().equals("char")) {
-                throwSemanticError();
+                throwSemanticError(this.getClass().toString());
             }
 
         }
@@ -823,7 +853,7 @@ public class AST {
 
             exprNode.check();
             if (!exprNode.getType().equals("int")) {
-                throwSemanticError();
+                throwSemanticError(this.getClass().toString());
             }
 
         }
@@ -861,9 +891,9 @@ public class AST {
             exp1.check();
             exp2.check();
             if (!((TypeNode) exp1).equals(exp2)) {
-                throwSemanticError();
+                throwSemanticError(this.getClass().toString());
             } else if (!exp1.getType().contains("pair") && exp2.getType().contains("pair")) {
-                throwSemanticError();
+                throwSemanticError(this.getClass().toString());
             }
         }
     }
@@ -1024,7 +1054,6 @@ public class AST {
 
         @Override
         public void check() {
-
             checkIfVaribleExist(this);
         }
 
@@ -1044,7 +1073,6 @@ public class AST {
             for (ExprNode exprNode : exprNodes) {
                 exprNode.setParent(this);
             }
-
 
         }
 
@@ -1165,16 +1193,20 @@ public class AST {
     public class Array_literNode extends ASTNode {
 
         List<ASTNode> exprNodeList;
-        private String type = "";
 
         public Array_literNode(List<ASTNode> exprNodeList) {
-            this.exprNodeList = exprNodeList;
 
+            this.exprNodeList = exprNodeList;
 
         }
 
+        @Override
         public String getType() {
-            return type;
+            return ((ExprNode) exprNodeList.get(0)).getType() + "array";
+        }
+
+        private String getElemType() {
+            return ((ExprNode) exprNodeList.get(0)).getType();
         }
 
         @Override
@@ -1183,13 +1215,10 @@ public class AST {
             for(ASTNode astNode : exprNodeList) {
                 astNode.check();
             }
-            if (!exprNodeList.isEmpty()) {
-                type = ((ExprNode) exprNodeList.get(0)).getType();
-            }
-            if(!type.equals("")) {
+            if(!getType().equals("")) {
                 for(ASTNode astNode : exprNodeList) {
-                    if(!astNode.getType().equals(type)) {
-                        throwSemanticError();
+                    if(!astNode.getType().equals(getElemType())) {
+                        throwSemanticError(this.getClass().toString());
                     }
                 }
             }
@@ -1253,6 +1282,7 @@ public class AST {
         }
 
         public String getType() {
+            FuncNode funcNode = (FuncNode)getRoot().getSymbolTable().get(identNode.getIdent());
             return funcNode.getTypeNode().getType();
         }
 
@@ -1263,9 +1293,8 @@ public class AST {
             for(ExprNode exprNode : exprNodeList) {
                 exprNode.check();
             }
-            funcNode = (FuncNode) getRoot().getSymbolTable().get(identNode);
-            if(funcNode == null) {
-                throwSemanticError();
+            if (!getRoot().getSymbolTable().containsKey(identNode.getIdent())) {
+                throwSemanticError(this.getClass().toString());
             }
         }
 
