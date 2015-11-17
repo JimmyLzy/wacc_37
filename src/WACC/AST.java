@@ -1,5 +1,6 @@
 package WACC;
 
+import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -214,6 +215,7 @@ public class AST {
                 System.out.println(assign_rhsNode.getType());
                 throwSemanticError(this.getClass().toString());
             }
+
         }
 
         private void putIntoSymbolTable(ASTNode currentScope, String string, TypeNode node) {
@@ -250,13 +252,20 @@ public class AST {
 
             assign_lhsNode.check();
             assign_rhsNode.check();
+            System.out.println(assign_rhsNode.getClass().toString());
             if (!assign_lhsNode.getType().equals(assign_rhsNode.getType())) {
                 throwSemanticError(this.getClass().toString());
             }
-
+            System.out.println("gets");
 
         }
 
+        private TypeNode lookupSymbolTable(ASTNode currentScope, String string) {
+            while (!currentScope.getScope()) {
+                currentScope = currentScope.getParent();
+            }
+            return (TypeNode) currentScope.getSymbolTable().get(string);
+        }
     }
 
     public class ReadNode extends StatNode {
@@ -336,7 +345,6 @@ public class AST {
 
         @Override
         public void check() {
-
             exprNode.check();
             ASTNode parent = getParent();
             while (!(parent instanceof FuncNode)) {
@@ -364,7 +372,6 @@ public class AST {
 
         @Override
         public void check() {
-
             exprNode.check();
             if (!exprNode.getType().equals("int")) {
                 throwSemanticError(this.getClass().toString());
@@ -879,7 +886,7 @@ public class AST {
 
         @Override
         public String getType() {
-            return ((TypeNode) exp1).getType();
+            return (exp1).getType();
         }
 
         public String getBinOp() {
@@ -890,11 +897,21 @@ public class AST {
         public void check() {
             exp1.check();
             exp2.check();
-            if (!((TypeNode) exp1).equals(exp2)) {
-                throwSemanticError(this.getClass().toString());
-            } else if (!exp1.getType().contains("pair") && exp2.getType().contains("pair")) {
+            IdentNode identNode = (IdentNode) exp1;
+            TypeNode typeNode = lookupSymbolTable(this, identNode.getIdent());
+            if (typeNode.getType() != exp2.getType()) {
                 throwSemanticError(this.getClass().toString());
             }
+//            else if (!exp1.getType().contains("pair") && exp2.getType().contains("pair")) {
+//                throwSemanticError(this.getClass().toString());
+//            }
+        }
+
+        private TypeNode lookupSymbolTable(ASTNode currentScope, String string) {
+            while (!currentScope.getScope()) {
+                currentScope = currentScope.getParent();
+            }
+            return (TypeNode) currentScope.getSymbolTable().get(string);
         }
     }
 
@@ -951,6 +968,11 @@ public class AST {
             binOp = ">";
         }
 
+        @Override
+        public String getType() {
+            return "bool";
+        }
+
     }
 
     public class GreaterOrEqualNode extends Binary_operNode {
@@ -958,6 +980,11 @@ public class AST {
         public GreaterOrEqualNode(ASTNode exp1, ASTNode exp2) {
             super(exp1, exp2);
             binOp = ">=";
+        }
+
+        @Override
+        public String getType() {
+            return "bool";
         }
 
     }
@@ -969,6 +996,11 @@ public class AST {
             binOp = "<";
         }
 
+        @Override
+        public String getType() {
+            return "bool";
+        }
+
     }
 
     public class SmallerOrEqualNode extends Binary_operNode {
@@ -978,13 +1010,23 @@ public class AST {
             binOp = "<=";
         }
 
+        @Override
+        public String getType() {
+            return "bool";
+        }
+
     }
 
     public class EqualNode extends Binary_operNode {
 
         public EqualNode(ASTNode exp1, ASTNode exp2) {
             super(exp1, exp2);
-            binOp = "=";
+            binOp = "==";
+        }
+
+        @Override
+        public String getType() {
+            return "bool";
         }
 
     }
@@ -994,6 +1036,11 @@ public class AST {
         public NotEqualNode(ASTNode exp1, ASTNode exp2) {
             super(exp1, exp2);
             binOp = "!=";
+        }
+
+        @Override
+        public String getType() {
+            return "bool";
         }
 
     }
@@ -1037,13 +1084,14 @@ public class AST {
         @Override
         public String getType() {
 
-            ASTNode parent = null;
+            ASTNode parent = getParent();
             ASTNode typeNode = null;
-            while ((parent = getParent()) != null && typeNode == null) {
+            while (parent != null && typeNode == null) {
                 if (typeNode instanceof FuncNode) {
-                    return ((FuncNode) typeNode).getType();
+                    return (typeNode).getType();
                 }
                 typeNode = parent.getSymbolTable().get(ident);
+                parent = parent.getParent();
             }
             if(typeNode == null) {
                 return "";
