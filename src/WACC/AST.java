@@ -11,13 +11,13 @@ import java.util.List;
 public class AST {
 
     private AST ast;
-    private ASTNode root;
+    private ProgramNode root;
 
-    public ASTNode getRoot() {
+    public ProgramNode getRoot() {
         return root;
     }
 
-    public void setRoot(ASTNode root) {
+    public void setRoot(ProgramNode root) {
 
         this.root = root;
     }
@@ -57,7 +57,6 @@ public class AST {
             ASTNode parent = getParent();
             boolean found = false;
             while (parent != null) {
-//                astNode = parent.getSymbolTable().get(identNode.getIdent());
                 if (parent.getSymbolTable().containsKey(identNode.getIdent())) {
                     found = true;
                 }
@@ -74,7 +73,6 @@ public class AST {
             System.exit(200);
         }
 
-
         public String getType() {
             return null;
         }
@@ -88,6 +86,11 @@ public class AST {
 
         private List<FuncNode> functionNodes;
         private StatNode statNode;
+        private HashMap<String, ASTNode> functionSymbolTable = new HashMap<>();
+
+        public HashMap<String, ASTNode> getFunctionSymbolTable() {
+            return functionSymbolTable;
+        }
 
 
         public ProgramNode(List<FuncNode> functionNodes, StatNode statNode) {
@@ -108,7 +111,6 @@ public class AST {
                 funcNode.check();
             }
             statNode.check();
-
         }
 
     }
@@ -1333,7 +1335,7 @@ public class AST {
         }
 
         public String getType() {
-            FuncNode funcNode = (FuncNode)getRoot().getSymbolTable().get(identNode.getIdent());
+            FuncNode funcNode = (FuncNode)getRoot().getFunctionSymbolTable().get(identNode.getIdent());
             return funcNode.getTypeNode().getType();
         }
 
