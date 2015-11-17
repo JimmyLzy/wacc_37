@@ -60,10 +60,10 @@ public class MyVisitor extends BasicParserBaseVisitor<AST.ASTNode> {
         AST.FuncNode funcNode = ast.new FuncNode((AST.TypeNode) visit(ctx.type()), (AST.IdentNode) visit(ctx.ident()),
                 paramNodeList, (AST.StatNode) visit(ctx.func_return()));
 
-        for (int i = 0; i < paramContextList.size(); i++) {
-            BasicParser.ParamContext paramContext = (BasicParser.ParamContext) paramContextList.get(i);
-            funcNode.getSymbolTable().put(paramContext.ident().getText(), paramNodeList.get(i).getTypeNode());
-        }
+//        for (int i = 0; i < paramContextList.size(); i++) {
+//            BasicParser.ParamContext paramContext = (BasicParser.ParamContext) paramContextList.get(i);
+//            funcNode.getSymbolTable().put(paramContext.ident().getText(), paramNodeList.get(i).getTypeNode());
+//        }
         return funcNode;
     }
 
@@ -254,9 +254,9 @@ public class MyVisitor extends BasicParserBaseVisitor<AST.ASTNode> {
     @Override
     public AST.ASTNode visitPair_elem(@NotNull BasicParser.Pair_elemContext ctx) {
         if (ctx.FST() != null) {
-            return ast.new FSTNode((AST.ExprNode) visit(ctx.expr()));
+            return ast.new FSTNode((AST.Pair_typeNode) visit(ctx.expr()));
         } else {
-            return ast.new SNDNode((AST.ExprNode) visit(ctx.expr()));
+            return ast.new SNDNode((AST.Pair_typeNode) visit(ctx.expr()));
         }
     }
 

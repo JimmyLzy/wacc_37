@@ -1,9 +1,6 @@
 package WACC;
 
-import javax.lang.model.type.ArrayType;
-import java.lang.reflect.Type;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 
 /**
@@ -11,7 +8,6 @@ import java.util.List;
  */
 public class AST {
 
-    private AST ast;
     private ProgramNode root;
 
     public ProgramNode getRoot() {
@@ -19,7 +15,6 @@ public class AST {
     }
 
     public void setRoot(ProgramNode root) {
-
         this.root = root;
     }
 
@@ -32,7 +27,6 @@ public class AST {
         public boolean getScope() {
             return scope;
         }
-
 
         public void setScope(boolean scope) {
             this.scope = scope;
@@ -47,8 +41,6 @@ public class AST {
         public void setParent(ASTNode parent) {
             this.parent = parent;
         }
-
-
 
         public HashMap<String, ASTNode> getSymbolTable() {
             return symbolTable;
@@ -74,13 +66,9 @@ public class AST {
             System.exit(200);
         }
 
-        public String getType() {
-            return null;
-        }
+        public abstract String getType();
 
-        public void check() {
-        }
-
+        public abstract void check();
     }
 
     public class ProgramNode extends ASTNode {
@@ -103,6 +91,11 @@ public class AST {
             this.statNode = statNode;
             statNode.setParent(this);
             setRoot(this);
+        }
+
+        @Override
+        public String getType() {
+            return "Program";
         }
 
         @Override
@@ -139,27 +132,30 @@ public class AST {
             identNode.setParent(this);
         }
 
-        public TypeNode getTypeNode() {
-            return typeNode;
-        }
-
         @Override
         public String getType() {
-            return type;
+            return typeNode.getType();
         }
 
         @Override
         public void check() {
+
             setScope(true);
-            /*Checking paramNodeList*/
-            LinkedList<ParamNode> checklist = new LinkedList<>();
-            for (ParamNode paramNode : paramNodes) {
-                if (checklist.contains(paramNode)) {
-                    throwSemanticError(this.getClass().toString());
-                }
-                checklist.add(paramNode);
-                paramNode.check();
+
+            if (getRoot().getFunctionSymbolTable().containsKey(identNode.getIdent())) {
+                throwSemanticError(this.getClass().toString());
+            } else {
+                getRoot().getFunctionSymbolTable().put(identNode.getIdent(), this);
             }
+
+            for (ParamNode paramNode : paramNodes) {
+                if (this.getSymbolTable().containsKey(paramNode.getIdentNode().getIdent())) {
+                    throwSemanticError(this.getClass().toString());
+                } else {
+                    this.getSymbolTable().put(paramNode.getIdentNode().getIdent(), paramNode.getTypeNode());
+                }
+            }
+
             statNode.check();
         }
 
@@ -186,6 +182,15 @@ public class AST {
             command = "skip";
         }
 
+        @Override
+        public String getType() {
+            return "Skip";
+        }
+
+        @Override
+        public void check() {
+
+        }
     }
 
     public class DeclarationNode extends StatNode {
@@ -211,8 +216,12 @@ public class AST {
         }
 
         @Override
-        public void check() {
+        public String getType() {
+            return "Declaration";
+        }
 
+        @Override
+        public void check() {
 
             putIntoSymbolTable(this, identNode.getIdent(), typeNode);
             assign_rhsNode.check();
@@ -230,7 +239,6 @@ public class AST {
             }else {
                 currentScope.getSymbolTable().put(string, node);
             }
-
         }
 
     }
@@ -248,6 +256,11 @@ public class AST {
             this.assign_rhsNode = assign_rhsNode;
             assign_rhsNode.setParent(this);
 
+        }
+
+        @Override
+        public String getType() {
+            return "Assignment";
         }
 
         @Override
@@ -282,6 +295,10 @@ public class AST {
         }
 
 
+        @Override
+        public String getType() {
+            return "Read";
+        }
 
         @Override
         public void check() {
@@ -315,6 +332,11 @@ public class AST {
         }
 
         @Override
+        public String getType() {
+            return "Read";
+        }
+
+        @Override
         public void check() {
 
             exprNode.check();
@@ -341,7 +363,8 @@ public class AST {
 
         @Override
         public String getType() {
-            return ((FuncNode) parent).getTypeNode().getType();
+
+            return exprNode.getType();
         }
 
         @Override
@@ -349,14 +372,12 @@ public class AST {
             exprNode.check();
             ASTNode parent = getParent();
             while (!(parent instanceof FuncNode)) {
-                parent.getParent();
+                parent = parent.getParent();
             }
-            if (!getType().equals(exprNode.getType())) {
+            if (this.getType() != parent.getType()) {
                 throwSemanticError(this.getClass().toString());
             }
-
         }
-
     }
 
     public class ExitNode extends StatNode {
@@ -372,14 +393,17 @@ public class AST {
         }
 
         @Override
+        public String getType() {
+            return exprNode.getType();
+        }
+
+        @Override
         public void check() {
             exprNode.check();
             if (!exprNode.getType().equals("int")) {
                 throwSemanticError(this.getClass().toString());
             }
-
         }
-
     }
 
     public class PrintNode extends StatNode {
@@ -392,6 +416,11 @@ public class AST {
             this.exprNode = exprNode;
             exprNode.setParent(this);
 
+        }
+
+        @Override
+        public String getType() {
+            return exprNode.getType();
         }
 
         @Override
@@ -411,6 +440,11 @@ public class AST {
             this.exprNode = exprNode;
             exprNode.setParent(this);
 
+        }
+
+        @Override
+        public String getType() {
+            return exprNode.getType();
         }
 
         @Override
@@ -438,6 +472,11 @@ public class AST {
                 statNodeFalse.setParent(this);
             }
 
+        }
+
+        @Override
+        public String getType() {
+            return "If";
         }
 
         @Override
@@ -472,31 +511,17 @@ public class AST {
         }
 
         @Override
+        public String getType() {
+            return "While";
+        }
+
+        @Override
         public void check() {
 
             exprNode.check();
             if (!exprNode.getType().equals("bool")) {
                 throwSemanticError(this.getClass().toString());
             }
-            statNode.check();
-        }
-
-    }
-
-    public class BeginNode extends StatNode {
-
-        private StatNode statNode;
-
-        public BeginNode(StatNode statNode) {
-
-            command = "begin";
-            this.statNode = statNode;
-            statNode.setParent(this);
-
-        }
-
-        @Override
-        public void check() {
             statNode.check();
         }
 
@@ -518,6 +543,11 @@ public class AST {
         }
 
         @Override
+        public String getType() {
+            return "MultipleStat";
+        }
+
+        @Override
         public void check() {
             statNodeFirst.check();
             statNodeSecond.check();
@@ -525,34 +555,17 @@ public class AST {
 
     }
 
-    public abstract class Pair_elemNode extends ASTNode {
+    public class FSTNode extends ASTNode {
 
-        protected String command;
+        private Pair_typeNode exprNode;
 
-        public Pair_elemNode() {
-            command = "";
-        }
-
-        public String getCommand() {
-            return command;
-        }
-
-    }
-
-
-    public class FSTNode extends Pair_elemNode {
-
-        private ExprNode exprNode;
-
-        public FSTNode(ExprNode exprNode) {
+        public FSTNode(Pair_typeNode exprNode) {
             this.exprNode = exprNode;
             exprNode.setParent(this);
-            command = "fst";
         }
 
         public String getType() {
-            IdentNode identNode = (IdentNode) exprNode;
-            return ((Pair_typeNode)(identNode.getTypeNode())).getFirstType();
+            return exprNode.getFirstElem().getType();
         }
 
         @Override
@@ -567,19 +580,17 @@ public class AST {
 
     }
 
-    public class SNDNode extends Pair_elemNode {
+    public class SNDNode extends ASTNode {
 
-        private ExprNode exprNode;
+        private Pair_typeNode exprNode;
 
-        public SNDNode(ExprNode exprNode) {
+        public SNDNode(Pair_typeNode exprNode) {
             this.exprNode = exprNode;
             exprNode.setParent(this);
-            command = "snd";
         }
 
         public String getType() {
-            IdentNode identNode = (IdentNode) exprNode;
-            return ((Pair_typeNode)(identNode.getTypeNode())).getSecondType();
+            return exprNode.getSecondElem().getType();
         }
 
         @Override
@@ -606,10 +617,6 @@ public class AST {
         public boolean equals(Object that) {
             return getType().equals(((TypeNode) that).getType());
         }
-
-        public String getType() {
-            return type;
-        }
     }
 
 
@@ -623,9 +630,18 @@ public class AST {
     public class IntTypeNode extends Base_typeNode {
 
         public IntTypeNode() {
-            type = "int";
+            type = "Int";
         }
 
+        @Override
+        public String getType() {
+            return "Int";
+        }
+
+        @Override
+        public void check() {
+
+        }
     }
 
     public class BoolTypeNode extends Base_typeNode {
@@ -634,6 +650,15 @@ public class AST {
             type = "bool";
         }
 
+        @Override
+        public String getType() {
+            return "Bool";
+        }
+
+        @Override
+        public void check() {
+
+        }
     }
 
     public class CharTypeNode extends Base_typeNode {
@@ -642,6 +667,15 @@ public class AST {
             type = "char";
         }
 
+        @Override
+        public String getType() {
+            return "Char";
+        }
+
+        @Override
+        public void check() {
+
+        }
     }
 
     public class StringTypeNode extends Base_typeNode {
@@ -650,6 +684,15 @@ public class AST {
             type = "string";
         }
 
+        @Override
+        public String getType() {
+            return "String";
+        }
+
+        @Override
+        public void check() {
+
+        }
     }
 
 
@@ -666,7 +709,13 @@ public class AST {
 
         @Override
         public String getType() {
-            return typeNode.getType() + "array";
+
+            return typeNode.getType() + "[]";
+        }
+
+        @Override
+        public void check() {
+
         }
 
         public String getElemType() {
@@ -687,53 +736,70 @@ public class AST {
             typeNode.setParent(this);
             this.identNode = identNode;
             identNode.setParent(this);
+        }
 
+        public IdentNode getIdentNode() {
+            return identNode;
         }
 
         public TypeNode getTypeNode() {
             return typeNode;
         }
 
+        @Override
+        public String getType() {
+            return typeNode.getType();
+        }
+
+        @Override
+        public void check() {
+
+        }
     }
 
     public class Pair_typeNode extends TypeNode {
 
 
-        private TypeNode pair_elem_typeNode1;
-        private TypeNode pair_elem_typeNode2;
+        private TypeNode pair_elemNode1;
+        private TypeNode pair_elemNode2;
 
-        public Pair_typeNode(TypeNode pair_elem_typeNode1, TypeNode pair_elem_typeNode2) {
-            this.pair_elem_typeNode1 = pair_elem_typeNode1;
-            pair_elem_typeNode1.setParent(this);
-            this.pair_elem_typeNode2 = pair_elem_typeNode2;
-            pair_elem_typeNode2.setParent(this);
+        public Pair_typeNode(TypeNode pair_elemNode1, TypeNode pair_elemNode2) {
+            this.pair_elemNode1 = pair_elemNode1;
+            pair_elemNode1.setParent(this);
+            this.pair_elemNode2 = pair_elemNode2;
+            pair_elemNode2.setParent(this);
         }
 
-        public String getFirstType() {
-            return pair_elem_typeNode1.getType();
+        public TypeNode getFirstElem() {
+            return pair_elemNode1;
         }
 
-        public String getSecondType() {
-            return pair_elem_typeNode2.getType();
+        public TypeNode getSecondElem() {
+            return pair_elemNode2;
         }
 
         @Override
         public String getType() {
-            return "pair(" + pair_elem_typeNode1.getType() + ", " + pair_elem_typeNode2.getType() + ")";
+            return "pair(" + pair_elemNode1.getType() + ", " + pair_elemNode2.getType() + ")";
         }
 
+        @Override
+        public void check() {
 
+        }
     }
-
 
     public class PairNode extends TypeNode {
 
-        private String command;
-
-        public PairNode() {
-            command = "pair";
+        @Override
+        public String getType() {
+            return "Pair";
         }
 
+        @Override
+        public void check() {
+
+        }
     }
 
     public abstract class Unary_operNode extends ExprNode {
@@ -1073,12 +1139,6 @@ public class AST {
     public abstract class ExprNode extends StatNode {
 
         protected String type;
-
-        @Override
-        public String getType() {
-            return type;
-        }
-
     }
 
     public class IdentNode extends ExprNode {
@@ -1156,10 +1216,14 @@ public class AST {
 
         @Override
         public String getType() {
-            if (identNode.getType().equals("string")) {
-                return "char";
+            return lookupSymbolTable(this, identNode.getIdent()).getType();
+        }
+
+        private TypeNode lookupSymbolTable(ASTNode currentScope, String string) {
+            while (!currentScope.getScope()) {
+                currentScope = currentScope.getParent();
             }
-            return ((Array_typeNode) identNode.getTypeNode()).getElemType();
+            return (TypeNode) currentScope.getSymbolTable().get(string);
         }
     }
 
@@ -1272,7 +1336,8 @@ public class AST {
 
         @Override
         public String getType() {
-            return exprNodeList.get(0).getType() + "array";
+
+            return exprNodeList.get(0).getType() + "[]";
         }
 
         private String getElemType() {
@@ -1351,7 +1416,7 @@ public class AST {
 
         public String getType() {
             FuncNode funcNode = (FuncNode)getRoot().getFunctionSymbolTable().get(identNode.getIdent());
-            return funcNode.getTypeNode().getType();
+            return funcNode.getType();
         }
 
         @Override
