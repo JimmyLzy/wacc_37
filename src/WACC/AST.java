@@ -897,9 +897,7 @@ public class AST {
         public void check() {
             exp1.check();
             exp2.check();
-            IdentNode identNode = (IdentNode) exp1;
-            TypeNode typeNode = lookupSymbolTable(this, identNode.getIdent());
-            if (typeNode.getType() != exp2.getType()) {
+            if (exp1.getType() != exp2.getType()) {
                 throwSemanticError(this.getClass().toString());
             }
 //            else if (!exp1.getType().contains("pair") && exp2.getType().contains("pair")) {
@@ -1066,6 +1064,11 @@ public class AST {
     public abstract class ExprNode extends StatNode {
 
         protected String type;
+
+        @Override
+        public String getType() {
+            return type;
+        }
 
     }
 
