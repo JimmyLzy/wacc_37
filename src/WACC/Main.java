@@ -1,17 +1,10 @@
 package WACC;
 // import ANTLR's runtime libraries
 import org.antlr.v4.runtime.*;
-import org.antlr.v4.runtime.atn.ATNConfigSet;
-import org.antlr.v4.runtime.dfa.DFA;
-import org.antlr.v4.runtime.misc.NotNull;
-import org.antlr.v4.runtime.misc.Nullable;
 import org.antlr.v4.runtime.tree.*;
 
 // import antlr package (your code)
 import antlr.*;
-import org.antlr.v4.runtime.tree.gui.SystemFontMetrics;
-
-import java.util.BitSet;
 
 public class Main {
 
@@ -41,7 +34,7 @@ public class Main {
         // build and run my custom visitor
         MyVisitor visitor = new MyVisitor();
         AST.ASTNode astNode = visitor.visit(tree);
-        astNode.check();
+        // astNode.check();
         System.out.println("Semantic check finish!");
 
     }

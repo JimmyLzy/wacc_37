@@ -54,20 +54,13 @@ public class MyVisitor extends BasicParserBaseVisitor<AST.ASTNode> {
             paramNodeList.add((AST.ParamNode) visit(param));
         }
 
-        AST.FuncNode funcNode = ast.new FuncNode((AST.TypeNode) visit(ctx.type()), (AST.IdentNode) visit(ctx.ident()), paramNodeList, (AST.StatNode) visit(ctx.func_return()));
+        AST.FuncNode funcNode = ast.new FuncNode((AST.TypeNode) visit(ctx.type()), (AST.IdentNode) visit(ctx.ident()),
+                paramNodeList, (AST.StatNode) visit(ctx.func_return()));
 
         for (int i = 0; i < paramContextList.size(); i++) {
             BasicParser.ParamContext paramContext = (BasicParser.ParamContext) paramContextList.get(i);
             funcNode.getSymbolTable().put(paramContext.ident().getText(), paramNodeList.get(i).getTypeNode());
         }
-
-
-
-//        if (funcNode.getParent().getSymbolTable().containsKey(ctx.ident().getText())) {
-//            System.out.println("error");
-//        } else {
-//            funcNode.getParent().getSymbolTable().put(ctx.ident().getText(), funcNode);
-//        }
 
         return funcNode;
     }
@@ -124,13 +117,12 @@ public class MyVisitor extends BasicParserBaseVisitor<AST.ASTNode> {
      */
     @Override
     public AST.ASTNode visitParam(@NotNull BasicParser.ParamContext ctx) {
-        AST.ParamNode paramNode = null;
 
         AST.TypeNode typeNode = (AST.TypeNode) visit(ctx.type());
 
         AST.IdentNode identNode = (AST.IdentNode) visit(ctx.ident());
 
-        paramNode = ast.new ParamNode(typeNode, identNode);
+        AST.ParamNode paramNode = ast.new ParamNode(typeNode, identNode);
 
         return paramNode;
     }
