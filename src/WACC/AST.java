@@ -44,7 +44,7 @@ public class AST {
             ASTNode parent = getParent();
             while (parent != null && astNode == null) {
                 astNode = parent.getSymbolTable().get(identNode.getIdent());
-                parent = getParent();
+                parent = parent.getParent();
             }
             if (astNode == null) {
                 throwSemanticError();
@@ -84,10 +84,10 @@ public class AST {
 
         @Override
         public void check() {
-
             for (FuncNode funcNode : functionNodes) {
                 funcNode.check();
             }
+
             statNode.check();
 
         }
@@ -911,6 +911,7 @@ public class AST {
             binOp = "-";
         }
 
+
     }
 
     public class GreaterNode extends Binary_operNode {
@@ -1023,6 +1024,7 @@ public class AST {
 
         @Override
         public void check() {
+
             checkIfVaribleExist(this);
         }
 
@@ -1167,9 +1169,7 @@ public class AST {
 
         public Array_literNode(List<ASTNode> exprNodeList) {
             this.exprNodeList = exprNodeList;
-            if (!exprNodeList.isEmpty()) {
-                type = ((ExprNode) exprNodeList.get(0)).getType();
-            }
+
 
         }
 
@@ -1179,7 +1179,19 @@ public class AST {
 
         @Override
         public void check() {
+
+            for(ASTNode astNode : exprNodeList) {
+                astNode.check();
+            }
+            if (!exprNodeList.isEmpty()) {
+                type = ((ExprNode) exprNodeList.get(0)).getType();
+            }
             if(!type.equals("")) {
+                for(ASTNode astNode : exprNodeList) {
+                    if(!astNode.getType().equals(type)) {
+                        throwSemanticError();
+                    }
+                }
             }
         }
     }
@@ -1216,6 +1228,8 @@ public class AST {
 
         @Override
         public void check() {
+            exprNode1.check();
+            exprNode2.check();
         }
 
     }
@@ -1244,7 +1258,15 @@ public class AST {
 
         @Override
         public void check() {
+
+            identNode.check();
+            for(ExprNode exprNode : exprNodeList) {
+                exprNode.check();
+            }
             funcNode = (FuncNode) getRoot().getSymbolTable().get(identNode);
+            if(funcNode == null) {
+                throwSemanticError();
+            }
         }
 
     }
