@@ -57,7 +57,6 @@ public class MyVisitor extends BasicParserBaseVisitor<AST.ASTNode> {
             paramNodeList.add((AST.ParamNode) visit(param));
         }
 
-
         AST.FuncNode funcNode = ast.new FuncNode((AST.TypeNode) visit(ctx.type()), (AST.IdentNode) visit(ctx.ident()),
                 paramNodeList, (AST.StatNode) visit(ctx.func_return()));
 

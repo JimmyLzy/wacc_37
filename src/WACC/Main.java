@@ -34,10 +34,12 @@ public class Main {
 
         // build and run my custom visitor
         MyVisitor visitor = new MyVisitor();
+
         AST.ASTNode astNode = visitor.visit(tree);
         System.out.println("visit finished");
+
         astNode.check();
-        System.out.println("Semantic check finish!");
+        System.out.println("Semantic check finished");
 
     }
 }
