@@ -110,6 +110,7 @@ public class AST {
             for (FuncNode funcNode : functionNodes) {
                 funcNode.check();
             }
+
             statNode.check();
         }
 
@@ -210,14 +211,13 @@ public class AST {
 
         @Override
         public void check() {
+
+
             putIntoSymbolTable(this, identNode.getIdent(), typeNode);
             assign_rhsNode.check();
             if (!typeNode.getType().equals(assign_rhsNode.getType())) {
-                System.out.println(typeNode.getType());
-                System.out.println(assign_rhsNode.getType());
                 throwSemanticError(this.getClass().toString());
             }
-
         }
 
         private void putIntoSymbolTable(ASTNode currentScope, String string, TypeNode node) {
@@ -254,11 +254,9 @@ public class AST {
 
             assign_lhsNode.check();
             assign_rhsNode.check();
-            System.out.println(assign_rhsNode.getClass().toString());
             if (!assign_lhsNode.getType().equals(assign_rhsNode.getType())) {
                 throwSemanticError(this.getClass().toString());
             }
-            System.out.println("gets");
 
         }
 
@@ -552,7 +550,8 @@ public class AST {
         }
 
         public String getType() {
-            return exprNode.getType();
+            IdentNode identNode = (IdentNode) exprNode;
+            return ((Pair_typeNode)(identNode.getTypeNode())).getFirstType();
         }
 
         @Override
@@ -578,9 +577,9 @@ public class AST {
         }
 
         public String getType() {
-            return exprNode.getType();
+            IdentNode identNode = (IdentNode) exprNode;
+            return ((Pair_typeNode)(identNode.getTypeNode())).getSecondType();
         }
-
 
         @Override
         public void check() {
@@ -701,6 +700,14 @@ public class AST {
             pair_elem_typeNode1.setParent(this);
             this.pair_elem_typeNode2 = pair_elem_typeNode2;
             pair_elem_typeNode2.setParent(this);
+        }
+
+        public String getFirstType() {
+            return pair_elem_typeNode1.getType();
+        }
+
+        public String getSecondType() {
+            return pair_elem_typeNode2.getType();
         }
 
         @Override
@@ -902,16 +909,9 @@ public class AST {
             if (exp1.getType() != exp2.getType()) {
                 throwSemanticError(this.getClass().toString());
             }
-//            else if (!exp1.getType().contains("pair") && exp2.getType().contains("pair")) {
-//                throwSemanticError(this.getClass().toString());
-//            }
-        }
-
-        private TypeNode lookupSymbolTable(ASTNode currentScope, String string) {
-            while (!currentScope.getScope()) {
-                currentScope = currentScope.getParent();
+            else if (!exp1.getType().contains("pair") && exp2.getType().contains("pair")) {
+                throwSemanticError(this.getClass().toString());
             }
-            return (TypeNode) currentScope.getSymbolTable().get(string);
         }
     }
 
@@ -1086,7 +1086,34 @@ public class AST {
             return ident;
         }
 
+        public TypeNode getTypeNode() {
+
+            ASTNode parent = getParent();
+            ASTNode typeNode = null;
+            while (parent != null && typeNode == null) {
+                if (typeNode instanceof FuncNode) {
+                    return (TypeNode) typeNode;
+                }
+                typeNode = parent.getSymbolTable().get(ident);
+                parent = parent.getParent();
+            }
+            return (TypeNode) typeNode;
+
+        }
+
         @Override
+        public String getType() {
+
+            ASTNode typeNode = getTypeNode();
+
+            if(typeNode == null) {
+                return "";
+            }
+            return typeNode.getType();
+
+        }
+
+   /*     @Override
         public String getType() {
 
             ASTNode parent = getParent();
@@ -1104,7 +1131,7 @@ public class AST {
             return typeNode.getType();
 
         }
-
+*/
         @Override
         public void check() {
             checkIfVaribleExist(this);
@@ -1142,7 +1169,10 @@ public class AST {
 
         @Override
         public String getType() {
-            return null;
+            if (identNode.getType().equals("string")) {
+                return "char";
+            }
+            return identNode.getType();
         }
     }
 
