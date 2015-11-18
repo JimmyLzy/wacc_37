@@ -1403,7 +1403,7 @@ public class AST {
 
             if (!exp1.getType().equals(exp2.getType())) {
                 throwSemanticError("Both expressions must have the same type on not logical and operator");
-            } else if (!exp1.equals("Bool")) {
+            } else if (!exp1.getType().equals("Bool")) {
                 throwSemanticError("Logical and operator can only take bool arguments");
             }
         }
@@ -1421,10 +1421,9 @@ public class AST {
         public void check() {
             exp1.check();
             exp2.check();
-
             if (!exp1.getType().equals(exp2.getType())) {
                 throwSemanticError("Both expressions must have the same type on not logical or operator");
-            } else if (!exp1.equals("Bool")) {
+            } else if (!exp1.getType().equals("Bool")) {
                 throwSemanticError("Logical or operator can only take bool arguments");
             }
         }
