@@ -95,6 +95,7 @@ UPPER_CASE_ALPHABET : 'A'..'Z' ;
 WS: (' ' | '\t' | '\r' | '\n') -> skip;
 NEW_LINE: '\n' -> skip;
 
+
 //Characters & Strings
 CHAR_LITER: '\'' CHARACTER '\'' ;
 
@@ -111,35 +112,6 @@ ESCAPED_CHAR : '0'
 | '\''
 | '\\' ;
 
+
 STR_LITER: '"' (CHARACTER)* '"';
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-//BACKSLASH: '\\' -> Mode(SLASHMODE);
-//mode SLASHMODE;
-//
-//fragment SLASH: '\\' ;
-//
-//SINGLESLASH: SLASH -> skip;
-//
-//ESCAPEDCHAR : ESCAPED_CHAR -> popMode ;
 
