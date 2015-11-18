@@ -71,21 +71,23 @@ public class MyVisitor extends BasicParserBaseVisitor<AST.ASTNode> {
 
     /**
      * {@inheritDoc}
-     *
+     * <p/>
      * <p>The default implementation returns the result of calling
      * {@link #visitChildren} on {@code ctx}.</p>
      */
-    @Override public AST.ASTNode visitFunc_return(@NotNull BasicParser.Func_returnContext ctx) {
+    @Override
+    public AST.ASTNode visitFunc_return(@NotNull BasicParser.Func_returnContext ctx) {
         if (ctx.IF() != null) {
-            return ast.new IfNode((AST.ExprNode)visit(ctx.expr()), (AST.StatNode)visit(ctx.func_return(0)), (AST.StatNode)visit(ctx.func_return(1)));
-        }else if (ctx.SEMICOLON() != null) {
-            return ast.new MultipleStatNode((AST.StatNode)visit(ctx.stat()), (AST.StatNode)visit(ctx.expr()));
-        }else if (ctx.expr() != null) {
-            return ast.new ReturnNode((AST.ExprNode)visit(ctx.expr()));
+            return ast.new IfNode((AST.ExprNode) visit(ctx.expr()), (AST.StatNode) visit(ctx.func_return(0)), (AST.StatNode) visit(ctx.func_return(1)));
+        } else if (ctx.SEMICOLON() != null) {
+            return ast.new MultipleStatNode((AST.StatNode) visit(ctx.stat()), (AST.StatNode) visit(ctx.expr()));
+        } else if (ctx.expr() != null) {
+            return ast.new ReturnNode((AST.ExprNode) visit(ctx.expr()));
         }
         System.out.println("Error");
         return visitChildren(ctx);
     }
+
     /**
      * {@inheritDoc}
      *

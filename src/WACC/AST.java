@@ -245,15 +245,17 @@ public class AST {
                     rhs = (Pair_typeNode) ((SNDNode) assign_rhsNode).getTypeNode();
                 } else if (assign_rhsNode instanceof FSTNode) {
                     rhs = (Pair_typeNode) ((FSTNode) assign_rhsNode).getTypeNode();
+                } else if (assign_rhsNode instanceof CallNode) {
+                    rhs = (Pair_typeNode) ((CallNode) assign_rhsNode).getTypeNode();
                 } else {
                     rhs = (Pair_typeNode) assign_rhsNode;
                 }
+                System.out.println(rhs.getFirstElem());
+                System.out.println(lhs.getFirstElem().equals(rhs.getFirstElem()));
                 if (!(rhs.getFirstElem().equals("Null") || lhs.getFirstElem().equals(rhs.getFirstElem()))) {
                     throwSemanticError(this.getClass().toString());
                 }
                 if (!(rhs.getSecondElem().equals("Null") || lhs.getSecondElem().equals(rhs.getSecondElem()))) {
-                    System.out.println(lhs.getSecondElem());
-                    System.out.println(rhs.getSecondElem());
                     throwSemanticError(this.getClass().toString());
                 }
             } else if (!typeNode.getType().equals(assign_rhsNode.getType())) {
@@ -267,7 +269,7 @@ public class AST {
             }
             if (currentScope.getSymbolTable().containsKey(string)) {
                 throwSemanticError(currentScope.getClass().toString());
-            }else {
+            } else {
                 currentScope.getSymbolTable().put(string, node);
             }
         }
@@ -311,6 +313,8 @@ public class AST {
                     lhs = (Pair_typeNode) ((SNDNode) assign_rhsNode).getTypeNode();
                 } else if (assign_rhsNode instanceof FSTNode) {
                     lhs = (Pair_typeNode) ((FSTNode) assign_rhsNode).getTypeNode();
+                } else if (assign_rhsNode instanceof CallNode) {
+                    lhs = (Pair_typeNode) ((CallNode) assign_rhsNode).getTypeNode();
                 } else {
                     lhs = (Pair_typeNode) assign_rhsNode;
                 }
@@ -321,6 +325,8 @@ public class AST {
                     rhs = (Pair_typeNode) ((SNDNode) assign_rhsNode).getTypeNode();
                 } else if (assign_rhsNode instanceof FSTNode) {
                     rhs = (Pair_typeNode) ((FSTNode) assign_rhsNode).getTypeNode();
+                } else if (assign_rhsNode instanceof CallNode) {
+                    rhs = (Pair_typeNode) ((CallNode) assign_rhsNode).getTypeNode();
                 } else {
                     rhs = (Pair_typeNode) assign_rhsNode;
                 }
@@ -333,6 +339,8 @@ public class AST {
                     throwSemanticError(this.getClass().toString());
                 }
             } else if (!assign_lhsNode.getType().equals(assign_rhsNode.getType())) {
+                System.out.println(assign_lhsNode.getType());
+                System.out.println(assign_rhsNode.getType());
                 throwSemanticError(this.getClass().toString());
             }
 
@@ -637,7 +645,7 @@ public class AST {
 
         public String getType() {
 
-            return ((Pair_typeNode)(exprNode.getTypeNode())).getFirstElem();
+            return ((Pair_typeNode) (exprNode.getTypeNode())).getFirstElem();
         }
 
         public TypeNode getTypeNode() {
@@ -669,7 +677,7 @@ public class AST {
 
         public String getType() {
 
-            return ((Pair_typeNode)(exprNode.getTypeNode())).getSecondElem();
+            return ((Pair_typeNode) (exprNode.getTypeNode())).getSecondElem();
         }
 
         public TypeNode getTypeNode() {
@@ -807,7 +815,6 @@ public class AST {
         }
 
 
-
     }
 
     public class ParamNode extends ASTNode {
@@ -866,7 +873,7 @@ public class AST {
         @Override
         public String getType() {
 
- //           return "Pair(" + pair_elemNode1.getType() + ", " + pair_elemNode2.getType() + ")";
+            //           return "Pair(" + pair_elemNode1.getType() + ", " + pair_elemNode2.getType() + ")";
             return "Pair";
         }
 
@@ -1079,8 +1086,7 @@ public class AST {
 
             if (exp1.getType() != exp2.getType() && !exp2.getType().equals("Null")) {
                 throwSemanticError(this.getClass().toString());
-            }
-            else if (!exp1.getType().contains("Pair") && exp2.getType().contains("Pair")) {
+            } else if (!exp1.getType().contains("Pair") && exp2.getType().contains("Pair")) {
                 throwSemanticError(this.getClass().toString());
             }
         }
@@ -1259,17 +1265,26 @@ public class AST {
 
         public TypeNode getTypeNode() {
 
-            ASTNode parent = getParent();
-            ASTNode typeNode = null;
-            while (parent != null && typeNode == null) {
-                if (typeNode instanceof FuncNode) {
-                    return (TypeNode) typeNode;
-                }
-                typeNode = parent.getSymbolTable().get(ident);
-                parent = parent.getParent();
-            }
-            return (TypeNode) typeNode;
+//            ASTNode parent = getParent();
+//            ASTNode typeNode = null;
+//            while (parent != null && typeNode == null) {
+//                if (typeNode instanceof FuncNode) {
+//                    return (TypeNode) typeNode;
+//                }
+//                typeNode = parent.getSymbolTable().get(ident);
+//                parent = parent.getParent();
+//            }
+//            return (TypeNode) typeNode;
 
+            return lookupSymbolTable(this, ident);
+
+        }
+
+        private TypeNode lookupSymbolTable(ASTNode currentScope, String string) {
+            while (!currentScope.getScope()) {
+                currentScope = currentScope.getParent();
+            }
+            return (TypeNode) currentScope.getSymbolTable().get(string);
         }
 
         @Override
@@ -1277,7 +1292,7 @@ public class AST {
 
             ASTNode typeNode = getTypeNode();
 
-            if(typeNode == null) {
+            if (typeNode == null) {
                 return "";
             }
             return typeNode.getType();
@@ -1320,7 +1335,11 @@ public class AST {
 
         @Override
         public String getType() {
-            return lookupSymbolTable(this, identNode.getIdent()).getType();
+            String result = lookupSymbolTable(this, identNode.getIdent()).getType();
+            if (result.equals("String")) {
+                result = "Char";
+            }
+            return result;
         }
 
         private TypeNode lookupSymbolTable(ASTNode currentScope, String string) {
@@ -1455,12 +1474,12 @@ public class AST {
         @Override
         public void check() {
 
-            for(ASTNode astNode : exprNodeList) {
+            for (ASTNode astNode : exprNodeList) {
                 astNode.check();
             }
-            if(!getType().equals("")) {
-                for(ASTNode astNode : exprNodeList) {
-                    if(!astNode.getType().equals(getElemType())) {
+            if (!getType().equals("")) {
+                for (ASTNode astNode : exprNodeList) {
+                    if (!astNode.getType().equals(getElemType())) {
                         throwSemanticError(this.getClass().toString());
                     }
                 }
@@ -1537,14 +1556,18 @@ public class AST {
         }
 
         public String getType() {
-            FuncNode funcNode = (FuncNode)getRoot().getFunctionSymbolTable().get(identNode.getIdent());
+            FuncNode funcNode = (FuncNode) getRoot().getFunctionSymbolTable().get(identNode.getIdent());
             return funcNode.getType();
+        }
+
+        public TypeNode getTypeNode() {
+            return identNode.getTypeNode();
         }
 
         @Override
         public void check() {
 
-            for(ExprNode exprNode : exprNodeList) {
+            for (ExprNode exprNode : exprNodeList) {
                 exprNode.check();
             }
             if (!getRoot().getFunctionSymbolTable().containsKey(identNode.getIdent())) {

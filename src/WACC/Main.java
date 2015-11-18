@@ -30,13 +30,10 @@ public class Main {
             System.exit(100);
         }
 
-//        System.out.println(tree.toStringTree(parser));
-
         // build and run my custom visitor
         MyVisitor visitor = new MyVisitor();
 
         AST.ASTNode astNode = visitor.visit(tree);
-        System.out.println("visit finished");
 
         astNode.check();
         System.out.println("Semantic check finished");
