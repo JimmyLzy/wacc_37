@@ -410,7 +410,7 @@ public class MyVisitor extends BasicParserBaseVisitor<AST.ASTNode> {
         if (ctx.SEMICOLON() != null) {
             return ast.new MultipleStatNode((AST.StatNode) visit(ctx.stat(0)), (AST.StatNode) visit(ctx.stat(1)));
         } else if (ctx.BEGIN() != null) {
-            return visit(ctx.stat(0));
+            return ast.new BeginNode((AST.StatNode) visit(ctx.stat(0)));
         } else if (ctx.WHILE() != null) {
             return ast.new WhileNode((AST.ExprNode) visit(ctx.expr()), (AST.StatNode) visit(ctx.stat(0)));
         } else if (ctx.IF() != null) {

@@ -151,6 +151,10 @@ public class AST {
             return identNode;
         }
 
+        public List<ParamNode> getParamNodes() {
+            return paramNodes;
+        }
+
         @Override
         public void check() {
             setScope(true);
@@ -377,17 +381,16 @@ public class AST {
             assign_lhsNode.check();
             String type = assign_lhsNode.getType();
             switch (type) {
-
                 case "Int":
                 case "Char":
-                case "Bool":
-                case "String":
-                case "Null":
                     break;
                 default:
-                    throwSemanticError(this.getClass().toString());
+                    throwSemanticError("The read statment can only read int or char type experssion");
             }
-
+            if (!(assign_lhsNode instanceof IdentNode || assign_lhsNode instanceof Array_elemNode
+                    || assign_lhsNode instanceof FSTNode || assign_lhsNode instanceof SNDNode)) {
+                throwSemanticError("The read statment can only read a program varible, array element or a pair element");
+            }
         }
 
     }
@@ -447,7 +450,11 @@ public class AST {
             exprNode.check();
             ASTNode parent = getParent();
             while (!(parent instanceof FuncNode)) {
+                if (parent.equals(getRoot())) {
+                    throwSemanticError("Can not return from program");
+                }
                 parent = parent.getParent();
+
             }
             if (this.getType() != parent.getType()) {
                 throwSemanticError(this.getClass().toString());
@@ -601,6 +608,33 @@ public class AST {
                 throwSemanticError(this.getClass().toString());
             }
             statNode.check();
+        }
+
+    }
+
+    public class BeginNode extends StatNode {
+
+        private StatNode statNode;
+
+        public BeginNode(StatNode statNode) {
+
+            command = "begin";
+            this.statNode = statNode;
+            statNode.setParent(this);
+
+        }
+
+        @Override
+        public String getType() {
+            return "Begin";
+        }
+
+        @Override
+        public void check() {
+
+            setScope(true);
+            statNode.check();
+
         }
 
     }
@@ -1084,7 +1118,7 @@ public class AST {
             exp1.check();
             exp2.check();
 
-            if (exp1.getType() != exp2.getType() && !exp2.getType().equals("Null")) {
+            if (!exp1.getType().equals(exp2.getType()) && !exp2.getType().equals("Null")) {
                 throwSemanticError(this.getClass().toString());
             } else if (!exp1.getType().contains("Pair") && exp2.getType().contains("Pair")) {
                 throwSemanticError(this.getClass().toString());
@@ -1099,6 +1133,18 @@ public class AST {
             binOp = "*";
         }
 
+        @Override
+        public void check() {
+            exp1.check();
+            exp2.check();
+
+            if (!exp1.getType().equals(exp2.getType())) {
+                throwSemanticError("Both expressions must have the same type on mutiply binary operator");
+            } else if (!exp1.getType().equals("Int")) {
+                throwSemanticError("Multiplication can only take int arguments");
+            }
+        }
+
     }
 
     public class DivNode extends Binary_operNode {
@@ -1106,6 +1152,18 @@ public class AST {
         public DivNode(ASTNode exp1, ASTNode exp2) {
             super(exp1, exp2);
             binOp = "/";
+        }
+
+        @Override
+        public void check() {
+            exp1.check();
+            exp2.check();
+
+            if (!exp1.getType().equals(exp2.getType())) {
+                throwSemanticError("Both expressions must have the same type on divide binary operator");
+            } else if (!exp1.getType().equals("Int")) {
+                throwSemanticError("Division can only take int arguments");
+            }
         }
 
     }
@@ -1117,6 +1175,18 @@ public class AST {
             binOp = "%";
         }
 
+        @Override
+        public void check() {
+            exp1.check();
+            exp2.check();
+
+            if (!exp1.getType().equals(exp2.getType())) {
+                throwSemanticError("Both expressions must have the same type on mod binary operator");
+            } else if (!exp1.getType().equals("Int")) {
+                throwSemanticError("Modules can only take int arguments");
+            }
+        }
+
     }
 
     public class PlusNode extends Binary_operNode {
@@ -1124,6 +1194,18 @@ public class AST {
         public PlusNode(ASTNode exp1, ASTNode exp2) {
             super(exp1, exp2);
             binOp = "+";
+        }
+
+        @Override
+        public void check() {
+            exp1.check();
+            exp2.check();
+
+            if (!exp1.getType().equals(exp2.getType())) {
+                throwSemanticError("Both expressions must have the same type on add binary operator");
+            } else if (!exp1.getType().equals("Int")) {
+                throwSemanticError("Addition can only take int arguments");
+            }
         }
 
     }
@@ -1135,6 +1217,17 @@ public class AST {
             binOp = "-";
         }
 
+        @Override
+        public void check() {
+            exp1.check();
+            exp2.check();
+
+            if (!exp1.getType().equals(exp2.getType())) {
+                throwSemanticError("Both expressions must have the same type on minus binary operator");
+            } else if (!exp1.getType().equals("Int")) {
+                throwSemanticError("Minus binary operator can only take int arguments");
+            }
+        }
 
     }
 
@@ -1149,6 +1242,18 @@ public class AST {
         public String getType() {
 
             return "Bool";
+        }
+
+        @Override
+        public void check() {
+            exp1.check();
+            exp2.check();
+
+            if (!exp1.getType().equals(exp2.getType())) {
+                throwSemanticError("Both expressions must have the same type on greater binary operator");
+            } else if (!(exp1.getType().equals("Int") || exp1.getType().equals("Char"))) {
+                throwSemanticError("Greater binary operator can only take int or char arguments");
+            }
         }
 
     }
@@ -1166,6 +1271,18 @@ public class AST {
             return "Bool";
         }
 
+        @Override
+        public void check() {
+            exp1.check();
+            exp2.check();
+
+            if (!exp1.getType().equals(exp2.getType())) {
+                throwSemanticError("Both expressions must have the same type on greater or equal binary operator");
+            } else if (!(exp1.getType().equals("Int") || exp1.getType().equals("Char"))) {
+                throwSemanticError("Greater or equal binary operator can only take int or char arguments");
+            }
+        }
+
     }
 
     public class SmallerNode extends Binary_operNode {
@@ -1179,6 +1296,18 @@ public class AST {
         public String getType() {
 
             return "Bool";
+        }
+
+        @Override
+        public void check() {
+            exp1.check();
+            exp2.check();
+
+            if (!exp1.getType().equals(exp2.getType())) {
+                throwSemanticError("Both expressions must have the same type on smaller binary operator");
+            } else if (!(exp1.getType().equals("Int") || exp1.getType().equals("Char"))) {
+                throwSemanticError("Smaller binary operator can only take int or char arguments");
+            }
         }
 
     }
@@ -1196,6 +1325,18 @@ public class AST {
             return "Bool";
         }
 
+        @Override
+        public void check() {
+            exp1.check();
+            exp2.check();
+
+            if (!exp1.getType().equals(exp2.getType())) {
+                throwSemanticError("Both expressions must have the same type on smaller or equal binary operator");
+            } else if (!(exp1.getType().equals("Int") || exp1.getType().equals("Char"))) {
+                throwSemanticError("Smaller or equal binary operator can only take int or char arguments");
+            }
+        }
+
     }
 
     public class EqualNode extends Binary_operNode {
@@ -1209,6 +1350,16 @@ public class AST {
         public String getType() {
 
             return "Bool";
+        }
+
+        @Override
+        public void check() {
+            exp1.check();
+            exp2.check();
+
+            if (!exp1.getType().equals(exp2.getType())) {
+                throwSemanticError("Both expressions must have the same type on equal binary operator");
+            }
         }
 
     }
@@ -1226,6 +1377,16 @@ public class AST {
             return "Bool";
         }
 
+        @Override
+        public void check() {
+            exp1.check();
+            exp2.check();
+
+            if (!exp1.getType().equals(exp2.getType())) {
+                throwSemanticError("Both expressions must have the same type on not equal binary operator");
+            }
+        }
+
     }
 
     public class LogicalAndNode extends Binary_operNode {
@@ -1235,6 +1396,18 @@ public class AST {
             binOp = "&&";
         }
 
+        @Override
+        public void check() {
+            exp1.check();
+            exp2.check();
+
+            if (!exp1.getType().equals(exp2.getType())) {
+                throwSemanticError("Both expressions must have the same type on not logical and operator");
+            } else if (!exp1.equals("Bool")) {
+                throwSemanticError("Logical and operator can only take bool arguments");
+            }
+        }
+
     }
 
     public class LogicalOrNode extends Binary_operNode {
@@ -1242,6 +1415,18 @@ public class AST {
         public LogicalOrNode(ASTNode exp1, ASTNode exp2) {
             super(exp1, exp2);
             binOp = "||";
+        }
+
+        @Override
+        public void check() {
+            exp1.check();
+            exp2.check();
+
+            if (!exp1.getType().equals(exp2.getType())) {
+                throwSemanticError("Both expressions must have the same type on not logical or operator");
+            } else if (!exp1.equals("Bool")) {
+                throwSemanticError("Logical or operator can only take bool arguments");
+            }
         }
 
     }
@@ -1563,6 +1748,15 @@ public class AST {
             }
             if (!getRoot().getFunctionSymbolTable().containsKey(identNode.getIdent())) {
                 throwSemanticError(this.getClass().toString());
+            }
+            funcNode = (FuncNode) getRoot().getFunctionSymbolTable().get(identNode.getIdent());
+            if (funcNode.getParamNodes().size() != exprNodeList.size()) {
+                throwSemanticError("Argument size not matched in function: " + identNode.getIdent());
+            }
+            for (int i = 0; i < exprNodeList.size(); i++) {
+                if (!funcNode.getParamNodes().get(i).getType().equals(exprNodeList.get(i).getType())) {
+                    throwSemanticError("The " + (i+1) + "th argument in function " + identNode.getIdent() + " not match");
+                }
             }
         }
 
