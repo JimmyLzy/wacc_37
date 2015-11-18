@@ -343,8 +343,6 @@ public class AST {
                     throwSemanticError(this.getClass().toString());
                 }
             } else if (!assign_lhsNode.getType().equals(assign_rhsNode.getType())) {
-                System.out.println(assign_lhsNode.getType());
-                System.out.println(assign_rhsNode.getType());
                 throwSemanticError(this.getClass().toString());
             }
 
@@ -835,7 +833,6 @@ public class AST {
 
         @Override
         public String getType() {
-
             return typeNode.getType() + "[]";
         }
 
@@ -1422,6 +1419,8 @@ public class AST {
             exp1.check();
             exp2.check();
             if (!exp1.getType().equals(exp2.getType())) {
+                System.out.println(exp1.getType());
+                System.out.println(exp2.getType());
                 throwSemanticError("Both expressions must have the same type on not logical or operator");
             } else if (!exp1.getType().equals("Bool")) {
                 throwSemanticError("Logical or operator can only take bool arguments");
@@ -1513,6 +1512,8 @@ public class AST {
             String result = lookupSymbolTable(this, identNode.getIdent()).getType();
             if (result.equals("String")) {
                 result = "Char";
+            } else {
+                result = result.replace("[]", "");
             }
             return result;
         }
@@ -1633,6 +1634,9 @@ public class AST {
         public Array_literNode(List<ASTNode> exprNodeList) {
 
             this.exprNodeList = exprNodeList;
+            for (ASTNode node : exprNodeList) {
+                node.setParent(this);
+            }
 
         }
 
