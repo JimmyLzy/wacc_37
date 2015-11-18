@@ -6,6 +6,10 @@ import java.util.List;
 /**
  * Created by yh6714 on 13/11/15.
  */
+
+/*
+ * All unused methods and fields are the prepartion of the code generation part
+ */
 public class AST {
 
     private ProgramNode root;
@@ -18,6 +22,12 @@ public class AST {
         this.root = root;
     }
 
+    /*The base of all other nodes and other nodes need to implement the methods
+    * Containing:
+    * Symboltable as hashmap
+    * Parent of the current node
+    * Check method to do the semantic check
+    * */
     public abstract class ASTNode {
 
         protected HashMap<String, ASTNode> symbolTable = new HashMap<>();
@@ -71,6 +81,9 @@ public class AST {
         public abstract void check();
     }
 
+    /*
+     * The basic program node, containing two symbol tables for functions and program statements.
+     */
     public class ProgramNode extends ASTNode {
 
         private List<FuncNode> functionNodes;
@@ -119,6 +132,11 @@ public class AST {
 
     }
 
+    /*
+     * Representing the functions declare in the program
+     * Has program node as parent
+     * Has it own scope which is the symboltable
+     */
     public class FuncNode extends ASTNode {
 
         private TypeNode typeNode;
@@ -172,7 +190,10 @@ public class AST {
 
     }
 
-
+    /*
+     * Spliting all statement to different nodes
+     * The command field is for the use of code generation
+     */
     public abstract class StatNode extends ASTNode {
 
         protected String command;
@@ -200,10 +221,14 @@ public class AST {
 
         @Override
         public void check() {
-
         }
     }
 
+    /*
+     * The DeclarationNode adds all varibles to the symboltable in correct scope
+     * Checks semantically if the varible can be declare or not
+     * Handles all edge cases
+     */
     public class DeclarationNode extends StatNode {
 
         private TypeNode typeNode;
@@ -254,8 +279,6 @@ public class AST {
                 } else {
                     rhs = (Pair_typeNode) assign_rhsNode;
                 }
-                System.out.println(rhs.getFirstElem());
-                System.out.println(lhs.getFirstElem().equals(rhs.getFirstElem()));
                 if (!(rhs.getFirstElem().equals("Null") || lhs.getFirstElem().equals(rhs.getFirstElem()))) {
                     throwSemanticError(this.getClass().toString());
                 }
@@ -280,6 +303,10 @@ public class AST {
 
     }
 
+    /*
+     * Similar to DeclarationNode
+     * Has handle left-hand-side node correctly
+     */
     public class AssignmentNode extends StatNode {
 
         private ASTNode assign_lhsNode;
@@ -338,8 +365,6 @@ public class AST {
                     throwSemanticError(this.getClass().toString());
                 }
                 if (!(rhs.getSecondElem().equals("Null") || lhs.getSecondElem().equals(rhs.getSecondElem()))) {
-                    System.out.println(lhs.getSecondElem());
-                    System.out.println(rhs.getSecondElem());
                     throwSemanticError(this.getClass().toString());
                 }
             } else if (!assign_lhsNode.getType().equals(assign_rhsNode.getType())) {
@@ -356,6 +381,10 @@ public class AST {
         }
     }
 
+    /*
+     * All other StatNodes are similar
+     * Implemented their own check cases
+     */
     public class ReadNode extends StatNode {
 
         private ASTNode assign_lhsNode;
@@ -535,6 +564,10 @@ public class AST {
 
     }
 
+    /*
+     * IfNode has its own scope
+     * Correctly checked the condition and ensure the statements are vaild
+     */
     public class IfNode extends StatNode {
 
         private ExprNode exprNode;
@@ -577,6 +610,10 @@ public class AST {
 
     }
 
+    /*
+     * WhileNode has its own scope
+     * Correctly checked the condition and ensure the statements are vaild
+     */
     public class WhileNode extends StatNode {
 
         private ExprNode exprNode;
@@ -637,6 +674,9 @@ public class AST {
 
     }
 
+    /*
+     * To introduce more statemtns
+     */
     public class MultipleStatNode extends StatNode {
 
         private StatNode statNodeFirst;
@@ -665,8 +705,11 @@ public class AST {
 
     }
 
+    /*
+     * FSTNode has the type Pair
+     * Need to return to correct type
+     */
     public class FSTNode extends ASTNode {
-
 
         private IdentNode exprNode;
 
@@ -697,8 +740,11 @@ public class AST {
 
     }
 
+    /*
+     * SNDNode has the type Pair
+     * Need to return to correct type
+     */
     public class SNDNode extends ASTNode {
-
 
         private IdentNode exprNode;
 
@@ -729,6 +775,10 @@ public class AST {
 
     }
 
+    /*
+     * Including base-type, array-type, pair-type
+     * The getType() method will return the type as String
+     */
     public abstract class TypeNode extends ASTNode {
 
         protected String type;
@@ -741,6 +791,11 @@ public class AST {
         public boolean equals(Object that) {
             return getType().equals(((TypeNode) that).getType());
         }
+
+        @Override
+        public void check() {
+        }
+
     }
 
 
@@ -749,6 +804,7 @@ public class AST {
         public Base_typeNode() {
             super();
         }
+
     }
 
     public class IntTypeNode extends Base_typeNode {
@@ -762,10 +818,6 @@ public class AST {
             return "Int";
         }
 
-        @Override
-        public void check() {
-
-        }
     }
 
     public class BoolTypeNode extends Base_typeNode {
@@ -779,10 +831,6 @@ public class AST {
             return "Bool";
         }
 
-        @Override
-        public void check() {
-
-        }
     }
 
     public class CharTypeNode extends Base_typeNode {
@@ -796,10 +844,6 @@ public class AST {
             return "Char";
         }
 
-        @Override
-        public void check() {
-
-        }
     }
 
     public class StringTypeNode extends Base_typeNode {
@@ -813,10 +857,6 @@ public class AST {
             return "String";
         }
 
-        @Override
-        public void check() {
-
-        }
     }
 
 
@@ -836,11 +876,6 @@ public class AST {
             return typeNode.getType() + "[]";
         }
 
-        @Override
-        public void check() {
-
-        }
-
         public String getElemType() {
             return typeNode.getType();
         }
@@ -848,6 +883,10 @@ public class AST {
 
     }
 
+    /*
+     * Representing the nodes of the parameters of the function
+     * Save all parameters in the relating function scope
+     */
     public class ParamNode extends ASTNode {
 
         private TypeNode typeNode;
@@ -875,12 +914,11 @@ public class AST {
 
         @Override
         public void check() {
-
         }
+
     }
 
     public class Pair_typeNode extends TypeNode {
-
 
         private ASTNode pair_elemNode1;
         private ASTNode pair_elemNode2;
@@ -903,15 +941,9 @@ public class AST {
 
         @Override
         public String getType() {
-
-            //           return "Pair(" + pair_elemNode1.getType() + ", " + pair_elemNode2.getType() + ")";
             return "Pair";
         }
 
-        @Override
-        public void check() {
-
-        }
     }
 
     public class PairNode extends TypeNode {
@@ -927,6 +959,10 @@ public class AST {
         }
     }
 
+    /*
+     * Each different unary-operation needs to implement their own check() method in order to get meaningful
+     * error message and condition.
+     */
     public abstract class Unary_operNode extends ExprNode {
 
         protected String unOp;
@@ -965,7 +1001,6 @@ public class AST {
         public void check() {
 
             exprNode.check();
-
             if (!exprNode.getType().equals("Bool")) {
                 throwSemanticError(this.getClass().toString());
             }
@@ -993,7 +1028,6 @@ public class AST {
         public void check() {
 
             exprNode.check();
-
             if (!exprNode.getType().equals("Int")) {
                 throwSemanticError(this.getClass().toString());
             }
@@ -1084,8 +1118,11 @@ public class AST {
 
     }
 
+    /*
+     * Different binary-operation has different semantic requirement
+     * All sub-classes overwrite the check() method
+     */
     public abstract class Binary_operNode extends ExprNode {
-
 
         protected ASTNode exp1;
         protected ASTNode exp2;
@@ -1237,7 +1274,6 @@ public class AST {
 
         @Override
         public String getType() {
-
             return "Bool";
         }
 
@@ -1264,7 +1300,6 @@ public class AST {
 
         @Override
         public String getType() {
-
             return "Bool";
         }
 
@@ -1291,7 +1326,6 @@ public class AST {
 
         @Override
         public String getType() {
-
             return "Bool";
         }
 
@@ -1345,7 +1379,6 @@ public class AST {
 
         @Override
         public String getType() {
-
             return "Bool";
         }
 
@@ -1370,7 +1403,6 @@ public class AST {
 
         @Override
         public String getType() {
-
             return "Bool";
         }
 
@@ -1430,10 +1462,15 @@ public class AST {
     }
 
     public abstract class ExprNode extends StatNode {
-
-        protected String type;
+        @Override
+        public void check() {
+        }
     }
 
+    /*
+     * IdentNode checks through the related scopes for the detail of a varible
+     * getType() method returns the correct type of the ident
+     */
     public class IdentNode extends ExprNode {
 
         private String ident;
@@ -1481,6 +1518,9 @@ public class AST {
 
     }
 
+    /*
+     * The single element of an array
+     */
     public class Array_elemNode extends ExprNode {
 
         private IdentNode identNode;
@@ -1526,7 +1566,9 @@ public class AST {
         }
     }
 
-
+    /*
+     * All liters use the getType() method to return their type
+     */
     public class Int_literNode extends ExprNode {
 
         private String value;
@@ -1537,20 +1579,11 @@ public class AST {
             this.sign = sign;
         }
 
-        /*public Integer getValue() {
-            return value;
-        }*/
-
-        @Override
-        public void check() {
-
-        }
-
         @Override
         public String getType() {
-
             return "Int";
         }
+
     }
 
 
@@ -1567,11 +1600,6 @@ public class AST {
         }
 
         @Override
-        public void check() {
-
-        }
-
-        @Override
         public String getType() {
 
             return "Bool";
@@ -1585,16 +1613,6 @@ public class AST {
         public Char_literNode(String value) {
             this.value = value.charAt(0);
         }
-
-        public char getValue() {
-            return value;
-        }
-
-        @Override
-        public void check() {
-
-        }
-
         @Override
         public String getType() {
 
@@ -1608,15 +1626,6 @@ public class AST {
 
         public Str_literNode(String value) {
             this.value = value;
-        }
-
-        public String getValue() {
-            return value;
-        }
-
-        @Override
-        public void check() {
-
         }
 
         @Override
@@ -1669,10 +1678,6 @@ public class AST {
     public class Pair_literNode extends ExprNode {
 
         @Override
-        public void check() {
-        }
-
-        @Override
         public String getType() {
 
             return "Null";
@@ -1686,7 +1691,6 @@ public class AST {
 
         public NewPairNode(ExprNode exprNode1, ExprNode exprNode2) {
 
-
             super(exprNode1, exprNode2);
             this.exprNode1 = exprNode1;
             exprNode1.setParent(this);
@@ -1696,17 +1700,6 @@ public class AST {
         }
 
         public String getType() {
-
-  /*          String exprNode1Type = exprNode1.getType();
-            if (exprNode1Type.contains("Pair")) {
-                exprNode1Type = "Pair";
-            }
-            String exprNode2Type = exprNode2.getType();
-            if (exprNode2Type.contains("Pair")) {
-                exprNode2Type = "Pair";
-            }
-            return "Pair(" + exprNode1Type + ", " + exprNode2Type + ")";
-          */
             return "Pair";
         }
 
@@ -1718,6 +1711,11 @@ public class AST {
 
     }
 
+    /*
+     * Used when calling a method
+     * Check the if the arguments are valid or not
+     * Goes through the function symboltable in program scope
+     */
     public class CallNode extends ASTNode {
 
         private IdentNode identNode;
