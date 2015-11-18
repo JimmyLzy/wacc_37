@@ -1265,26 +1265,17 @@ public class AST {
 
         public TypeNode getTypeNode() {
 
-//            ASTNode parent = getParent();
-//            ASTNode typeNode = null;
-//            while (parent != null && typeNode == null) {
-//                if (typeNode instanceof FuncNode) {
-//                    return (TypeNode) typeNode;
-//                }
-//                typeNode = parent.getSymbolTable().get(ident);
-//                parent = parent.getParent();
-//            }
-//            return (TypeNode) typeNode;
-
-            return lookupSymbolTable(this, ident);
-
-        }
-
-        private TypeNode lookupSymbolTable(ASTNode currentScope, String string) {
-            while (!currentScope.getScope()) {
-                currentScope = currentScope.getParent();
+            ASTNode parent = getParent();
+            ASTNode typeNode = null;
+            while (parent != null && typeNode == null) {
+                if (typeNode instanceof FuncNode) {
+                    return (TypeNode) typeNode;
+                }
+                typeNode = parent.getSymbolTable().get(ident);
+                parent = parent.getParent();
             }
-            return (TypeNode) currentScope.getSymbolTable().get(string);
+            return (TypeNode) typeNode;
+
         }
 
         @Override
