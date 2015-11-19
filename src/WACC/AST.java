@@ -207,6 +207,22 @@ public class AST {
             return command;
         }
 
+        public Pair_typeNode getPair_typeNode(ASTNode node) {
+            Pair_typeNode result;
+            if (node.getClass().toString().contains("IdentNode")) {
+                result = (Pair_typeNode) ((IdentNode) node).getTypeNode();
+            } else if (node.getClass().toString().contains("SNDNode")) {
+                result = (Pair_typeNode) ((SNDNode) node).getTypeNode();
+            } else if (node.getClass().toString().contains("FSTNode")) {
+                result = (Pair_typeNode) ((FSTNode) node).getTypeNode();
+            } else if (node.getClass().toString().contains("CallNode")) {
+                result = (Pair_typeNode) ((CallNode) node).getTypeNode();
+            } else {
+                result = (Pair_typeNode) node;
+            }
+            return result;
+        }
+
     }
 
     public class SkipNode extends StatNode {
@@ -266,43 +282,9 @@ public class AST {
             if (assign_rhsNode.getType().equals("Null")) {
                 return;
             }
-//            if (typeNode.getType().contains("Pair") && assign_rhsNode.getType().contains("Pair")) {
-//                Pair_typeNode lhs = (Pair_typeNode) typeNode;
-//                Pair_typeNode rhs;
-//                if (assign_rhsNode instanceof IdentNode) {
-//                    rhs = (Pair_typeNode) ((IdentNode) assign_rhsNode).getTypeNode();
-//                } else if (assign_rhsNode instanceof SNDNode) {
-//                    rhs = (Pair_typeNode) ((SNDNode) assign_rhsNode).getTypeNode();
-//                } else if (assign_rhsNode instanceof FSTNode) {
-//                    rhs = (Pair_typeNode) ((FSTNode) assign_rhsNode).getTypeNode();
-//                } else if (assign_rhsNode instanceof CallNode) {
-//                    rhs = (Pair_typeNode) ((CallNode) assign_rhsNode).getTypeNode();
-//                } else {
-//                    rhs = (Pair_typeNode) assign_rhsNode;
-//                }
-//                if (!(rhs.getFirstElem().equals("Null") || lhs.getFirstElem().equals(rhs.getFirstElem()))) {
-//                    throwSemanticError(this.getClass().toString());
-//                }
-//                if (!(rhs.getSecondElem().equals("Null") || lhs.getSecondElem().equals(rhs.getSecondElem()))) {
-//                    throwSemanticError(this.getClass().toString());
-//                }
-//            } else if (!typeNode.getType().equals(assign_rhsNode.getType())) {
-//                throwSemanticError(this.getClass().toString());
-//            }
             if (typeNode.getType().contains("Pair") && assign_rhsNode.getType().contains("Pair")) {
                 Pair_typeNode lhs = (Pair_typeNode) typeNode;
-                Pair_typeNode rhs;
-                if (assign_rhsNode.getClass().toString().contains("IdentNode")) {
-                    rhs = (Pair_typeNode) ((IdentNode) assign_rhsNode).getTypeNode();
-                } else if (assign_rhsNode.getClass().toString().contains("SNDNode")) {
-                    rhs = (Pair_typeNode) ((SNDNode) assign_rhsNode).getTypeNode();
-                } else if (assign_rhsNode.getClass().toString().contains("FSTNode")) {
-                    rhs = (Pair_typeNode) ((FSTNode) assign_rhsNode).getTypeNode();
-                } else if (assign_rhsNode.getClass().toString().contains("CallNode")) {
-                    rhs = (Pair_typeNode) ((CallNode) assign_rhsNode).getTypeNode();
-                } else {
-                    rhs = (Pair_typeNode) assign_rhsNode;
-                }
+                Pair_typeNode rhs = getPair_typeNode(assign_rhsNode);
                 if (!(rhs.getFirstElem().equals("Null") || lhs.getFirstElem().equals(rhs.getFirstElem()))) {
                     throwSemanticError(this.getClass().toString());
                 }
@@ -361,30 +343,8 @@ public class AST {
                 return;
             }
             if (assign_lhsNode.getType().contains("Pair") && assign_rhsNode.getType().contains("Pair")) {
-                Pair_typeNode lhs;
-                if (assign_lhsNode instanceof IdentNode) {
-                    lhs = (Pair_typeNode) ((IdentNode) assign_rhsNode).getTypeNode();
-                } else if (assign_rhsNode instanceof SNDNode) {
-                    lhs = (Pair_typeNode) ((SNDNode) assign_rhsNode).getTypeNode();
-                } else if (assign_rhsNode instanceof FSTNode) {
-                    lhs = (Pair_typeNode) ((FSTNode) assign_rhsNode).getTypeNode();
-                } else if (assign_rhsNode instanceof CallNode) {
-                    lhs = (Pair_typeNode) ((CallNode) assign_rhsNode).getTypeNode();
-                } else {
-                    lhs = (Pair_typeNode) assign_rhsNode;
-                }
-                Pair_typeNode rhs;
-                if (assign_rhsNode instanceof IdentNode) {
-                    rhs = (Pair_typeNode) ((IdentNode) assign_rhsNode).getTypeNode();
-                } else if (assign_rhsNode instanceof SNDNode) {
-                    rhs = (Pair_typeNode) ((SNDNode) assign_rhsNode).getTypeNode();
-                } else if (assign_rhsNode instanceof FSTNode) {
-                    rhs = (Pair_typeNode) ((FSTNode) assign_rhsNode).getTypeNode();
-                } else if (assign_rhsNode instanceof CallNode) {
-                    rhs = (Pair_typeNode) ((CallNode) assign_rhsNode).getTypeNode();
-                } else {
-                    rhs = (Pair_typeNode) assign_rhsNode;
-                }
+                Pair_typeNode lhs = getPair_typeNode(assign_lhsNode);
+                Pair_typeNode rhs = getPair_typeNode(assign_rhsNode);
                 if (!(rhs.getFirstElem().equals("Null") || lhs.getFirstElem().equals(rhs.getFirstElem()))) {
                     throwSemanticError(this.getClass().toString());
                 }
@@ -438,8 +398,9 @@ public class AST {
                 default:
                     throwSemanticError("The read statment can only read int or char type experssion");
             }
-            if (!(assign_lhsNode instanceof IdentNode || assign_lhsNode instanceof Array_elemNode
-                    || assign_lhsNode instanceof FSTNode || assign_lhsNode instanceof SNDNode)) {
+            String lhsString = assign_lhsNode.getClass().toString();
+            if (!(lhsString.contains("IdentNode") || lhsString.contains("Array_elemNode")
+                    || lhsString.contains("FSTNode") || lhsString.contains("SNDNode"))) {
                 throwSemanticError("The read statment can only read a program varible, array element or a pair element");
             }
         }
@@ -500,7 +461,7 @@ public class AST {
         public void check() {
             exprNode.check();
             ASTNode parent = getParent();
-            while (!(parent instanceof FuncNode)) {
+            while (!(parent.getClass().toString().contains("FuncNode"))) {
                 if (parent.equals(getRoot())) {
                     throwSemanticError("Can not return from program");
                 }
@@ -1512,7 +1473,7 @@ public class AST {
             ASTNode parent = getParent();
             ASTNode typeNode = null;
             while (parent != null && typeNode == null) {
-                if (typeNode instanceof FuncNode) {
+                if (typeNode.getClass().toString().contains("FuncNode")) {
                     return (TypeNode) typeNode;
                 }
                 typeNode = parent.getSymbolTable().get(ident);
