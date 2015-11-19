@@ -398,9 +398,8 @@ public class AST {
                 default:
                     throwSemanticError("The read statment can only read int or char type experssion");
             }
-            String lhsString = assign_lhsNode.getClass().toString();
-            if (!(lhsString.contains("IdentNode") || lhsString.contains("Array_elemNode")
-                    || lhsString.contains("FSTNode") || lhsString.contains("SNDNode"))) {
+            if (!(assign_lhsNode instanceof IdentNode || assign_lhsNode instanceof Array_elemNode
+                    || assign_lhsNode instanceof FSTNode || assign_lhsNode instanceof SNDNode)) {
                 throwSemanticError("The read statment can only read a program varible, array element or a pair element");
             }
         }
@@ -461,7 +460,7 @@ public class AST {
         public void check() {
             exprNode.check();
             ASTNode parent = getParent();
-            while (!(parent.getClass().toString().contains("FuncNode"))) {
+            while (!(parent instanceof FuncNode)) {
                 if (parent.equals(getRoot())) {
                     throwSemanticError("Can not return from program");
                 }
@@ -1473,7 +1472,7 @@ public class AST {
             ASTNode parent = getParent();
             ASTNode typeNode = null;
             while (parent != null && typeNode == null) {
-                if (typeNode.getClass().toString().contains("FuncNode")) {
+                if (typeNode instanceof FuncNode) {
                     return (TypeNode) typeNode;
                 }
                 typeNode = parent.getSymbolTable().get(ident);
