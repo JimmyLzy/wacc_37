@@ -286,13 +286,13 @@ public class AST {
                 Pair_typeNode lhs = (Pair_typeNode) typeNode;
                 Pair_typeNode rhs = getPair_typeNode(assign_rhsNode);
                 if (!(rhs.getFirstElem().equals("Null") || lhs.getFirstElem().equals(rhs.getFirstElem()))) {
-                    throwSemanticError(this.getClass().toString());
+                    throwSemanticError("Need same type when declaring the variable");
                 }
                 if (!(rhs.getSecondElem().equals("Null") || lhs.getSecondElem().equals(rhs.getSecondElem()))) {
-                    throwSemanticError(this.getClass().toString());
+                    throwSemanticError("Need same type when declaring the variable");
                 }
             } else if (!typeNode.getType().equals(assign_rhsNode.getType())) {
-                throwSemanticError(this.getClass().toString());
+                throwSemanticError("Need same type when declaring the variable");
             }
         }
 
@@ -346,13 +346,13 @@ public class AST {
                 Pair_typeNode lhs = getPair_typeNode(assign_lhsNode);
                 Pair_typeNode rhs = getPair_typeNode(assign_rhsNode);
                 if (!(rhs.getFirstElem().equals("Null") || lhs.getFirstElem().equals(rhs.getFirstElem()))) {
-                    throwSemanticError(this.getClass().toString());
+                    throwSemanticError("Need same type when assigning the variable");
                 }
                 if (!(rhs.getSecondElem().equals("Null") || lhs.getSecondElem().equals(rhs.getSecondElem()))) {
-                    throwSemanticError(this.getClass().toString());
+                    throwSemanticError("Need same type when assigning the variable");
                 }
             } else if (!assign_lhsNode.getType().equals(assign_rhsNode.getType())) {
-                throwSemanticError(this.getClass().toString());
+                throwSemanticError("Need same type when assigning the variable");
             }
 
         }
@@ -400,7 +400,8 @@ public class AST {
             }
             if (!(assign_lhsNode instanceof IdentNode || assign_lhsNode instanceof Array_elemNode
                     || assign_lhsNode instanceof FSTNode || assign_lhsNode instanceof SNDNode)) {
-                throwSemanticError("The read statment can only read a program varible, array element or a pair element");
+                throwSemanticError("The read statment can only read a program varible, " +
+                        "array element or a pair element");
             }
         }
 
@@ -431,7 +432,7 @@ public class AST {
             String type = exprNode.getType();
 
             if (!type.contains("Pair(") || type.contains("[]")) {
-                throwSemanticError(this.getClass().toString());
+                throwSemanticError("The free staement takes invalid arguments");
             }
 
         }
@@ -468,7 +469,7 @@ public class AST {
 
             }
             if (this.getType() != parent.getType()) {
-                throwSemanticError(this.getClass().toString());
+                throwSemanticError("Cannot return in program statement");
             }
         }
     }
@@ -495,7 +496,7 @@ public class AST {
             exprNode.check();
 
             if (!exprNode.getType().equals("Int")) {
-                throwSemanticError(this.getClass().toString());
+                throwSemanticError("The exit statement must take int argument");
             }
         }
     }
@@ -584,7 +585,7 @@ public class AST {
             exprNode.check();
 
             if (!exprNode.getType().equals("Bool")) {
-                throwSemanticError(this.getClass().toString());
+                throwSemanticError("If statement can only take boolean argument");
             }
             statNodeTrue.check();
             if (statNodeFalse != null) {
@@ -624,7 +625,7 @@ public class AST {
             exprNode.check();
 
             if (!exprNode.getType().equals("Bool")) {
-                throwSemanticError(this.getClass().toString());
+                throwSemanticError("While statement condition can only take boolean argument");
             }
             statNode.check();
         }
@@ -717,7 +718,7 @@ public class AST {
             exprNode.check();
 
             if (!exprNode.getType().contains("Pair")) {
-                throwSemanticError(this.getClass().toString());
+                throwSemanticError("The FST statement can only take argument of type pair");
             }
 
         }
@@ -752,7 +753,7 @@ public class AST {
             exprNode.check();
 
             if (!exprNode.getType().contains("Pair")) {
-                throwSemanticError(this.getClass().toString());
+                throwSemanticError("The SND statement can only take argument of type pair");
             }
 
         }
@@ -986,7 +987,7 @@ public class AST {
 
             exprNode.check();
             if (!exprNode.getType().equals("Bool")) {
-                throwSemanticError(this.getClass().toString());
+                throwSemanticError("Not operator only take boolean argument");
             }
 
         }
@@ -1013,7 +1014,7 @@ public class AST {
 
             exprNode.check();
             if (!exprNode.getType().equals("Int")) {
-                throwSemanticError(this.getClass().toString());
+                throwSemanticError("Negate operator only take int argument");
             }
 
         }
@@ -1041,7 +1042,7 @@ public class AST {
             exprNode.check();
 
             if (!exprNode.getType().contains("[]")) {
-                throwSemanticError(this.getClass().toString());
+                throwSemanticError("Len operator only take int argument");
             }
 
         }
@@ -1068,7 +1069,7 @@ public class AST {
             exprNode.check();
 
             if (!exprNode.getType().equals("Char")) {
-                throwSemanticError(this.getClass().toString());
+                throwSemanticError("Ord operator only take int argument");
             }
 
         }
@@ -1095,7 +1096,7 @@ public class AST {
             exprNode.check();
 
             if (!exprNode.getType().equals("Int")) {
-                throwSemanticError(this.getClass().toString());
+                throwSemanticError("Char operator only take int argument");
             }
 
         }
@@ -1137,9 +1138,9 @@ public class AST {
             exp2.check();
 
             if (!exp1.getType().equals(exp2.getType()) && !exp2.getType().equals("Null")) {
-                throwSemanticError(this.getClass().toString());
+                throwSemanticError("Binary operation need both sides have the same type");
             } else if (!exp1.getType().contains("Pair") && exp2.getType().contains("Pair")) {
-                throwSemanticError(this.getClass().toString());
+                throwSemanticError("Binary operation for pair need to have type pair on both sides");
             }
         }
     }
@@ -1652,7 +1653,7 @@ public class AST {
             if (!getType().equals("")) {
                 for (ASTNode astNode : exprNodeList) {
                     if (!astNode.getType().equals(getElemType())) {
-                        throwSemanticError(this.getClass().toString());
+                        throwSemanticError("Array need to contain same type arguments");
                     }
                 }
             }
@@ -1732,7 +1733,7 @@ public class AST {
                 exprNode.check();
             }
             if (!getRoot().getFunctionSymbolTable().containsKey(identNode.getIdent())) {
-                throwSemanticError(this.getClass().toString());
+                throwSemanticError("The function " + identNode.getIdent() + " has not been declared");
             }
             funcNode = (FuncNode) getRoot().getFunctionSymbolTable().get(identNode.getIdent());
             if (funcNode.getParamNodes().size() != exprNodeList.size()) {
@@ -1740,7 +1741,8 @@ public class AST {
             }
             for (int i = 0; i < exprNodeList.size(); i++) {
                 if (!funcNode.getParamNodes().get(i).getType().equals(exprNodeList.get(i).getType())) {
-                    throwSemanticError("The " + (i+1) + "th argument in function " + identNode.getIdent() + " not match");
+                    throwSemanticError("The " + (i+1) + "th argument in function "
+                            + identNode.getIdent() + " not match");
                 }
             }
         }
