@@ -66,7 +66,7 @@ public class AST {
                 parent = parent.getParent();
             }
             if (found == false) {
-                throwSemanticError(this.getClass().toString());
+                throwSemanticError(identNode.getIdent() + " has not been decleared before");
             }
         }
 
@@ -117,7 +117,8 @@ public class AST {
 
             for (FuncNode funcNode : functionNodes) {
                 if (getFunctionSymbolTable().containsKey(funcNode.getIdentNode().getIdent())) {
-                    throwSemanticError(this.getClass().toString());
+                    throwSemanticError("The function " + funcNode.getIdentNode().getIdent()
+                            + " cannot be overloaded");
                 } else {
                     getFunctionSymbolTable().put(funcNode.getIdentNode().getIdent(), funcNode);
                 }
@@ -179,7 +180,7 @@ public class AST {
 
             for (ParamNode paramNode : paramNodes) {
                 if (this.getSymbolTable().containsKey(paramNode.getIdentNode().getIdent())) {
-                    throwSemanticError(this.getClass().toString());
+                    throwSemanticError("The function parameters cannot have same variable name");
                 } else {
                     this.getSymbolTable().put(paramNode.getIdentNode().getIdent(), paramNode.getTypeNode());
                 }
@@ -265,16 +266,39 @@ public class AST {
             if (assign_rhsNode.getType().equals("Null")) {
                 return;
             }
+//            if (typeNode.getType().contains("Pair") && assign_rhsNode.getType().contains("Pair")) {
+//                Pair_typeNode lhs = (Pair_typeNode) typeNode;
+//                Pair_typeNode rhs;
+//                if (assign_rhsNode instanceof IdentNode) {
+//                    rhs = (Pair_typeNode) ((IdentNode) assign_rhsNode).getTypeNode();
+//                } else if (assign_rhsNode instanceof SNDNode) {
+//                    rhs = (Pair_typeNode) ((SNDNode) assign_rhsNode).getTypeNode();
+//                } else if (assign_rhsNode instanceof FSTNode) {
+//                    rhs = (Pair_typeNode) ((FSTNode) assign_rhsNode).getTypeNode();
+//                } else if (assign_rhsNode instanceof CallNode) {
+//                    rhs = (Pair_typeNode) ((CallNode) assign_rhsNode).getTypeNode();
+//                } else {
+//                    rhs = (Pair_typeNode) assign_rhsNode;
+//                }
+//                if (!(rhs.getFirstElem().equals("Null") || lhs.getFirstElem().equals(rhs.getFirstElem()))) {
+//                    throwSemanticError(this.getClass().toString());
+//                }
+//                if (!(rhs.getSecondElem().equals("Null") || lhs.getSecondElem().equals(rhs.getSecondElem()))) {
+//                    throwSemanticError(this.getClass().toString());
+//                }
+//            } else if (!typeNode.getType().equals(assign_rhsNode.getType())) {
+//                throwSemanticError(this.getClass().toString());
+//            }
             if (typeNode.getType().contains("Pair") && assign_rhsNode.getType().contains("Pair")) {
                 Pair_typeNode lhs = (Pair_typeNode) typeNode;
                 Pair_typeNode rhs;
-                if (assign_rhsNode instanceof IdentNode) {
+                if (assign_rhsNode.getClass().toString().contains("IdentNode")) {
                     rhs = (Pair_typeNode) ((IdentNode) assign_rhsNode).getTypeNode();
-                } else if (assign_rhsNode instanceof SNDNode) {
+                } else if (assign_rhsNode.getClass().toString().contains("SNDNode")) {
                     rhs = (Pair_typeNode) ((SNDNode) assign_rhsNode).getTypeNode();
-                } else if (assign_rhsNode instanceof FSTNode) {
+                } else if (assign_rhsNode.getClass().toString().contains("FSTNode")) {
                     rhs = (Pair_typeNode) ((FSTNode) assign_rhsNode).getTypeNode();
-                } else if (assign_rhsNode instanceof CallNode) {
+                } else if (assign_rhsNode.getClass().toString().contains("CallNode")) {
                     rhs = (Pair_typeNode) ((CallNode) assign_rhsNode).getTypeNode();
                 } else {
                     rhs = (Pair_typeNode) assign_rhsNode;
