@@ -420,7 +420,7 @@ public class MyVisitor extends BasicParserBaseVisitor<AST.ASTNode> {
         } else if (ctx.PRINT() != null) {
             return ast.new PrintNode((AST.ExprNode) visit(ctx.expr()));
         } else if (ctx.EXIT() != null) {
-            return ast.new ExitNode((AST.ExprNode) visit(ctx.int_liter()));
+            return ast.new ExitNode((AST.ExprNode) visit(ctx.expr()));
         } else if (ctx.RETURN() != null) {
             return ast.new ReturnNode((AST.ExprNode) visit(ctx.expr()));
         } else if (ctx.FREE() != null) {

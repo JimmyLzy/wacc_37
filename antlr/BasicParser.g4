@@ -30,7 +30,7 @@ stat: SKIP
 | READ assign_lhs
 | FREE expr
 | RETURN expr
-| EXIT int_liter
+| EXIT expr
 | PRINT expr
 | PRINTLN expr
 | IF expr THEN stat ELSE stat FI

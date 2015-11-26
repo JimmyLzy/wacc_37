@@ -555,8 +555,14 @@ public class AST {
 
         @Override
         public void generate(PrintWriter fileWriter) {
-            Int_literNode int_literNode = (Int_literNode) exprNode;
-            int exitNum = int_literNode.getvalue();
+            int exitNum = 0;
+            if (exprNode instanceof NegateOperNode) {
+                NegateOperNode negateOperNode = (NegateOperNode) exprNode;
+                exitNum = ((Int_literNode) negateOperNode.getExprNdoe()).getvalue() / -1;
+            } else {
+                Int_literNode int_literNode = (Int_literNode) exprNode;
+                exitNum = int_literNode.getvalue();
+            }
             fileWriter.println("LDR r0, =" + exitNum);
             fileWriter.println("BL exit");
         }
@@ -1106,6 +1112,10 @@ public class AST {
             return unOp;
         }
 
+        public ExprNode getExprNdoe() {
+            return exprNode;
+        }
+
     }
 
     public class NotOperNode extends Unary_operNode {
@@ -1146,7 +1156,6 @@ public class AST {
 
             super(exprNode);
             unOp = "-";
-
         }
 
         @Override
