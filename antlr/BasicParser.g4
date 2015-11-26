@@ -30,7 +30,7 @@ stat: SKIP
 | READ assign_lhs
 | FREE expr
 | RETURN expr
-| EXIT expr
+| EXIT int_liter
 | PRINT expr
 | PRINTLN expr
 | IF expr THEN stat ELSE stat FI
@@ -87,6 +87,8 @@ expr: unary_oper expr
 | int_liter
 | OPEN_PARENTHESES expr CLOSE_PARENTHESES;
 
+int_sign: PLUS | MINUS ;
+
 //Unary operator
 unary_oper: LOGICAL_NOT
 | MINUS
@@ -103,8 +105,6 @@ digit: SINGLE_DIGIT ;
 
 //Type liter
 int_liter: (int_sign)? INTEGER ;
-
-int_sign: PLUS | MINUS ;
 
 bool_liter: TRUE | FALSE ;
 
