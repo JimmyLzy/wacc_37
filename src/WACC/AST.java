@@ -1,5 +1,6 @@
 package WACC;
 
+import java.io.PrintWriter;
 import java.util.HashMap;
 import java.util.List;
 
@@ -79,6 +80,8 @@ public class AST {
         public abstract String getType();
 
         public abstract void check();
+
+        public abstract void generate(PrintWriter fileWriter);
     }
 
     /*
@@ -130,6 +133,20 @@ public class AST {
 
             statNode.check();
         }
+
+        public void generate(PrintWriter fileWriter) {
+            fileWriter.println(".text");
+            fileWriter.println(".global main");
+            fileWriter.println("main: ");
+            fileWriter.println("PUSH {lr}  ");
+            for (FuncNode funcNode : functionNodes) {
+                funcNode.generate(fileWriter);
+            }
+            statNode.generate(fileWriter);
+            fileWriter.println("MOV r0, #0");
+            fileWriter.println("POP {pc}");
+        }
+
 
     }
 
@@ -189,6 +206,12 @@ public class AST {
             statNode.check();
         }
 
+        @Override
+        public void generate(PrintWriter fileWriter) {
+
+        }
+
+
     }
 
     /*
@@ -238,6 +261,11 @@ public class AST {
 
         @Override
         public void check() {
+        }
+
+        @Override
+        public void generate(PrintWriter fileWriter) {
+
         }
     }
 
@@ -294,6 +322,11 @@ public class AST {
             } else if (!typeNode.getType().equals(assign_rhsNode.getType())) {
                 throwSemanticError("Need same type when declaring the variable");
             }
+        }
+
+        @Override
+        public void generate(PrintWriter fileWriter) {
+
         }
 
         private void putIntoSymbolTable(ASTNode currentScope, String string, TypeNode node) {
@@ -357,6 +390,11 @@ public class AST {
 
         }
 
+        @Override
+        public void generate(PrintWriter fileWriter) {
+
+        }
+
         private TypeNode lookupSymbolTable(ASTNode currentScope, String string) {
             while (!currentScope.getScope()) {
                 currentScope = currentScope.getParent();
@@ -405,6 +443,11 @@ public class AST {
             }
         }
 
+        @Override
+        public void generate(PrintWriter fileWriter) {
+
+        }
+
     }
 
     public class FreeNode extends StatNode {
@@ -434,6 +477,11 @@ public class AST {
             if (!type.contains("Pair(") || type.contains("[]")) {
                 throwSemanticError("The free staement takes invalid arguments");
             }
+
+        }
+
+        @Override
+        public void generate(PrintWriter fileWriter) {
 
         }
 
@@ -472,6 +520,11 @@ public class AST {
                 throwSemanticError("Cannot return in program statement");
             }
         }
+
+        @Override
+        public void generate(PrintWriter fileWriter) {
+
+        }
     }
 
     public class ExitNode extends StatNode {
@@ -499,6 +552,14 @@ public class AST {
                 throwSemanticError("The exit statement must take int argument");
             }
         }
+
+        @Override
+        public void generate(PrintWriter fileWriter) {
+            Int_literNode int_literNode = (Int_literNode) exprNode;
+            int exitNum = int_literNode.getvalue();
+            fileWriter.println("LDR r0, =" + exitNum);
+            fileWriter.println("BL exit");
+        }
     }
 
     public class PrintNode extends StatNode {
@@ -523,6 +584,11 @@ public class AST {
             exprNode.check();
         }
 
+        @Override
+        public void generate(PrintWriter fileWriter) {
+
+        }
+
     }
 
     public class PrintlnNode extends StatNode {
@@ -545,6 +611,11 @@ public class AST {
         @Override
         public void check() {
             exprNode.check();
+        }
+
+        @Override
+        public void generate(PrintWriter fileWriter) {
+
         }
 
     }
@@ -593,6 +664,11 @@ public class AST {
             }
         }
 
+        @Override
+        public void generate(PrintWriter fileWriter) {
+
+        }
+
     }
 
     /*
@@ -630,6 +706,11 @@ public class AST {
             statNode.check();
         }
 
+        @Override
+        public void generate(PrintWriter fileWriter) {
+
+        }
+
     }
 
     public class BeginNode extends StatNode {
@@ -654,6 +735,11 @@ public class AST {
 
             setScope(true);
             statNode.check();
+
+        }
+
+        @Override
+        public void generate(PrintWriter fileWriter) {
 
         }
 
@@ -686,6 +772,11 @@ public class AST {
         public void check() {
             statNodeFirst.check();
             statNodeSecond.check();
+        }
+
+        @Override
+        public void generate(PrintWriter fileWriter) {
+
         }
 
     }
@@ -723,6 +814,11 @@ public class AST {
 
         }
 
+        @Override
+        public void generate(PrintWriter fileWriter) {
+
+        }
+
     }
 
     /*
@@ -755,6 +851,11 @@ public class AST {
             if (!exprNode.getType().contains("Pair")) {
                 throwSemanticError("The SND statement can only take argument of type pair");
             }
+
+        }
+
+        @Override
+        public void generate(PrintWriter fileWriter) {
 
         }
 
@@ -803,6 +904,11 @@ public class AST {
             return "Int";
         }
 
+        @Override
+        public void generate(PrintWriter fileWriter) {
+
+        }
+
     }
 
     public class BoolTypeNode extends Base_typeNode {
@@ -814,6 +920,11 @@ public class AST {
         @Override
         public String getType() {
             return "Bool";
+        }
+
+        @Override
+        public void generate(PrintWriter fileWriter) {
+
         }
 
     }
@@ -829,6 +940,11 @@ public class AST {
             return "Char";
         }
 
+        @Override
+        public void generate(PrintWriter fileWriter) {
+
+        }
+
     }
 
     public class StringTypeNode extends Base_typeNode {
@@ -840,6 +956,11 @@ public class AST {
         @Override
         public String getType() {
             return "String";
+        }
+
+        @Override
+        public void generate(PrintWriter fileWriter) {
+
         }
 
     }
@@ -859,6 +980,11 @@ public class AST {
         @Override
         public String getType() {
             return typeNode.getType() + "[]";
+        }
+
+        @Override
+        public void generate(PrintWriter fileWriter) {
+
         }
 
         public String getElemType() {
@@ -901,6 +1027,11 @@ public class AST {
         public void check() {
         }
 
+        @Override
+        public void generate(PrintWriter fileWriter) {
+
+        }
+
     }
 
     public class Pair_typeNode extends TypeNode {
@@ -929,6 +1060,11 @@ public class AST {
             return "Pair";
         }
 
+        @Override
+        public void generate(PrintWriter fileWriter) {
+
+        }
+
     }
 
     public class PairNode extends TypeNode {
@@ -940,6 +1076,11 @@ public class AST {
 
         @Override
         public void check() {
+
+        }
+
+        @Override
+        public void generate(PrintWriter fileWriter) {
 
         }
     }
@@ -992,6 +1133,11 @@ public class AST {
 
         }
 
+        @Override
+        public void generate(PrintWriter fileWriter) {
+
+        }
+
     }
 
     public class NegateOperNode extends Unary_operNode {
@@ -1016,6 +1162,11 @@ public class AST {
             if (!exprNode.getType().equals("Int")) {
                 throwSemanticError("Negate operator only take int argument");
             }
+
+        }
+
+        @Override
+        public void generate(PrintWriter fileWriter) {
 
         }
 
@@ -1046,6 +1197,11 @@ public class AST {
             }
 
         }
+
+        @Override
+        public void generate(PrintWriter fileWriter) {
+
+        }
     }
 
     public class OrdOperNode extends Unary_operNode {
@@ -1073,6 +1229,11 @@ public class AST {
             }
 
         }
+
+        @Override
+        public void generate(PrintWriter fileWriter) {
+
+        }
     }
 
     public class CharOperNode extends Unary_operNode {
@@ -1098,6 +1259,11 @@ public class AST {
             if (!exprNode.getType().equals("Int")) {
                 throwSemanticError("Char operator only take int argument");
             }
+
+        }
+
+        @Override
+        public void generate(PrintWriter fileWriter) {
 
         }
 
@@ -1164,6 +1330,11 @@ public class AST {
             }
         }
 
+        @Override
+        public void generate(PrintWriter fileWriter) {
+
+        }
+
     }
 
     public class DivNode extends Binary_operNode {
@@ -1183,6 +1354,11 @@ public class AST {
             } else if (!exp1.getType().equals("Int")) {
                 throwSemanticError("Division can only take int arguments");
             }
+        }
+
+        @Override
+        public void generate(PrintWriter fileWriter) {
+
         }
 
     }
@@ -1206,6 +1382,11 @@ public class AST {
             }
         }
 
+        @Override
+        public void generate(PrintWriter fileWriter) {
+
+        }
+
     }
 
     public class PlusNode extends Binary_operNode {
@@ -1227,6 +1408,11 @@ public class AST {
             }
         }
 
+        @Override
+        public void generate(PrintWriter fileWriter) {
+
+        }
+
     }
 
     public class MinusNode extends Binary_operNode {
@@ -1246,6 +1432,11 @@ public class AST {
             } else if (!exp1.getType().equals("Int")) {
                 throwSemanticError("Minus binary operator can only take int arguments");
             }
+        }
+
+        @Override
+        public void generate(PrintWriter fileWriter) {
+
         }
 
     }
@@ -1274,6 +1465,11 @@ public class AST {
             }
         }
 
+        @Override
+        public void generate(PrintWriter fileWriter) {
+
+        }
+
     }
 
     public class GreaterOrEqualNode extends Binary_operNode {
@@ -1300,6 +1496,11 @@ public class AST {
             }
         }
 
+        @Override
+        public void generate(PrintWriter fileWriter) {
+
+        }
+
     }
 
     public class SmallerNode extends Binary_operNode {
@@ -1324,6 +1525,11 @@ public class AST {
             } else if (!(exp1.getType().equals("Int") || exp1.getType().equals("Char"))) {
                 throwSemanticError("Smaller binary operator can only take int or char arguments");
             }
+        }
+
+        @Override
+        public void generate(PrintWriter fileWriter) {
+
         }
 
     }
@@ -1353,6 +1559,11 @@ public class AST {
             }
         }
 
+        @Override
+        public void generate(PrintWriter fileWriter) {
+
+        }
+
     }
 
     public class EqualNode extends Binary_operNode {
@@ -1375,6 +1586,11 @@ public class AST {
             if (!exp1.getType().equals(exp2.getType())) {
                 throwSemanticError("Both expressions must have the same type on equal binary operator");
             }
+        }
+
+        @Override
+        public void generate(PrintWriter fileWriter) {
+
         }
 
     }
@@ -1401,6 +1617,11 @@ public class AST {
             }
         }
 
+        @Override
+        public void generate(PrintWriter fileWriter) {
+
+        }
+
     }
 
     public class LogicalAndNode extends Binary_operNode {
@@ -1420,6 +1641,11 @@ public class AST {
             } else if (!exp1.getType().equals("Bool")) {
                 throwSemanticError("Logical and operator can only take bool arguments");
             }
+        }
+
+        @Override
+        public void generate(PrintWriter fileWriter) {
+
         }
 
     }
@@ -1442,6 +1668,11 @@ public class AST {
             } else if (!exp1.getType().equals("Bool")) {
                 throwSemanticError("Logical or operator can only take bool arguments");
             }
+        }
+
+        @Override
+        public void generate(PrintWriter fileWriter) {
+
         }
 
     }
@@ -1500,6 +1731,11 @@ public class AST {
             checkIfVaribleExist(this);
         }
 
+        @Override
+        public void generate(PrintWriter fileWriter) {
+
+        }
+
 
     }
 
@@ -1530,6 +1766,11 @@ public class AST {
                 exprNode.check();
             }
             checkIfVaribleExist(identNode);
+        }
+
+        @Override
+        public void generate(PrintWriter fileWriter) {
+
         }
 
         @Override
@@ -1569,6 +1810,17 @@ public class AST {
             return "Int";
         }
 
+        @Override
+        public void generate(PrintWriter fileWriter) {
+
+        }
+
+        public int getvalue() {
+            if (sign.equals("-")) {
+                return Integer.parseInt(value) / (-1);
+            }
+            return Integer.parseInt(value);
+        }
     }
 
 
@@ -1589,6 +1841,11 @@ public class AST {
 
             return "Bool";
         }
+
+        @Override
+        public void generate(PrintWriter fileWriter) {
+
+        }
     }
 
     public class Char_literNode extends ExprNode {
@@ -1602,6 +1859,11 @@ public class AST {
         public String getType() {
 
             return "Char";
+        }
+
+        @Override
+        public void generate(PrintWriter fileWriter) {
+
         }
     }
 
@@ -1617,6 +1879,11 @@ public class AST {
         public String getType() {
 
             return "String";
+        }
+
+        @Override
+        public void generate(PrintWriter fileWriter) {
+
         }
     }
 
@@ -1658,6 +1925,11 @@ public class AST {
                 }
             }
         }
+
+        @Override
+        public void generate(PrintWriter fileWriter) {
+
+        }
     }
 
     public class Pair_literNode extends ExprNode {
@@ -1666,6 +1938,11 @@ public class AST {
         public String getType() {
 
             return "Null";
+        }
+
+        @Override
+        public void generate(PrintWriter fileWriter) {
+
         }
     }
 
@@ -1745,6 +2022,11 @@ public class AST {
                             + identNode.getIdent() + " not match");
                 }
             }
+        }
+
+        @Override
+        public void generate(PrintWriter fileWriter) {
+
         }
 
     }

@@ -6,13 +6,15 @@ import org.antlr.v4.runtime.tree.*;
 // import antlr package (your code)
 import antlr.*;
 
+import java.io.PrintWriter;
+
 
 public class Main {
 
     public static void main(String[] args) throws Exception {
 
         // create a CharStream that reads from standard input
-        ANTLRInputStream input = new ANTLRInputStream(System.in);
+        ANTLRInputStream input = new ANTLRFileStream(args[0]);
 
         // create a lexer that feeds off of input CharStream
         BasicLexer lexer = new BasicLexer(input);
@@ -38,5 +40,12 @@ public class Main {
         astNode.check();
         System.out.println("Semantic check finished");
 
+        String fileName = args[0].substring(args[0].lastIndexOf("/") + 1, args[0].length() - "WACC".length());
+
+        PrintWriter fileWriter = new PrintWriter(fileName + "s");
+
+        astNode.generate(fileWriter);
+
+        fileWriter.close();
     }
 }
