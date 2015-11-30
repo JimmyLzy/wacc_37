@@ -1,6 +1,5 @@
 package WACC;
 
-import java.io.PrintWriter;
 import java.util.HashMap;
 import java.util.List;
 
@@ -81,7 +80,7 @@ public class AST {
 
         public abstract void check();
 
-        public abstract void generate(PrintWriter fileWriter);
+        public abstract void generate(StringBuilder sb);
     }
 
     /*
@@ -134,20 +133,20 @@ public class AST {
             statNode.check();
         }
 
-        public void generate(PrintWriter fileWriter) {
-            fileWriter.println(".text");
-            fileWriter.println(".global main");
-            fileWriter.println("main: ");
-            fileWriter.println("PUSH {lr}  ");
+        public void generate(StringBuilder sb) {
+            sb.append(new StringBuilder(".text\n"));
+            sb.append(".global main\n");
+            StringBuilder mainSb = new StringBuilder();
+            mainSb.append("main: \n");
+            mainSb.append("PUSH {lr}  \n");
             for (FuncNode funcNode : functionNodes) {
-                funcNode.generate(fileWriter);
+                funcNode.generate(mainSb);
             }
-            statNode.generate(fileWriter);
-            fileWriter.println("MOV r0, #0");
-            fileWriter.println("POP {pc}");
+            statNode.generate(mainSb);
+            mainSb.append("MOV r0, #0\n");
+            mainSb.append("POP {pc}\n");
+            sb.append(mainSb);
         }
-
-
     }
 
     /*
@@ -207,7 +206,7 @@ public class AST {
         }
 
         @Override
-        public void generate(PrintWriter fileWriter) {
+        public void generate(StringBuilder sb) {
 
         }
 
@@ -264,7 +263,7 @@ public class AST {
         }
 
         @Override
-        public void generate(PrintWriter fileWriter) {
+        public void generate(StringBuilder sb) {
 
         }
     }
@@ -325,7 +324,7 @@ public class AST {
         }
 
         @Override
-        public void generate(PrintWriter fileWriter) {
+        public void generate(StringBuilder sb) {
 
         }
 
@@ -391,7 +390,7 @@ public class AST {
         }
 
         @Override
-        public void generate(PrintWriter fileWriter) {
+        public void generate(StringBuilder sb) {
 
         }
 
@@ -444,7 +443,7 @@ public class AST {
         }
 
         @Override
-        public void generate(PrintWriter fileWriter) {
+        public void generate(StringBuilder sb) {
 
         }
 
@@ -481,7 +480,7 @@ public class AST {
         }
 
         @Override
-        public void generate(PrintWriter fileWriter) {
+        public void generate(StringBuilder sb) {
 
         }
 
@@ -522,7 +521,7 @@ public class AST {
         }
 
         @Override
-        public void generate(PrintWriter fileWriter) {
+        public void generate(StringBuilder sb) {
 
         }
     }
@@ -554,7 +553,7 @@ public class AST {
         }
 
         @Override
-        public void generate(PrintWriter fileWriter) {
+        public void generate(StringBuilder sb) {
             int exitNum = 0;
             if (exprNode instanceof NegateOperNode) {
                 NegateOperNode negateOperNode = (NegateOperNode) exprNode;
@@ -563,8 +562,8 @@ public class AST {
                 Int_literNode int_literNode = (Int_literNode) exprNode;
                 exitNum = int_literNode.getvalue();
             }
-            fileWriter.println("LDR r0, =" + exitNum);
-            fileWriter.println("BL exit");
+            sb.append("LDR r0, =" + exitNum + "\n");
+            sb.append("BL exit\n");
         }
     }
 
@@ -591,8 +590,19 @@ public class AST {
         }
 
         @Override
-        public void generate(PrintWriter fileWriter) {
-
+        public void generate(StringBuilder sb) {
+            sb.append("LDR r0, =msg_0\n");
+            sb.append("BL p_print_string\n");
+            StringBuilder printSb = new StringBuilder("p_print_string:\n");
+            printSb.append("PUSH {lr}\n");
+            printSb.append("LDR r1, [r0]\n");
+            printSb.append("ADD r2, r0, #4\n");
+            printSb.append("LDR r0, =msg_1\n");
+            printSb.append("ADD r0, r0, #4\n");
+            printSb.append("MOV r0, #0\n");
+            printSb.append("BL fflush\n");
+            printSb.append("POP {pc}\n");
+            sb.insert(0, printSb);
         }
 
     }
@@ -620,7 +630,7 @@ public class AST {
         }
 
         @Override
-        public void generate(PrintWriter fileWriter) {
+        public void generate(StringBuilder sb) {
 
         }
 
@@ -671,7 +681,7 @@ public class AST {
         }
 
         @Override
-        public void generate(PrintWriter fileWriter) {
+        public void generate(StringBuilder sb) {
 
         }
 
@@ -713,7 +723,7 @@ public class AST {
         }
 
         @Override
-        public void generate(PrintWriter fileWriter) {
+        public void generate(StringBuilder sb) {
 
         }
 
@@ -745,7 +755,7 @@ public class AST {
         }
 
         @Override
-        public void generate(PrintWriter fileWriter) {
+        public void generate(StringBuilder sb) {
 
         }
 
@@ -781,7 +791,7 @@ public class AST {
         }
 
         @Override
-        public void generate(PrintWriter fileWriter) {
+        public void generate(StringBuilder sb) {
 
         }
 
@@ -821,7 +831,7 @@ public class AST {
         }
 
         @Override
-        public void generate(PrintWriter fileWriter) {
+        public void generate(StringBuilder sb) {
 
         }
 
@@ -861,7 +871,7 @@ public class AST {
         }
 
         @Override
-        public void generate(PrintWriter fileWriter) {
+        public void generate(StringBuilder sb) {
 
         }
 
@@ -911,7 +921,7 @@ public class AST {
         }
 
         @Override
-        public void generate(PrintWriter fileWriter) {
+        public void generate(StringBuilder sb) {
 
         }
 
@@ -929,7 +939,7 @@ public class AST {
         }
 
         @Override
-        public void generate(PrintWriter fileWriter) {
+        public void generate(StringBuilder sb) {
 
         }
 
@@ -947,7 +957,7 @@ public class AST {
         }
 
         @Override
-        public void generate(PrintWriter fileWriter) {
+        public void generate(StringBuilder sb) {
 
         }
 
@@ -965,7 +975,7 @@ public class AST {
         }
 
         @Override
-        public void generate(PrintWriter fileWriter) {
+        public void generate(StringBuilder sb) {
 
         }
 
@@ -989,7 +999,7 @@ public class AST {
         }
 
         @Override
-        public void generate(PrintWriter fileWriter) {
+        public void generate(StringBuilder sb) {
 
         }
 
@@ -1034,7 +1044,7 @@ public class AST {
         }
 
         @Override
-        public void generate(PrintWriter fileWriter) {
+        public void generate(StringBuilder sb) {
 
         }
 
@@ -1067,7 +1077,7 @@ public class AST {
         }
 
         @Override
-        public void generate(PrintWriter fileWriter) {
+        public void generate(StringBuilder sb) {
 
         }
 
@@ -1086,7 +1096,7 @@ public class AST {
         }
 
         @Override
-        public void generate(PrintWriter fileWriter) {
+        public void generate(StringBuilder sb) {
 
         }
     }
@@ -1144,7 +1154,12 @@ public class AST {
         }
 
         @Override
-        public void generate(PrintWriter fileWriter) {
+        public String getValue() {
+            return String.valueOf(!(Boolean.parseBoolean(exprNode.getValue())));
+        }
+
+        @Override
+        public void generate(StringBuilder sb) {
 
         }
 
@@ -1175,7 +1190,12 @@ public class AST {
         }
 
         @Override
-        public void generate(PrintWriter fileWriter) {
+        public String getValue() {
+            return String.valueOf(-Integer.valueOf(exprNode.getValue()));
+        }
+
+        @Override
+        public void generate(StringBuilder sb) {
 
         }
 
@@ -1208,7 +1228,12 @@ public class AST {
         }
 
         @Override
-        public void generate(PrintWriter fileWriter) {
+        public String getValue() {
+            return null;
+        }
+
+        @Override
+        public void generate(StringBuilder sb) {
 
         }
     }
@@ -1240,7 +1265,12 @@ public class AST {
         }
 
         @Override
-        public void generate(PrintWriter fileWriter) {
+        public String getValue() {
+            return null;
+        }
+
+        @Override
+        public void generate(StringBuilder sb) {
 
         }
     }
@@ -1272,7 +1302,12 @@ public class AST {
         }
 
         @Override
-        public void generate(PrintWriter fileWriter) {
+        public String getValue() {
+            return null;
+        }
+
+        @Override
+        public void generate(StringBuilder sb) {
 
         }
 
@@ -1340,7 +1375,12 @@ public class AST {
         }
 
         @Override
-        public void generate(PrintWriter fileWriter) {
+        public String getValue() {
+            return null;
+        }
+
+        @Override
+        public void generate(StringBuilder sb) {
 
         }
 
@@ -1366,7 +1406,12 @@ public class AST {
         }
 
         @Override
-        public void generate(PrintWriter fileWriter) {
+        public String getValue() {
+            return null;
+        }
+
+        @Override
+        public void generate(StringBuilder sb) {
 
         }
 
@@ -1392,7 +1437,12 @@ public class AST {
         }
 
         @Override
-        public void generate(PrintWriter fileWriter) {
+        public String getValue() {
+            return null;
+        }
+
+        @Override
+        public void generate(StringBuilder sb) {
 
         }
 
@@ -1418,7 +1468,12 @@ public class AST {
         }
 
         @Override
-        public void generate(PrintWriter fileWriter) {
+        public String getValue() {
+            return null;
+        }
+
+        @Override
+        public void generate(StringBuilder sb) {
 
         }
 
@@ -1444,7 +1499,12 @@ public class AST {
         }
 
         @Override
-        public void generate(PrintWriter fileWriter) {
+        public String getValue() {
+            return null;
+        }
+
+        @Override
+        public void generate(StringBuilder sb) {
 
         }
 
@@ -1475,7 +1535,12 @@ public class AST {
         }
 
         @Override
-        public void generate(PrintWriter fileWriter) {
+        public String getValue() {
+            return null;
+        }
+
+        @Override
+        public void generate(StringBuilder sb) {
 
         }
 
@@ -1506,7 +1571,12 @@ public class AST {
         }
 
         @Override
-        public void generate(PrintWriter fileWriter) {
+        public String getValue() {
+            return null;
+        }
+
+        @Override
+        public void generate(StringBuilder sb) {
 
         }
 
@@ -1537,7 +1607,12 @@ public class AST {
         }
 
         @Override
-        public void generate(PrintWriter fileWriter) {
+        public String getValue() {
+            return null;
+        }
+
+        @Override
+        public void generate(StringBuilder sb) {
 
         }
 
@@ -1569,7 +1644,12 @@ public class AST {
         }
 
         @Override
-        public void generate(PrintWriter fileWriter) {
+        public String getValue() {
+            return null;
+        }
+
+        @Override
+        public void generate(StringBuilder sb) {
 
         }
 
@@ -1598,7 +1678,12 @@ public class AST {
         }
 
         @Override
-        public void generate(PrintWriter fileWriter) {
+        public String getValue() {
+            return null;
+        }
+
+        @Override
+        public void generate(StringBuilder sb) {
 
         }
 
@@ -1627,7 +1712,12 @@ public class AST {
         }
 
         @Override
-        public void generate(PrintWriter fileWriter) {
+        public String getValue() {
+            return null;
+        }
+
+        @Override
+        public void generate(StringBuilder sb) {
 
         }
 
@@ -1653,7 +1743,12 @@ public class AST {
         }
 
         @Override
-        public void generate(PrintWriter fileWriter) {
+        public String getValue() {
+            return null;
+        }
+
+        @Override
+        public void generate(StringBuilder sb) {
 
         }
 
@@ -1680,7 +1775,12 @@ public class AST {
         }
 
         @Override
-        public void generate(PrintWriter fileWriter) {
+        public String getValue() {
+            return null;
+        }
+
+        @Override
+        public void generate(StringBuilder sb) {
 
         }
 
@@ -1690,6 +1790,8 @@ public class AST {
         @Override
         public void check() {
         }
+
+        public abstract String getValue();
     }
 
     /*
@@ -1699,6 +1801,7 @@ public class AST {
     public class IdentNode extends ExprNode {
 
         private String ident;
+        private String value;
 
         public IdentNode(String ident) {
             this.ident = ident;
@@ -1741,7 +1844,16 @@ public class AST {
         }
 
         @Override
-        public void generate(PrintWriter fileWriter) {
+        public String getValue() {
+            return value;
+        }
+
+        public void setValue(String value) {
+            this.value = value;
+        }
+
+        @Override
+        public void generate(StringBuilder sb) {
 
         }
 
@@ -1778,7 +1890,12 @@ public class AST {
         }
 
         @Override
-        public void generate(PrintWriter fileWriter) {
+        public String getValue() {
+            return null;
+        }
+
+        @Override
+        public void generate(StringBuilder sb) {
 
         }
 
@@ -1820,7 +1937,7 @@ public class AST {
         }
 
         @Override
-        public void generate(PrintWriter fileWriter) {
+        public void generate(StringBuilder sb) {
 
         }
 
@@ -1829,6 +1946,11 @@ public class AST {
                 return Integer.parseInt(value) / (-1);
             }
             return Integer.parseInt(value);
+        }
+
+        @Override
+        public String getValue() {
+            return null;
         }
     }
 
@@ -1841,8 +1963,8 @@ public class AST {
             this.value = Boolean.parseBoolean(value);
         }
 
-        public boolean getValue() {
-            return value;
+        public String getValue() {
+            return String.valueOf(value);
         }
 
         @Override
@@ -1852,7 +1974,7 @@ public class AST {
         }
 
         @Override
-        public void generate(PrintWriter fileWriter) {
+        public void generate(StringBuilder sb) {
 
         }
     }
@@ -1871,8 +1993,13 @@ public class AST {
         }
 
         @Override
-        public void generate(PrintWriter fileWriter) {
+        public void generate(StringBuilder sb) {
 
+        }
+
+        @Override
+        public String getValue() {
+            return null;
         }
     }
 
@@ -1891,8 +2018,13 @@ public class AST {
         }
 
         @Override
-        public void generate(PrintWriter fileWriter) {
+        public void generate(StringBuilder sb) {
 
+        }
+
+        @Override
+        public String getValue() {
+            return null;
         }
     }
 
@@ -1935,8 +2067,12 @@ public class AST {
             }
         }
 
+        public int getLength() {
+            return exprNodeList.size();
+        }
+
         @Override
-        public void generate(PrintWriter fileWriter) {
+        public void generate(StringBuilder sb) {
 
         }
     }
@@ -1950,8 +2086,13 @@ public class AST {
         }
 
         @Override
-        public void generate(PrintWriter fileWriter) {
+        public void generate(StringBuilder sb) {
 
+        }
+
+        @Override
+        public String getValue() {
+            return null;
         }
     }
 
@@ -2034,7 +2175,7 @@ public class AST {
         }
 
         @Override
-        public void generate(PrintWriter fileWriter) {
+        public void generate(StringBuilder sb) {
 
         }
 

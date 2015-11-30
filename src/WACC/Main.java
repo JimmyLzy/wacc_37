@@ -42,10 +42,12 @@ public class Main {
 
         String fileName = args[0].substring(args[0].lastIndexOf("/") + 1, args[0].length() - "WACC".length());
 
+        StringBuilder stringBuilder = new StringBuilder();
+
+        astNode.generate(stringBuilder);
         PrintWriter fileWriter = new PrintWriter(fileName + "s");
-
-        astNode.generate(fileWriter);
-
+        fileWriter.println(stringBuilder);
+        System.out.println(stringBuilder);
         fileWriter.close();
     }
 }
