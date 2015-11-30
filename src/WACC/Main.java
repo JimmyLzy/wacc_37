@@ -45,8 +45,9 @@ public class Main {
         StringBuilder mainStringBuilder = new StringBuilder();
         StringBuilder headerStringBuilder = new StringBuilder();
         StringBuilder functionStringBuilder = new StringBuilder();
+        Registers registers = new Registers();
 
-        astNode.generate(headerStringBuilder, mainStringBuilder, functionStringBuilder);
+        astNode.generate(headerStringBuilder, mainStringBuilder, functionStringBuilder, registers);
         PrintWriter fileWriter = new PrintWriter(fileName + "s");
         fileWriter.println(headerStringBuilder);
         fileWriter.println(mainStringBuilder);

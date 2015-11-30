@@ -9,6 +9,7 @@ import java.util.List;
 public class Registers {
 
     private List<Register> registers = new ArrayList<>();
+    private int messageCount = 0;
 
     public List<Register> getEmptyRegisters() {
         List<Register> registersNotInUse = new ArrayList<>();
@@ -27,6 +28,14 @@ public class Registers {
             }
         }
         return null;
+    }
+
+    public int getMessageCount() {
+        return messageCount;
+    }
+
+    public void incMessageCount() {
+        this.messageCount++;
     }
 
     private class Register<T> {

@@ -1,5 +1,6 @@
 package WACC;
 
+
 import java.util.HashMap;
 import java.util.List;
 
@@ -81,7 +82,7 @@ public class AST {
         public abstract void check();
 
         public abstract void generate(StringBuilder headerStringBuilder,
-                                      StringBuilder mainStringBuilder, StringBuilder functionStringBuilder);
+                                      StringBuilder mainStringBuilder, StringBuilder functionStringBuilder, Registers registers);
     }
 
     /*
@@ -135,15 +136,15 @@ public class AST {
         }
 
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder, Registers registers) {
             mainStringBuilder.append(".text\n");
             mainStringBuilder.append(".global main\n");
             mainStringBuilder.append("main: \n");
             mainStringBuilder.append("PUSH {lr}  \n");
             for (FuncNode funcNode : functionNodes) {
-                funcNode.generate(headerStringBuilder, mainStringBuilder, functionStringBuilder);
+                funcNode.generate(headerStringBuilder, mainStringBuilder, functionStringBuilder, registers);
             }
-            statNode.generate(headerStringBuilder, mainStringBuilder, functionStringBuilder);
+            statNode.generate(headerStringBuilder, mainStringBuilder, functionStringBuilder, registers);
             mainStringBuilder.append("MOV r0, #0\n");
             mainStringBuilder.append("POP {pc}\n");
         }
@@ -207,7 +208,7 @@ public class AST {
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder, Registers registers) {
 
         }
 
@@ -264,7 +265,7 @@ public class AST {
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder, Registers registers) {
 
         }
 
@@ -327,7 +328,7 @@ public class AST {
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder, Registers registers) {
 
         }
 
@@ -395,7 +396,7 @@ public class AST {
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder, Registers registers) {
 
         }
 
@@ -450,7 +451,7 @@ public class AST {
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder, Registers registers) {
 
         }
     }
@@ -487,7 +488,7 @@ public class AST {
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder, Registers registers) {
 
         }
 
@@ -530,7 +531,7 @@ public class AST {
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder, Registers registers) {
 
         }
 
@@ -564,7 +565,7 @@ public class AST {
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder, Registers registers) {
             int exitNum = 0;
             if (exprNode instanceof NegateOperNode) {
                 NegateOperNode negateOperNode = (NegateOperNode) exprNode;
@@ -602,28 +603,33 @@ public class AST {
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
-            mainStringBuilder.append("LDR r0, =msg_0\n");
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder, Registers registers) {
+
+            mainStringBuilder.append("LDR r0, =msg_" + registers.getMessageCount() + "\n");
             mainStringBuilder.append("BL p_print_string\n");
 
             headerStringBuilder.append(".data\n");
-            headerStringBuilder.append("msg_0:\n");
-            headerStringBuilder.append(".word 13\n");
-            headerStringBuilder.append(".ascii\t\"Hello World!\\n\"\n");
-            headerStringBuilder.append("msg_1:\n");
-            headerStringBuilder.append(".word 5\n");
-            headerStringBuilder.append(".ascii\t\"%.*s\\0\"\n");
+            headerStringBuilder.append("msg_" + registers.getMessageCount() + ": \n");
+            registers.incMessageCount();
+            headerStringBuilder.append(".word " + exprNode.getValue().length() + "\n");
+            headerStringBuilder.append(".ascii\t" + exprNode.getValue() + "\n");
+            if (!functionStringBuilder.toString().contains("p_print_string:")) {
+                functionStringBuilder.append("p_print_string:\n");
+                functionStringBuilder.append("PUSH {lr}\n");
+                functionStringBuilder.append("LDR r1, [r0]\n");
+                functionStringBuilder.append("ADD r2, r0, #4\n");
+                functionStringBuilder.append("LDR r0, =msg_" + registers.getMessageCount() + "\n");
+                functionStringBuilder.append("ADD r0, r0, #4\n");
+                functionStringBuilder.append("BL printf\n");
+                functionStringBuilder.append("MOV r0, #0\n");
+                functionStringBuilder.append("BL fflush\n");
+                functionStringBuilder.append("POP {pc}\n");
+                headerStringBuilder.append("msg_" + registers.getMessageCount() + ":\n");
+                registers.incMessageCount();
+                headerStringBuilder.append(".word 5\n");
+                headerStringBuilder.append(".ascii\t\"%.*s\\0\"\n");
+            }
 
-            functionStringBuilder.append("p_print_string:\n");
-            functionStringBuilder.append("PUSH {lr}\n");
-            functionStringBuilder.append("LDR r1, [r0]\n");
-            functionStringBuilder.append("ADD r2, r0, #4\n");
-            functionStringBuilder.append("LDR r0, =msg_1\n");
-            functionStringBuilder.append("ADD r0, r0, #4\n");
-            functionStringBuilder.append("BL printf\n");
-            functionStringBuilder.append("MOV r0, #0\n");
-            functionStringBuilder.append("BL fflush\n");
-            functionStringBuilder.append("POP {pc}\n");
         }
 
     }
@@ -652,7 +658,48 @@ public class AST {
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder, Registers registers) {
+
+            mainStringBuilder.append("LDR r0, =msg_" + registers.getMessageCount() + "\n");
+            mainStringBuilder.append("BL p_print_string\n");
+            mainStringBuilder.append("BL p_print_ln\n");
+
+            headerStringBuilder.append(".data\n");
+            headerStringBuilder.append("msg_" + registers.getMessageCount() + ": \n");
+            registers.incMessageCount();
+            headerStringBuilder.append(".word " + String.valueOf(exprNode.getValue().length() - 2) + "\n");
+            headerStringBuilder.append(".ascii\t" + exprNode.getValue() + "\n");
+            if (!functionStringBuilder.toString().contains("p_print_string:")) {
+                functionStringBuilder.append("p_print_string:\n");
+                functionStringBuilder.append("PUSH {lr}\n");
+                functionStringBuilder.append("LDR r1, [r0]\n");
+                functionStringBuilder.append("ADD r2, r0, #4\n");
+                functionStringBuilder.append("LDR r0, =msg_" + registers.getMessageCount() + "\n");
+                functionStringBuilder.append("ADD r0, r0, #4\n");
+                functionStringBuilder.append("BL printf\n");
+                functionStringBuilder.append("MOV r0, #0\n");
+                functionStringBuilder.append("BL fflush\n");
+                functionStringBuilder.append("POP {pc}\n");
+                headerStringBuilder.append("msg_" + registers.getMessageCount() + ":\n");
+                registers.incMessageCount();
+                headerStringBuilder.append(".word 5\n");
+                headerStringBuilder.append(".ascii\t\"%.*s\\0\"\n");
+            }
+            if (!functionStringBuilder.toString().contains("p_print_ln:")) {
+                functionStringBuilder.append("p_print_ln:\n");
+                functionStringBuilder.append("PUSH {lr}\n");
+                functionStringBuilder.append("LDR r0, =msg_" + registers.getMessageCount() + "\n");
+                functionStringBuilder.append("ADD r0, r0, #4\n");
+                functionStringBuilder.append("BL puts\n");
+                functionStringBuilder.append("MOV r0, #0\n");
+                functionStringBuilder.append("BL fflush\n");
+                functionStringBuilder.append("POP {pc}\n");
+
+                headerStringBuilder.append("msg_" + registers.getMessageCount() + ":\n");
+                registers.incMessageCount();
+                headerStringBuilder.append(".word 1\n");
+                headerStringBuilder.append(".ascii\t\"\\0\"\n");
+            }
 
         }
 
@@ -704,7 +751,7 @@ public class AST {
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder, Registers registers) {
 
         }
 
@@ -747,7 +794,7 @@ public class AST {
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder, Registers registers) {
 
         }
 
@@ -780,7 +827,7 @@ public class AST {
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder, Registers registers) {
 
         }
 
@@ -817,8 +864,9 @@ public class AST {
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
-
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder, Registers registers) {
+            statNodeFirst.generate(headerStringBuilder, mainStringBuilder, functionStringBuilder, registers);
+            statNodeSecond.generate(headerStringBuilder, mainStringBuilder, functionStringBuilder, registers);
         }
 
     }
@@ -858,7 +906,7 @@ public class AST {
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder, Registers registers) {
 
         }
 
@@ -899,7 +947,7 @@ public class AST {
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder, Registers registers) {
 
         }
 
@@ -950,7 +998,7 @@ public class AST {
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder, Registers registers) {
 
         }
 
@@ -969,7 +1017,7 @@ public class AST {
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder, Registers registers) {
 
         }
 
@@ -988,7 +1036,7 @@ public class AST {
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder, Registers registers) {
 
         }
 
@@ -1007,7 +1055,7 @@ public class AST {
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder, Registers registers) {
 
         }
 
@@ -1032,7 +1080,7 @@ public class AST {
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder, Registers registers) {
 
         }
 
@@ -1078,7 +1126,7 @@ public class AST {
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder, Registers registers) {
 
         }
 
@@ -1112,7 +1160,7 @@ public class AST {
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder, Registers registers) {
 
         }
 
@@ -1132,7 +1180,7 @@ public class AST {
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder, Registers registers) {
 
         }
     }
@@ -1196,7 +1244,7 @@ public class AST {
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder, Registers registers) {
 
         }
 
@@ -1233,7 +1281,7 @@ public class AST {
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder, Registers registers) {
 
         }
 
@@ -1272,7 +1320,7 @@ public class AST {
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder, Registers registers) {
 
         }
     }
@@ -1310,7 +1358,7 @@ public class AST {
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder, Registers registers) {
 
         }
     }
@@ -1348,7 +1396,7 @@ public class AST {
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder, Registers registers) {
 
         }
 
@@ -1422,7 +1470,7 @@ public class AST {
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder, Registers registers) {
 
         }
 
@@ -1454,7 +1502,7 @@ public class AST {
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder, Registers registers) {
 
         }
     }
@@ -1485,7 +1533,7 @@ public class AST {
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder, Registers registers) {
 
         }
 
@@ -1517,7 +1565,7 @@ public class AST {
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder, Registers registers) {
 
         }
     }
@@ -1548,7 +1596,7 @@ public class AST {
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder, Registers registers) {
 
         }
 
@@ -1585,7 +1633,7 @@ public class AST {
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder, Registers registers) {
 
         }
 
@@ -1622,7 +1670,7 @@ public class AST {
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder, Registers registers) {
 
         }
 
@@ -1659,7 +1707,7 @@ public class AST {
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder, Registers registers) {
 
         }
     }
@@ -1696,7 +1744,7 @@ public class AST {
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder, Registers registers) {
 
         }
 
@@ -1731,7 +1779,7 @@ public class AST {
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder, Registers registers) {
 
         }
     }
@@ -1765,7 +1813,7 @@ public class AST {
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder, Registers registers) {
 
         }
     }
@@ -1796,7 +1844,7 @@ public class AST {
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder, Registers registers) {
 
         }
     }
@@ -1828,7 +1876,7 @@ public class AST {
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder, Registers registers) {
 
         }
     }
@@ -1901,7 +1949,7 @@ public class AST {
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder, Registers registers) {
 
         }
 
@@ -1943,7 +1991,7 @@ public class AST {
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder, Registers registers) {
 
         }
         @Override
@@ -1985,7 +2033,7 @@ public class AST {
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder, Registers registers) {
 
         }
         public int getvalue() {
@@ -2022,7 +2070,7 @@ public class AST {
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder, Registers registers) {
 
         }    }
 
@@ -2041,7 +2089,7 @@ public class AST {
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder, Registers registers) {
 
         }
         @Override
@@ -2066,12 +2114,12 @@ public class AST {
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder, Registers registers) {
 
         }
         @Override
         public String getValue() {
-            return null;
+            return value;
         }
     }
 
@@ -2120,7 +2168,7 @@ public class AST {
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder, Registers registers) {
 
         }    }
 
@@ -2134,7 +2182,7 @@ public class AST {
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder, Registers registers) {
 
         }
         @Override
@@ -2223,7 +2271,7 @@ public class AST {
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder, Registers registers) {
 
         }
     }
