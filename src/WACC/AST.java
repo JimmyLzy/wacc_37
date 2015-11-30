@@ -80,7 +80,8 @@ public class AST {
 
         public abstract void check();
 
-        public abstract void generate(StringBuilder sb);
+        public abstract void generate(StringBuilder headerStringBuilder,
+                                      StringBuilder mainStringBuilder, StringBuilder functionStringBuilder);
     }
 
     /*
@@ -133,19 +134,18 @@ public class AST {
             statNode.check();
         }
 
-        public void generate(StringBuilder sb) {
-            sb.append(new StringBuilder(".text\n"));
-            sb.append(".global main\n");
-            StringBuilder mainSb = new StringBuilder();
-            mainSb.append("main: \n");
-            mainSb.append("PUSH {lr}  \n");
+        public void generate(StringBuilder headerStringBuilder,
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+            mainStringBuilder.append(".text\n");
+            mainStringBuilder.append(".global main\n");
+            mainStringBuilder.append("main: \n");
+            mainStringBuilder.append("PUSH {lr}  \n");
             for (FuncNode funcNode : functionNodes) {
-                funcNode.generate(mainSb);
+                funcNode.generate(headerStringBuilder, mainStringBuilder, functionStringBuilder);
             }
-            statNode.generate(mainSb);
-            mainSb.append("MOV r0, #0\n");
-            mainSb.append("POP {pc}\n");
-            sb.append(mainSb);
+            statNode.generate(headerStringBuilder, mainStringBuilder, functionStringBuilder);
+            mainStringBuilder.append("MOV r0, #0\n");
+            mainStringBuilder.append("POP {pc}\n");
         }
     }
 
@@ -206,10 +206,10 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder sb) {
+        public void generate(StringBuilder headerStringBuilder,
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
 
         }
-
 
     }
 
@@ -263,9 +263,11 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder sb) {
+        public void generate(StringBuilder headerStringBuilder,
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
 
         }
+
     }
 
     /*
@@ -324,9 +326,11 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder sb) {
+        public void generate(StringBuilder headerStringBuilder,
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
 
         }
+
 
         private void putIntoSymbolTable(ASTNode currentScope, String string, TypeNode node) {
             while (!currentScope.getScope()) {
@@ -390,9 +394,11 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder sb) {
+        public void generate(StringBuilder headerStringBuilder,
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
 
         }
+
 
         private TypeNode lookupSymbolTable(ASTNode currentScope, String string) {
             while (!currentScope.getScope()) {
@@ -443,10 +449,10 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder sb) {
+        public void generate(StringBuilder headerStringBuilder,
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
 
         }
-
     }
 
     public class FreeNode extends StatNode {
@@ -480,9 +486,11 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder sb) {
+        public void generate(StringBuilder headerStringBuilder,
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
 
         }
+
 
     }
 
@@ -521,9 +529,11 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder sb) {
+        public void generate(StringBuilder headerStringBuilder,
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
 
         }
+
     }
 
     public class ExitNode extends StatNode {
@@ -553,7 +563,8 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder sb) {
+        public void generate(StringBuilder headerStringBuilder,
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
             int exitNum = 0;
             if (exprNode instanceof NegateOperNode) {
                 NegateOperNode negateOperNode = (NegateOperNode) exprNode;
@@ -562,8 +573,8 @@ public class AST {
                 Int_literNode int_literNode = (Int_literNode) exprNode;
                 exitNum = int_literNode.getvalue();
             }
-            sb.append("LDR r0, =" + exitNum + "\n");
-            sb.append("BL exit\n");
+            mainStringBuilder.append("LDR r0, =" + exitNum + "\n");
+            mainStringBuilder.append("BL exit\n");
         }
     }
 
@@ -590,19 +601,29 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder sb) {
-            sb.append("LDR r0, =msg_0\n");
-            sb.append("BL p_print_string\n");
-            StringBuilder printSb = new StringBuilder("p_print_string:\n");
-            printSb.append("PUSH {lr}\n");
-            printSb.append("LDR r1, [r0]\n");
-            printSb.append("ADD r2, r0, #4\n");
-            printSb.append("LDR r0, =msg_1\n");
-            printSb.append("ADD r0, r0, #4\n");
-            printSb.append("MOV r0, #0\n");
-            printSb.append("BL fflush\n");
-            printSb.append("POP {pc}\n");
-            sb.insert(0, printSb);
+        public void generate(StringBuilder headerStringBuilder,
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+            mainStringBuilder.append("LDR r0, =msg_0\n");
+            mainStringBuilder.append("BL p_print_string\n");
+
+            headerStringBuilder.append(".data\n");
+            headerStringBuilder.append("msg_0:\n");
+            headerStringBuilder.append(".word 13\n");
+            headerStringBuilder.append(".ascii\t\"Hello World!\\n\"\n");
+            headerStringBuilder.append("msg_1:\n");
+            headerStringBuilder.append(".word 5\n");
+            headerStringBuilder.append(".ascii\t\"%.*s\\0\"\n");
+
+            functionStringBuilder.append("p_print_string:\n");
+            functionStringBuilder.append("PUSH {lr}\n");
+            functionStringBuilder.append("LDR r1, [r0]\n");
+            functionStringBuilder.append("ADD r2, r0, #4\n");
+            functionStringBuilder.append("LDR r0, =msg_1\n");
+            functionStringBuilder.append("ADD r0, r0, #4\n");
+            functionStringBuilder.append("BL printf\n");
+            functionStringBuilder.append("MOV r0, #0\n");
+            functionStringBuilder.append("BL fflush\n");
+            functionStringBuilder.append("POP {pc}\n");
         }
 
     }
@@ -630,7 +651,8 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder sb) {
+        public void generate(StringBuilder headerStringBuilder,
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
 
         }
 
@@ -681,7 +703,8 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder sb) {
+        public void generate(StringBuilder headerStringBuilder,
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
 
         }
 
@@ -723,7 +746,8 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder sb) {
+        public void generate(StringBuilder headerStringBuilder,
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
 
         }
 
@@ -755,7 +779,8 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder sb) {
+        public void generate(StringBuilder headerStringBuilder,
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
 
         }
 
@@ -791,7 +816,8 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder sb) {
+        public void generate(StringBuilder headerStringBuilder,
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
 
         }
 
@@ -831,7 +857,8 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder sb) {
+        public void generate(StringBuilder headerStringBuilder,
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
 
         }
 
@@ -871,7 +898,8 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder sb) {
+        public void generate(StringBuilder headerStringBuilder,
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
 
         }
 
@@ -921,7 +949,8 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder sb) {
+        public void generate(StringBuilder headerStringBuilder,
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
 
         }
 
@@ -939,7 +968,8 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder sb) {
+        public void generate(StringBuilder headerStringBuilder,
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
 
         }
 
@@ -957,7 +987,8 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder sb) {
+        public void generate(StringBuilder headerStringBuilder,
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
 
         }
 
@@ -975,7 +1006,8 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder sb) {
+        public void generate(StringBuilder headerStringBuilder,
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
 
         }
 
@@ -999,7 +1031,8 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder sb) {
+        public void generate(StringBuilder headerStringBuilder,
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
 
         }
 
@@ -1044,7 +1077,8 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder sb) {
+        public void generate(StringBuilder headerStringBuilder,
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
 
         }
 
@@ -1077,7 +1111,8 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder sb) {
+        public void generate(StringBuilder headerStringBuilder,
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
 
         }
 
@@ -1096,7 +1131,8 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder sb) {
+        public void generate(StringBuilder headerStringBuilder,
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
 
         }
     }
@@ -1159,7 +1195,8 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder sb) {
+        public void generate(StringBuilder headerStringBuilder,
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
 
         }
 
@@ -1195,7 +1232,8 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder sb) {
+        public void generate(StringBuilder headerStringBuilder,
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
 
         }
 
@@ -1233,7 +1271,8 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder sb) {
+        public void generate(StringBuilder headerStringBuilder,
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
 
         }
     }
@@ -1270,7 +1309,8 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder sb) {
+        public void generate(StringBuilder headerStringBuilder,
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
 
         }
     }
@@ -1307,7 +1347,8 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder sb) {
+        public void generate(StringBuilder headerStringBuilder,
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
 
         }
 
@@ -1380,7 +1421,8 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder sb) {
+        public void generate(StringBuilder headerStringBuilder,
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
 
         }
 
@@ -1411,10 +1453,10 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder sb) {
+        public void generate(StringBuilder headerStringBuilder,
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
 
         }
-
     }
 
     public class ModNode extends Binary_operNode {
@@ -1442,7 +1484,8 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder sb) {
+        public void generate(StringBuilder headerStringBuilder,
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
 
         }
 
@@ -1473,10 +1516,10 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder sb) {
+        public void generate(StringBuilder headerStringBuilder,
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
 
         }
-
     }
 
     public class MinusNode extends Binary_operNode {
@@ -1504,7 +1547,8 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder sb) {
+        public void generate(StringBuilder headerStringBuilder,
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
 
         }
 
@@ -1540,7 +1584,8 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder sb) {
+        public void generate(StringBuilder headerStringBuilder,
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
 
         }
 
@@ -1576,7 +1621,8 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder sb) {
+        public void generate(StringBuilder headerStringBuilder,
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
 
         }
 
@@ -1612,10 +1658,10 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder sb) {
+        public void generate(StringBuilder headerStringBuilder,
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
 
         }
-
     }
 
     public class SmallerOrEqualNode extends Binary_operNode {
@@ -1649,7 +1695,8 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder sb) {
+        public void generate(StringBuilder headerStringBuilder,
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
 
         }
 
@@ -1683,10 +1730,10 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder sb) {
+        public void generate(StringBuilder headerStringBuilder,
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
 
         }
-
     }
 
     public class NotEqualNode extends Binary_operNode {
@@ -1717,10 +1764,10 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder sb) {
+        public void generate(StringBuilder headerStringBuilder,
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
 
         }
-
     }
 
     public class LogicalAndNode extends Binary_operNode {
@@ -1748,10 +1795,10 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder sb) {
+        public void generate(StringBuilder headerStringBuilder,
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
 
         }
-
     }
 
     public class LogicalOrNode extends Binary_operNode {
@@ -1780,10 +1827,10 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder sb) {
+        public void generate(StringBuilder headerStringBuilder,
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
 
         }
-
     }
 
     public abstract class ExprNode extends StatNode {
@@ -1853,10 +1900,10 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder sb) {
+        public void generate(StringBuilder headerStringBuilder,
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
 
         }
-
 
     }
 
@@ -1895,10 +1942,10 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder sb) {
+        public void generate(StringBuilder headerStringBuilder,
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
 
         }
-
         @Override
         public String getType() {
             String result = lookupSymbolTable(this, identNode.getIdent()).getType();
@@ -1937,10 +1984,10 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder sb) {
+        public void generate(StringBuilder headerStringBuilder,
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
 
         }
-
         public int getvalue() {
             if (sign.equals("-")) {
                 return Integer.parseInt(value) / (-1);
@@ -1974,10 +2021,10 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder sb) {
+        public void generate(StringBuilder headerStringBuilder,
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
 
-        }
-    }
+        }    }
 
     public class Char_literNode extends ExprNode {
 
@@ -1993,10 +2040,10 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder sb) {
+        public void generate(StringBuilder headerStringBuilder,
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
 
         }
-
         @Override
         public String getValue() {
             return null;
@@ -2018,10 +2065,10 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder sb) {
+        public void generate(StringBuilder headerStringBuilder,
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
 
         }
-
         @Override
         public String getValue() {
             return null;
@@ -2072,10 +2119,10 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder sb) {
+        public void generate(StringBuilder headerStringBuilder,
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
 
-        }
-    }
+        }    }
 
     public class Pair_literNode extends ExprNode {
 
@@ -2086,10 +2133,10 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder sb) {
+        public void generate(StringBuilder headerStringBuilder,
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
 
         }
-
         @Override
         public String getValue() {
             return null;
@@ -2175,10 +2222,10 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder sb) {
+        public void generate(StringBuilder headerStringBuilder,
+                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
 
         }
-
     }
 
 }
