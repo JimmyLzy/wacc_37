@@ -632,7 +632,7 @@ public class AST {
             headerStringBuilder.append(".data\n");
             headerStringBuilder.append("msg_" + registers.getMessageCount() + ": \n");
             registers.incMessageCount();
-            headerStringBuilder.append(".word " + exprNode.getValue().length() + "\n");
+            headerStringBuilder.append(".word " + String.valueOf(exprNode.getValue().length() - 2) + "\n");
             headerStringBuilder.append(".ascii\t" + exprNode.getValue() + "\n");
             if (!functionStringBuilder.toString().contains("p_print_string:")) {
                 functionStringBuilder.append("p_print_string:\n");
