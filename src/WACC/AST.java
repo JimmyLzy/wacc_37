@@ -25,6 +25,20 @@ public class AST {
         this.root = root;
     }
 
+    public int getWordLength(String s) {
+        int count = 0;
+        for (int i = 0; i < s.length(); i++) {
+            if (s.charAt(i)== '\\') {
+                count++;
+                i++;
+            } else {
+                count++;
+            }
+        }
+        return count - 2;
+    }
+
+
     /*The base of all other nodes and other nodes need to implement the methods
     * Containing:
     * Symboltable as hashmap
@@ -36,6 +50,7 @@ public class AST {
         protected HashMap<String, ASTNode> symbolTable = new HashMap<>();
 
         protected ASTNode parent;
+        protected boolean scope = false;
 
         public boolean getScope() {
             return scope;
@@ -44,8 +59,6 @@ public class AST {
         public void setScope(boolean scope) {
             this.scope = scope;
         }
-
-        protected boolean scope = false;
 
         public ASTNode getParent() {
             return parent;
@@ -96,11 +109,6 @@ public class AST {
         private StatNode statNode;
         private HashMap<String, ASTNode> functionSymbolTable = new HashMap<>();
 
-        public HashMap<String, ASTNode> getFunctionSymbolTable() {
-            return functionSymbolTable;
-        }
-
-
         public ProgramNode(List<FuncNode> functionNodes, StatNode statNode) {
 
             this.functionNodes = functionNodes;
@@ -110,6 +118,10 @@ public class AST {
             this.statNode = statNode;
             statNode.setParent(this);
             setRoot(this);
+        }
+
+        public HashMap<String, ASTNode> getFunctionSymbolTable() {
+            return functionSymbolTable;
         }
 
         @Override
@@ -139,6 +151,7 @@ public class AST {
 
         public void generate(StringBuilder headerStringBuilder,
                              StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+            headerStringBuilder.append(".data\n");
             mainStringBuilder.append(".text\n");
             mainStringBuilder.append(".global main\n");
             mainStringBuilder.append("main: \n");
@@ -295,7 +308,6 @@ public class AST {
             assign_rhsNode.setParent(this);
 
 
-
         }
 
         public TypeNode getTypeNode() {
@@ -402,7 +414,7 @@ public class AST {
         public void generate(StringBuilder headerStringBuilder,
                              StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
             if (assign_lhsNode instanceof IdentNode && assign_rhsNode instanceof Str_literNode) {
-                getTypeNode((IdentNode)assign_lhsNode).setValue(((Str_literNode)assign_rhsNode).getValue());
+                getTypeNode((IdentNode) assign_lhsNode).setValue(((Str_literNode) assign_rhsNode).getValue());
             }
         }
 
@@ -622,18 +634,135 @@ public class AST {
             exprNode.check();
         }
 
+//        @Override
+//        public void generate(StringBuilder headerStringBuilder,
+//                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+//
+//            mainStringBuilder.append("LDR r0, =msg_" + registers.getMessageCount() + "\n");
+//            mainStringBuilder.append("BL p_print_string\n");
+//
+//            headerStringBuilder.append("msg_" + registers.getMessageCount() + ": \n");
+//            registers.incMessageCount();
+//            headerStringBuilder.append(".word " + getWordLength(exprNode.getValue()) + "\n");
+//            headerStringBuilder.append(".ascii\t" + exprNode.getValue() + "\n");
+//            if (!functionStringBuilder.toString().contains("p_print_string:")) {
+//                functionStringBuilder.append("p_print_string:\n");
+//                functionStringBuilder.append("PUSH {lr}\n");
+//                functionStringBuilder.append("LDR r1, [r0]\n");
+//                functionStringBuilder.append("ADD r2, r0, #4\n");
+//                functionStringBuilder.append("LDR r0, =msg_" + registers.getMessageCount() + "\n");
+//                functionStringBuilder.append("ADD r0, r0, #4\n");
+//                functionStringBuilder.append("BL printf\n");
+//                functionStringBuilder.append("MOV r0, #0\n");
+//                functionStringBuilder.append("BL fflush\n");
+//                functionStringBuilder.append("POP {pc}\n");
+//                headerStringBuilder.append("msg_" + registers.getMessageCount() + ":\n");
+//                registers.incMessageCount();
+//                headerStringBuilder.append(".word 5\n");
+//                headerStringBuilder.append(".ascii\t\"%.*s\\0\"\n");
+//            }
+//
+//        }
+
         @Override
         public void generate(StringBuilder headerStringBuilder,
                              StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
 
+            if (exprNode instanceof IdentNode) {
+                switch (exprNode.getType()) {
+                    case ("String"):
+                        generatePrintStringLiter(headerStringBuilder, mainStringBuilder, functionStringBuilder);
+                        break;
+                    case ("Bool"):
+                        generatePrintBoolLiter(headerStringBuilder, mainStringBuilder, functionStringBuilder);
+                        break;
+                    case ("Int"):
+                        generatePrintIntLiter(headerStringBuilder, mainStringBuilder, functionStringBuilder);
+                        break;
+                    case ("Char"):
+                        generatePrintCharLiter(headerStringBuilder, mainStringBuilder, functionStringBuilder);
+                        break;
+                }
+            } else if (exprNode instanceof Str_literNode) {
+                generatePrintStringLiter(headerStringBuilder, mainStringBuilder, functionStringBuilder);
+            } else if (exprNode instanceof Bool_literNode) {
+                generatePrintBoolLiter(headerStringBuilder, mainStringBuilder, functionStringBuilder);
+            } else if (exprNode instanceof Int_literNode) {
+                generatePrintIntLiter(headerStringBuilder, mainStringBuilder, functionStringBuilder);
+            } else if (exprNode instanceof Char_literNode) {
+                generatePrintCharLiter(headerStringBuilder, mainStringBuilder, functionStringBuilder);
+            }
+        }
+
+        private void generatePrintCharLiter(StringBuilder headerStringBuilder,
+                                            StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+            mainStringBuilder.append("MOV r0, #'" + exprNode.getValue() + "'\n");
+            mainStringBuilder.append("BL putchar\n");
+        }
+
+        private void generatePrintIntLiter(StringBuilder headerStringBuilder,
+                                           StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+
+            mainStringBuilder.append("LDR r0, =" + exprNode.getValue() + "\n");
+            mainStringBuilder.append("BL p_print_int\n");
+
+            if (!functionStringBuilder.toString().contains("p_print_int:")) {
+                functionStringBuilder.append("p_print_int:\n");
+                functionStringBuilder.append("PUSH {lr}\n");
+                functionStringBuilder.append("MOV r1, r0\n");
+                functionStringBuilder.append("LDR r0, =msg_" + registers.getMessageCount() + "\n");
+                functionStringBuilder.append("ADD r0, r0, #4\n");
+                functionStringBuilder.append("BL printf\n");
+                functionStringBuilder.append("MOV r0, #0\n");
+                functionStringBuilder.append("BL fflush\n");
+                functionStringBuilder.append("POP {pc}\n");
+                headerStringBuilder.append("msg_" + registers.getMessageCount() + ":\n");
+                registers.incMessageCount();
+                headerStringBuilder.append(".word 3\n");
+                headerStringBuilder.append(".ascii\t\"%d\\0\"\n");
+            }
+        }
+
+        private void generatePrintBoolLiter(StringBuilder headerStringBuilder,
+                                            StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+
+            mainStringBuilder.append("MOV r0, #" + (Boolean.valueOf(exprNode.getValue())?1:0) + "\n");
+            mainStringBuilder.append("BL p_print_bool\n");
+
+            if (!functionStringBuilder.toString().contains("p_print_bool:")) {
+                functionStringBuilder.append("p_print_bool:\n");
+                functionStringBuilder.append("PUSH {lr}\n");
+                functionStringBuilder.append("CMP r0, #0\n");
+                functionStringBuilder.append("LDRNE r0, =msg_" + registers.getMessageCount() + "\n");
+                headerStringBuilder.append("msg_" + registers.getMessageCount() + ":\n");
+                registers.incMessageCount();
+                headerStringBuilder.append(".word 5\n");
+                headerStringBuilder.append(".ascii\t\"true\\0\"\n");
+
+                functionStringBuilder.append("LDREQ r0, =msg_" + registers.getMessageCount() + "\n");
+                headerStringBuilder.append("msg_" + registers.getMessageCount() + ":\n");
+                registers.incMessageCount();
+                headerStringBuilder.append(".word 6\n");
+                headerStringBuilder.append(".ascii\t\"false\\0\"\n");
+                functionStringBuilder.append("ADD r0, r0, #4\n");
+                functionStringBuilder.append("BL printf\n");
+                functionStringBuilder.append("MOV r0, #0\n");
+                functionStringBuilder.append("BL fflush\n");
+                functionStringBuilder.append("POP {pc}\n");
+            }
+        }
+
+        private void generatePrintStringLiter(StringBuilder headerStringBuilder,
+                                              StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+
             mainStringBuilder.append("LDR r0, =msg_" + registers.getMessageCount() + "\n");
             mainStringBuilder.append("BL p_print_string\n");
 
-            headerStringBuilder.append(".data\n");
             headerStringBuilder.append("msg_" + registers.getMessageCount() + ": \n");
-            registers.incMessageCount();
-            headerStringBuilder.append(".word " + String.valueOf(exprNode.getValue().length() - 2) + "\n");
+            headerStringBuilder.append(".word " + getWordLength(exprNode.getValue()) + "\n");
             headerStringBuilder.append(".ascii\t" + exprNode.getValue() + "\n");
+            registers.incMessageCount();
+
             if (!functionStringBuilder.toString().contains("p_print_string:")) {
                 functionStringBuilder.append("p_print_string:\n");
                 functionStringBuilder.append("PUSH {lr}\n");
@@ -680,56 +809,30 @@ public class AST {
         @Override
         public void generate(StringBuilder headerStringBuilder,
                              StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
-            if (exprNode instanceof Char_literNode) {
-                mainStringBuilder.append("MOV r0, #'" + exprNode.getValue() + "'\n");
-                mainStringBuilder.append("BL putchar\n");
-                mainStringBuilder.append("BL p_print_ln\n");
-                if (!functionStringBuilder.toString().contains("p_print_ln:")) {
-                    functionStringBuilder.append("p_print_ln:\n");
-                    functionStringBuilder.append("PUSH {lr}\n");
-                    functionStringBuilder.append("LDR r0, =msg_" + registers.getMessageCount() + "\n");
-                    functionStringBuilder.append("ADD r0, r0, #4\n");
-                    functionStringBuilder.append("BL puts\n");
-                    functionStringBuilder.append("MOV r0, #0\n");
-                    functionStringBuilder.append("BL fflush\n");
-                    functionStringBuilder.append("POP {pc}\n");
 
-                    headerStringBuilder.append("msg_" + registers.getMessageCount() + ":\n");
-                    registers.incMessageCount();
-                    headerStringBuilder.append(".word 1\n");
-                    headerStringBuilder.append(".ascii\t\"\\0\"\n");
-                }
-                return;
-            }
-            mainStringBuilder.append("LDR r0, =msg_" + registers.getMessageCount() + "\n");
-            mainStringBuilder.append("BL p_print_string\n");
-            mainStringBuilder.append("BL p_print_ln\n");
-
-            headerStringBuilder.append(".data\n");
-            headerStringBuilder.append("msg_" + registers.getMessageCount() + ": \n");
-            registers.incMessageCount();
             if (exprNode instanceof IdentNode) {
-                headerStringBuilder.append(".word " + String.valueOf(getValue((IdentNode) exprNode).length() - 2) + "\n");
-                headerStringBuilder.append(".ascii\t" + getValue((IdentNode) exprNode) + "\n");
-            }else {
-                headerStringBuilder.append(".word " + String.valueOf(exprNode.getValue().length() - 2) + "\n");
-                headerStringBuilder.append(".ascii\t" + exprNode.getValue() + "\n");
-            }
-            if (!functionStringBuilder.toString().contains("p_print_string:")) {
-                functionStringBuilder.append("p_print_string:\n");
-                functionStringBuilder.append("PUSH {lr}\n");
-                functionStringBuilder.append("LDR r1, [r0]\n");
-                functionStringBuilder.append("ADD r2, r0, #4\n");
-                functionStringBuilder.append("LDR r0, =msg_" + registers.getMessageCount() + "\n");
-                functionStringBuilder.append("ADD r0, r0, #4\n");
-                functionStringBuilder.append("BL printf\n");
-                functionStringBuilder.append("MOV r0, #0\n");
-                functionStringBuilder.append("BL fflush\n");
-                functionStringBuilder.append("POP {pc}\n");
-                headerStringBuilder.append("msg_" + registers.getMessageCount() + ":\n");
-                registers.incMessageCount();
-                headerStringBuilder.append(".word 5\n");
-                headerStringBuilder.append(".ascii\t\"%.*s\\0\"\n");
+                switch (exprNode.getType()) {
+                    case ("String"):
+                        generatePrintStringLiter(headerStringBuilder, mainStringBuilder, functionStringBuilder);
+                        break;
+                    case ("Bool"):
+                        generatePrintBoolLiter(headerStringBuilder, mainStringBuilder, functionStringBuilder);
+                        break;
+                    case ("Int"):
+                        generatePrintIntLiter(headerStringBuilder, mainStringBuilder, functionStringBuilder);
+                        break;
+                    case ("Char"):
+                        generatePrintCharLiter(headerStringBuilder, mainStringBuilder, functionStringBuilder);
+                        break;
+                }
+            } else if (exprNode instanceof Str_literNode) {
+                generatePrintStringLiter(headerStringBuilder, mainStringBuilder, functionStringBuilder);
+            } else if (exprNode instanceof Bool_literNode) {
+                generatePrintBoolLiter(headerStringBuilder, mainStringBuilder, functionStringBuilder);
+            } else if (exprNode instanceof Int_literNode) {
+                generatePrintIntLiter(headerStringBuilder, mainStringBuilder, functionStringBuilder);
+            } else if (exprNode instanceof Char_literNode) {
+                generatePrintCharLiter(headerStringBuilder, mainStringBuilder, functionStringBuilder);
             }
             if (!functionStringBuilder.toString().contains("p_print_ln:")) {
                 functionStringBuilder.append("p_print_ln:\n");
@@ -745,6 +848,97 @@ public class AST {
                 registers.incMessageCount();
                 headerStringBuilder.append(".word 1\n");
                 headerStringBuilder.append(".ascii\t\"\\0\"\n");
+            }
+        }
+
+        private void generatePrintCharLiter(StringBuilder headerStringBuilder,
+                                            StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+            mainStringBuilder.append("MOV r0, #'" + exprNode.getValue() + "'\n");
+            mainStringBuilder.append("BL putchar\n");
+            mainStringBuilder.append("BL p_print_ln\n");
+        }
+
+        private void generatePrintIntLiter(StringBuilder headerStringBuilder,
+                                           StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+
+            mainStringBuilder.append("LDR r0, =" + exprNode.getValue() + "\n");
+            mainStringBuilder.append("BL p_print_int\n");
+            mainStringBuilder.append("BL p_print_ln\n");
+
+            if (!functionStringBuilder.toString().contains("p_print_int:")) {
+                functionStringBuilder.append("p_print_int:\n");
+                functionStringBuilder.append("PUSH {lr}\n");
+                functionStringBuilder.append("MOV r1, r0\n");
+                functionStringBuilder.append("LDR r0, =msg_" + registers.getMessageCount() + "\n");
+                functionStringBuilder.append("ADD r0, r0, #4\n");
+                functionStringBuilder.append("BL printf\n");
+                functionStringBuilder.append("MOV r0, #0\n");
+                functionStringBuilder.append("BL fflush\n");
+                functionStringBuilder.append("POP {pc}\n");
+                headerStringBuilder.append("msg_" + registers.getMessageCount() + ":\n");
+                registers.incMessageCount();
+                headerStringBuilder.append(".word 3\n");
+                headerStringBuilder.append(".ascii\t\"%d\\0\"\n");
+            }
+        }
+
+        private void generatePrintBoolLiter(StringBuilder headerStringBuilder,
+                                            StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+
+            mainStringBuilder.append("MOV r0, #" + (Boolean.valueOf(exprNode.getValue())?1:0) + "\n");
+            mainStringBuilder.append("BL p_print_bool\n");
+            mainStringBuilder.append("BL p_print_ln\n");
+
+            if (!functionStringBuilder.toString().contains("p_print_bool:")) {
+                functionStringBuilder.append("p_print_bool:\n");
+                functionStringBuilder.append("PUSH {lr}\n");
+                functionStringBuilder.append("CMP r0, #0\n");
+                functionStringBuilder.append("LDRNE r0, =msg_" + registers.getMessageCount() + "\n");
+                headerStringBuilder.append("msg_" + registers.getMessageCount() + ":\n");
+                registers.incMessageCount();
+                headerStringBuilder.append(".word 5\n");
+                headerStringBuilder.append(".ascii\t\"true\\0\"\n");
+
+                functionStringBuilder.append("LDREQ r0, =msg_" + registers.getMessageCount() + "\n");
+                headerStringBuilder.append("msg_" + registers.getMessageCount() + ":\n");
+                registers.incMessageCount();
+                headerStringBuilder.append(".word 6\n");
+                headerStringBuilder.append(".ascii\t\"false\\0\"\n");
+                functionStringBuilder.append("ADD r0, r0, #4\n");
+                functionStringBuilder.append("BL printf\n");
+                functionStringBuilder.append("MOV r0, #0\n");
+                functionStringBuilder.append("BL fflush\n");
+                functionStringBuilder.append("POP {pc}\n");
+            }
+        }
+
+        private void generatePrintStringLiter(StringBuilder headerStringBuilder,
+                                              StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+
+            mainStringBuilder.append("LDR r0, =msg_" + registers.getMessageCount() + "\n");
+            mainStringBuilder.append("BL p_print_string\n");
+            mainStringBuilder.append("BL p_print_ln\n");
+
+            headerStringBuilder.append("msg_" + registers.getMessageCount() + ": \n");
+            headerStringBuilder.append(".word " + getWordLength(exprNode.getValue()) + "\n");
+            headerStringBuilder.append(".ascii\t" + exprNode.getValue() + "\n");
+            registers.incMessageCount();
+
+            if (!functionStringBuilder.toString().contains("p_print_string:")) {
+                functionStringBuilder.append("p_print_string:\n");
+                functionStringBuilder.append("PUSH {lr}\n");
+                functionStringBuilder.append("LDR r1, [r0]\n");
+                functionStringBuilder.append("ADD r2, r0, #4\n");
+                functionStringBuilder.append("LDR r0, =msg_" + registers.getMessageCount() + "\n");
+                functionStringBuilder.append("ADD r0, r0, #4\n");
+                functionStringBuilder.append("BL printf\n");
+                functionStringBuilder.append("MOV r0, #0\n");
+                functionStringBuilder.append("BL fflush\n");
+                functionStringBuilder.append("POP {pc}\n");
+                headerStringBuilder.append("msg_" + registers.getMessageCount() + ":\n");
+                registers.incMessageCount();
+                headerStringBuilder.append(".word 5\n");
+                headerStringBuilder.append(".ascii\t\"%.*s\\0\"\n");
             }
 
         }
@@ -1037,12 +1231,12 @@ public class AST {
         public void check() {
         }
 
-        public void setValue(String value) {
-            this.value = value;
-        }
-
         public String getValue() {
             return value;
+        }
+
+        public void setValue(String value) {
+            this.value = value;
         }
     }
 
@@ -2062,6 +2256,7 @@ public class AST {
                              StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
 
         }
+
         @Override
         public String getType() {
             String result = lookupSymbolTable(this, identNode.getIdent()).getType();
@@ -2104,6 +2299,7 @@ public class AST {
                              StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
 
         }
+
         public int getvalue() {
             if (sign.equals("-")) {
                 return Integer.parseInt(value) / (-1);
@@ -2113,7 +2309,7 @@ public class AST {
 
         @Override
         public String getValue() {
-            return null;
+            return String.valueOf(getvalue()) ;
         }
     }
 
@@ -2140,7 +2336,8 @@ public class AST {
         public void generate(StringBuilder headerStringBuilder,
                              StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
 
-        }    }
+        }
+    }
 
     public class Char_literNode extends ExprNode {
 
@@ -2153,6 +2350,7 @@ public class AST {
                 this.value = value.charAt(1);
             }
         }
+
         @Override
         public String getType() {
 
@@ -2164,6 +2362,7 @@ public class AST {
                              StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
 
         }
+
         @Override
         public String getValue() {
             return Character.toString(value);
@@ -2189,6 +2388,7 @@ public class AST {
                              StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
 
         }
+
         @Override
         public String getValue() {
             return value;
@@ -2242,7 +2442,8 @@ public class AST {
         public void generate(StringBuilder headerStringBuilder,
                              StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
 
-        }    }
+        }
+    }
 
     public class Pair_literNode extends ExprNode {
 
@@ -2257,6 +2458,7 @@ public class AST {
                              StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
 
         }
+
         @Override
         public String getValue() {
             return null;
@@ -2335,7 +2537,7 @@ public class AST {
             }
             for (int i = 0; i < exprNodeList.size(); i++) {
                 if (!funcNode.getParamNodes().get(i).getType().equals(exprNodeList.get(i).getType())) {
-                    throwSemanticError("The " + (i+1) + "th argument in function "
+                    throwSemanticError("The " + (i + 1) + "th argument in function "
                             + identNode.getIdent() + " not match");
                 }
             }
