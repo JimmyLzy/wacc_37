@@ -2152,7 +2152,7 @@ public class AST {
         private char value;
 
         public Char_literNode(String value) {
-            if (value.charAt(1) == '\\') {
+            if (value.charAt(1) == '\\' && value.charAt(2) != '0') {
                 this.value = value.charAt(2);
             } else {
                 this.value = value.charAt(1);
