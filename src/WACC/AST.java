@@ -334,7 +334,6 @@ public class AST {
         public void generate(StringBuilder headerStringBuilder,
                              StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
             if (assign_rhsNode instanceof Str_literNode) {
-                System.out.println(identNode.hashCode());
                 this.typeNode.setValue(((Str_literNode) assign_rhsNode).getValue());
             }
         }
@@ -709,12 +708,11 @@ public class AST {
             headerStringBuilder.append(".data\n");
             headerStringBuilder.append("msg_" + registers.getMessageCount() + ": \n");
             registers.incMessageCount();
-            System.out.println(exprNode.hashCode());
             if (exprNode instanceof IdentNode) {
-                headerStringBuilder.append(".word " + getValue((IdentNode) exprNode).length() + "\n");
+                headerStringBuilder.append(".word " + String.valueOf(getValue((IdentNode) exprNode).length() - 2) + "\n");
                 headerStringBuilder.append(".ascii\t" + getValue((IdentNode) exprNode) + "\n");
             }else {
-                headerStringBuilder.append(".word " + exprNode.getValue().length() + "\n");
+                headerStringBuilder.append(".word " + String.valueOf(exprNode.getValue().length() - 2) + "\n");
                 headerStringBuilder.append(".ascii\t" + exprNode.getValue() + "\n");
             }
             if (!functionStringBuilder.toString().contains("p_print_string:")) {
@@ -1933,8 +1931,6 @@ public class AST {
             exp1.check();
             exp2.check();
             if (!exp1.getType().equals(exp2.getType())) {
-                System.out.println(exp1.getType());
-                System.out.println(exp2.getType());
                 throwSemanticError("Both expressions must have the same type on not logical or operator");
             } else if (!exp1.getType().equals("Bool")) {
                 throwSemanticError("Logical or operator can only take bool arguments");
@@ -2012,7 +2008,6 @@ public class AST {
 
         @Override
         public String getValue() {
-            System.out.println("reached");
             return value;
         }
 
