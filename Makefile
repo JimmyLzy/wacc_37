@@ -30,5 +30,6 @@ rules:
 
 clean:
 	$(RM) rules $(OUTPUT_DIR)
+	rm -f $(wildcard *.s)
 
 

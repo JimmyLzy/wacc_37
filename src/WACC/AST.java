@@ -396,8 +396,14 @@ public class AST {
         }
 
         private void setTypeNodeValue(TypeNode typeNode, ASTNode assign_rhsNode) {
-            if (assign_rhsNode instanceof Int_literNode)
-            typeNode.setValue(((Int_literNode) assign_rhsNode).getValue());
+            if (assign_rhsNode instanceof Int_literNode) {
+                typeNode.setValue(((Int_literNode) assign_rhsNode).getValue());
+            } else if (assign_rhsNode instanceof Str_literNode) {
+                typeNode.setValue(((Str_literNode) assign_rhsNode).getValue());
+            } else if (assign_rhsNode instanceof Char_literNode) {
+                typeNode.setValue(((Char_literNode) assign_rhsNode).getValue());
+            }
+
         }
 
 
@@ -533,7 +539,71 @@ public class AST {
 
         @Override
         public void generate(AssemblyBuilder builder) {
+            if (assign_lhsNode instanceof IdentNode) {
+                switch (assign_lhsNode.getType()) {
+                    case ("String"):
+                        generateReadStringLiter(builder);
+                        break;
+                    case ("Bool"):
+                        generateReadBoolLiter(builder);
+                        break;
+                    case ("Int"):
+                        generateReadIntLiter(builder);
+                        break;
+                    case ("Char"):
+                        generateReadCharLiter(builder);
+                        break;
+                }
+            }
+        }
 
+        private void generateReadCharLiter(AssemblyBuilder builder) {
+            builder.getCurrent().append("ADD r0, sp, #0\n");
+            builder.getCurrent().append("BL p_read_char\n");
+            if (!builder.getLabel().toString().contains("p_read_char:")) {
+                builder.getLabel().append("p_read_char:\n");
+                builder.getLabel().append("PUSH {lr}\n");
+                builder.getLabel().append("MOV r1, r0\n");
+                builder.getLabel().append("LDR r0, =msg_" + messageCount + "\n");
+                builder.getLabel().append("ADD r0, r0, #4\n");
+                builder.getLabel().append("BL scanf\n");
+                builder.getLabel().append("POP {pc}\n");
+
+                builder.getHeader().append("msg_" + messageCount + ":\n");
+                builder.getHeader().append(".word 4\n");
+                builder.getHeader().append(".ascii\t\" %c\\0\"\n");
+                messageCount++;
+            }
+
+        }
+
+        private void generateReadIntLiter(AssemblyBuilder builder) {
+
+            builder.getCurrent().append("ADD r0, sp, #0\n");
+            builder.getCurrent().append("BL p_read_int\n");
+            ((IdentNode) assign_lhsNode).getTypeNode().setValue("[sp]");
+            if (!builder.getLabel().toString().contains("p_read_int:")) {
+                builder.getLabel().append("p_read_int:\n");
+                builder.getLabel().append("PUSH {lr}\n");
+                builder.getLabel().append("MOV r1, r0\n");
+                builder.getLabel().append("LDR r0, =msg_" + messageCount + "\n");
+                builder.getLabel().append("ADD r0, r0, #4\n");
+                builder.getLabel().append("BL scanf\n");
+                builder.getLabel().append("POP {pc}\n");
+
+                builder.getHeader().append("msg_" + messageCount + ":\n");
+                builder.getHeader().append(".word 3\n");
+                builder.getHeader().append(".ascii\t\"%d\\0\"\n");
+                messageCount++;
+            }
+
+        }
+
+        private void generateReadBoolLiter(AssemblyBuilder builder) {
+
+        }
+
+        private void generateReadStringLiter(AssemblyBuilder builder) {
         }
     }
 
@@ -713,7 +783,11 @@ public class AST {
         }
 
         private void generatePrintCharLiter(AssemblyBuilder builder) {
-            builder.getMain().append("MOV r0, #'" + exprNode.getValue() + "'\n");
+            if (exprNode instanceof IdentNode) {
+                builder.getMain().append("LDRSB r0, [sp]\n");
+            } else {
+                builder.getMain().append("MOV r0, #" + exprNode.getValue() + "\n");
+            }
             builder.getMain().append("BL putchar\n");
         }
 
@@ -778,7 +852,6 @@ public class AST {
             messageCount++;
 
             if (!builder.getLabel().toString().contains("p_print_string:")) {
-                System.out.println("=====================");
                 builder.getLabel().append("p_print_string:\n");
                 builder.getLabel().append("PUSH {lr}\n");
                 builder.getLabel().append("LDR r1, [r0]\n");
@@ -866,14 +939,19 @@ public class AST {
         }
 
         private void generatePrintCharLiter(AssemblyBuilder builder) {
-            builder.getCurrent().append("MOV r0, #'" + exprNode.getValue() + "'\n");
+            if (exprNode instanceof IdentNode) {
+                builder.getCurrent().append("LDRSB r0, [sp]\n");
+            } else {
+                builder.getCurrent().append("MOV r0, #" + exprNode.getValue() + "\n");
+            }
             builder.getCurrent().append("BL putchar\n");
             builder.getCurrent().append("BL p_print_ln\n");
         }
 
         private void generatePrintIntLiter(AssemblyBuilder builder) {
+            String value =  exprNode.getValue().equals("[sp]") ? "[sp]" : "=" + exprNode.getValue();
 
-            builder.getCurrent().append("LDR r0, =" + exprNode.getValue() + "\n");
+            builder.getCurrent().append("LDR r0, " + value + "\n");
             builder.getCurrent().append("BL p_print_int\n");
             builder.getCurrent().append("BL p_print_ln\n");
 
@@ -1022,7 +1100,7 @@ public class AST {
 
         @Override
         public void generate(AssemblyBuilder builder) {
-            
+
         }
 
     }
@@ -1352,6 +1430,7 @@ public class AST {
     public class StringTypeNode extends Base_typeNode {
 
         public StringTypeNode() {
+
             type = "string";
         }
 
@@ -2273,6 +2352,7 @@ public class AST {
 
         @Override
         public String getValue() {
+            System.out.println(getTypeNode());
             return getTypeNode().getValue();
         }
 
@@ -2422,13 +2502,42 @@ public class AST {
 
     public class Char_literNode extends ExprNode {
 
-        private char value;
+        private String value;
 
-        public Char_literNode(String value) {
-            if (value.charAt(1) == '\\' && value.charAt(2) != '0') {
-                this.value = value.charAt(2);
+        public Char_literNode(String v) {
+            if (v.charAt(1) == '\\') {
+                switch (v.charAt(2)) {
+                    case '0':
+                        value = "0";
+                        break;
+                    case 'b':
+                        value = "8";
+                        break;
+                    case 't':
+                        value = "9";
+                        break;
+                    case 'n':
+                        value = "10";
+                        break;
+                    case 'f':
+                        value = "12";
+                        break;
+                    case 'r':
+                        value = "13";
+                        break;
+                    case '"':
+                        value = "\'\"\'";
+                        break;
+                    case '\'':
+                        value = "\'\\\'\'";
+                        break;
+                    case '\\':
+                        value = "\'\\\'";
+                        break;
+                }
+
             } else {
-                this.value = value.charAt(1);
+                this.value = "\'" + v.charAt(1) + "\'";
             }
         }
 
@@ -2440,15 +2549,15 @@ public class AST {
 
         @Override
         public void generate(AssemblyBuilder builder) {
-
+            System.out.println(value);
             Registers.Register firstEmptyRegister = registers.getFirstEmptyRegister();
-            builder.getCurrent().append("MOV " + firstEmptyRegister + ", #\'" + value + "\'\n");
+            builder.getCurrent().append("MOV " + firstEmptyRegister + ", #" + value + "\n");
             builder.getCurrent().append("STRB " + firstEmptyRegister + getStackPointer() + "\n");
         }
 
         @Override
         public String getValue() {
-            return Character.toString(value);
+            return value;
         }
     }
 
