@@ -103,6 +103,8 @@ public class AST {
 
         public abstract String getType();
 
+        public abstract String getValue();
+
         public abstract void check();
 
         public abstract void generate(AssemblyBuilder builder);
@@ -139,6 +141,11 @@ public class AST {
         @Override
         public String getType() {
             return "Program";
+        }
+
+        @Override
+        public String getValue() {
+            return null;
         }
 
         @Override
@@ -212,6 +219,11 @@ public class AST {
         @Override
         public String getType() {
             return typeNode.getType();
+        }
+
+        @Override
+        public String getValue() {
+            return null;
         }
 
         public IdentNode getIdentNode() {
@@ -307,6 +319,11 @@ public class AST {
         }
 
         @Override
+        public String getValue() {
+            return null;
+        }
+
+        @Override
         public void check() {
         }
 
@@ -348,6 +365,11 @@ public class AST {
         @Override
         public String getType() {
             return "Declaration";
+        }
+
+        @Override
+        public String getValue() {
+            return null;
         }
 
         @Override
@@ -396,14 +418,7 @@ public class AST {
         }
 
         private void setTypeNodeValue(TypeNode typeNode, ASTNode assign_rhsNode) {
-            if (assign_rhsNode instanceof Int_literNode) {
-                typeNode.setValue(((Int_literNode) assign_rhsNode).getValue());
-            } else if (assign_rhsNode instanceof Str_literNode) {
-                typeNode.setValue(((Str_literNode) assign_rhsNode).getValue());
-            } else if (assign_rhsNode instanceof Char_literNode) {
-                typeNode.setValue(((Char_literNode) assign_rhsNode).getValue());
-            }
-
+            typeNode.setValue((assign_rhsNode).getValue());
         }
 
 
@@ -444,6 +459,11 @@ public class AST {
         }
 
         @Override
+        public String getValue() {
+            return null;
+        }
+
+        @Override
         public void check() {
             assign_lhsNode.check();
             assign_rhsNode.check();
@@ -470,9 +490,9 @@ public class AST {
         public void generate(AssemblyBuilder builder) {
             if (assign_lhsNode instanceof IdentNode) {
                 if (assign_rhsNode instanceof Str_literNode) {
-                    getTypeNode((IdentNode) assign_lhsNode).setValue(((Str_literNode) assign_rhsNode).getValue());
-                } else if (assign_rhsNode instanceof Int_literNode) {
-                    getTypeNode((IdentNode) assign_lhsNode).setValue(((Int_literNode) assign_rhsNode).getValue());
+                    getTypeNode((IdentNode) assign_lhsNode).setValue((assign_rhsNode).getValue());
+                } else if (assign_rhsNode.getType().equals("Int")) {
+                    getTypeNode((IdentNode) assign_lhsNode).setValue((assign_rhsNode.getValue()));
                 }
             }
         }
@@ -521,6 +541,11 @@ public class AST {
         @Override
         public String getType() {
             return "Read";
+        }
+
+        @Override
+        public String getValue() {
+            return null;
         }
 
         @Override
@@ -630,6 +655,11 @@ public class AST {
         }
 
         @Override
+        public String getValue() {
+            return null;
+        }
+
+        @Override
         public void check() {
 
             exprNode.check();
@@ -665,6 +695,11 @@ public class AST {
         public String getType() {
 
             return exprNode.getType();
+        }
+
+        @Override
+        public String getValue() {
+            return null;
         }
 
         @Override
@@ -705,6 +740,11 @@ public class AST {
         @Override
         public String getType() {
             return exprNode.getType();
+        }
+
+        @Override
+        public String getValue() {
+            return null;
         }
 
         @Override
@@ -750,6 +790,11 @@ public class AST {
         @Override
         public String getType() {
             return exprNode.getType();
+        }
+
+        @Override
+        public String getValue() {
+            return null;
         }
 
         @Override
@@ -900,6 +945,11 @@ public class AST {
         }
 
         @Override
+        public String getValue() {
+            return null;
+        }
+
+        @Override
         public void check() {
             exprNode.check();
         }
@@ -907,28 +957,38 @@ public class AST {
         @Override
         public void generate(AssemblyBuilder builder) {
 
-            if (exprNode instanceof IdentNode) {
-                switch (exprNode.getType()) {
-                    case ("String"):
-                        generatePrintStringLiter(builder);
-                        break;
-                    case ("Bool"):
-                        generatePrintBoolLiter(builder);
-                        break;
-                    case ("Int"):
-                        generatePrintIntLiter(builder);
-                        break;
-                    case ("Char"):
-                        generatePrintCharLiter(builder);
-                        break;
-                }
-            } else if (exprNode instanceof Str_literNode) {
+//            if (exprNode instanceof IdentNode) {
+//                switch (exprNode.getType()) {
+//                    case ("String"):
+//                        generatePrintStringLiter(builder);
+//                        break;
+//                    case ("Bool"):
+//                        generatePrintBoolLiter(builder);
+//                        break;
+//                    case ("Int"):
+//                        generatePrintIntLiter(builder);
+//                        break;
+//                    case ("Char"):
+//                        generatePrintCharLiter(builder);
+//                        break;
+//                }
+//            } else if (exprNode instanceof Str_literNode) {
+//                generatePrintStringLiter(builder);
+//            } else if (exprNode instanceof Bool_literNode) {
+//                generatePrintBoolLiter(builder);
+//            } else if (exprNode instanceof Int_literNode) {
+//                generatePrintIntLiter(builder);
+//            } else if (exprNode instanceof Char_literNode) {
+//                generatePrintCharLiter(builder);
+//            }
+
+            if (exprNode.getType().equals("String")) {
                 generatePrintStringLiter(builder);
-            } else if (exprNode instanceof Bool_literNode) {
+            }else if (exprNode.getType().equals("Bool")) {
                 generatePrintBoolLiter(builder);
-            } else if (exprNode instanceof Int_literNode) {
+            }else if (exprNode.getType().equals("Int")) {
                 generatePrintIntLiter(builder);
-            } else if (exprNode instanceof Char_literNode) {
+            }else if (exprNode.getType().equals("Char")) {
                 generatePrintCharLiter(builder);
             }
             if (!builder.getLabel().toString().contains("p_print_ln:")) {
@@ -959,6 +1019,7 @@ public class AST {
         }
 
         private void generatePrintIntLiter(AssemblyBuilder builder) {
+            System.out.println(exprNode.getValue());
             String value =  exprNode.getValue().equals("[sp]") ? "[sp]" : "=" + exprNode.getValue();
 
             builder.getCurrent().append("LDR r0, " + value + "\n");
@@ -1089,6 +1150,11 @@ public class AST {
         }
 
         @Override
+        public String getValue() {
+            return null;
+        }
+
+        @Override
         public void check() {
             Stack stackTrue = new Stack();
             Stack stackFalse = new Stack();
@@ -1140,6 +1206,11 @@ public class AST {
         }
 
         @Override
+        public String getValue() {
+            return null;
+        }
+
+        @Override
         public void check() {
             Stack whileBodyStack = new Stack();
             statNode.setCurrentStack(whileBodyStack);
@@ -1174,6 +1245,11 @@ public class AST {
         @Override
         public String getType() {
             return "Begin";
+        }
+
+        @Override
+        public String getValue() {
+            return null;
         }
 
         @Override
@@ -1213,6 +1289,11 @@ public class AST {
         @Override
         public String getType() {
             return "MultipleStat";
+        }
+
+        @Override
+        public String getValue() {
+            return null;
         }
 
         @Override
@@ -1274,6 +1355,11 @@ public class AST {
         }
 
         @Override
+        public String getValue() {
+            return null;
+        }
+
+        @Override
         public void check() {
 
             exprNode.check();
@@ -1306,6 +1392,11 @@ public class AST {
         public String getType() {
 
             return ((Pair_typeNode) getTypeNode()).getSecondElem();
+        }
+
+        @Override
+        public String getValue() {
+            return null;
         }
 
         @Override
@@ -1522,6 +1613,11 @@ public class AST {
         @Override
         public String getType() {
             return typeNode.getType();
+        }
+
+        @Override
+        public String getValue() {
+            return null;
         }
 
         @Override
@@ -1871,7 +1967,7 @@ public class AST {
 
         @Override
         public String getValue() {
-            return null;
+            return String.valueOf(Integer.valueOf(exp1.getValue()) * Integer.valueOf(exp2.getValue()));
         }
 
         @Override
@@ -1902,7 +1998,7 @@ public class AST {
 
         @Override
         public String getValue() {
-            return null;
+            return String.valueOf(Integer.valueOf(exp1.getValue()) / Integer.valueOf(exp2.getValue()));
         }
 
         @Override
@@ -1963,7 +2059,7 @@ public class AST {
 
         @Override
         public String getValue() {
-            return null;
+            return String.valueOf(Integer.valueOf(exp1.getValue()) + Integer.valueOf(exp2.getValue()));
         }
 
         @Override
@@ -1993,7 +2089,7 @@ public class AST {
 
         @Override
         public String getValue() {
-            return null;
+            return String.valueOf(Integer.valueOf(exp1.getValue()) - Integer.valueOf(exp2.getValue()));
         }
 
         @Override
@@ -2623,6 +2719,11 @@ public class AST {
             return exprNodeList.get(0).getType() + "[]";
         }
 
+        @Override
+        public String getValue() {
+            return null;
+        }
+
         private String getElemType() {
             return exprNodeList.get(0).getType();
         }
@@ -2722,6 +2823,11 @@ public class AST {
         public String getType() {
             FuncNode funcNode = (FuncNode) getRoot().getFunctionSymbolTable().get(identNode.getIdent());
             return funcNode.getType();
+        }
+
+        @Override
+        public String getValue() {
+            return null;
         }
 
         public TypeNode getTypeNode() {
