@@ -349,7 +349,8 @@ public class AST {
 
             command = "declaration";
             this.typeNode = typeNode;
-            typeNode.setParent(this);
+            this.typeNode.setParent(this);
+            this.typeNode.setIdent(identNode.getIdent());
             this.identNode = identNode;
             identNode.setParent(this);
             this.assign_rhsNode = assign_rhsNode;
@@ -400,6 +401,9 @@ public class AST {
 
         @Override
         public void generate(AssemblyBuilder builder) {
+            if (assign_rhsNode instanceof IdentNode) {
+                typeNode.setIdent(((IdentNode) assign_rhsNode).getIdent());
+            }
             setTypeNodeValue(typeNode, assign_rhsNode);
             int stackSize = stack.getSize();
             int num = stackSize / Stack.MAX_STACK_SIZE;
@@ -489,6 +493,9 @@ public class AST {
         @Override
         public void generate(AssemblyBuilder builder) {
             if (assign_lhsNode instanceof IdentNode) {
+                if (assign_rhsNode instanceof IdentNode) {
+                    ((IdentNode) assign_lhsNode).getTypeNode().setIdent(((IdentNode) assign_rhsNode).getIdent());
+                }
                 if (assign_rhsNode instanceof Str_literNode) {
                     getTypeNode((IdentNode) assign_lhsNode).setValue((assign_rhsNode).getValue());
                 } else if (assign_rhsNode.getType().equals("Int")) {
@@ -1425,9 +1432,18 @@ public class AST {
 
         protected String type;
         private String value;
+        private String ident;
 
         public TypeNode() {
             type = "";
+        }
+
+        public String getIdent() {
+            return ident;
+        }
+
+        public void setIdent(String ident) {
+            this.ident = ident;
         }
 
         @Override
@@ -2028,7 +2044,7 @@ public class AST {
 
         @Override
         public String getValue() {
-            return null;
+            return String.valueOf(Integer.valueOf(exp1.getValue()) % Integer.valueOf(exp2.getValue()));
         }
 
         @Override
@@ -2125,7 +2141,7 @@ public class AST {
 
         @Override
         public String getValue() {
-            return null;
+            return String.valueOf(Integer.valueOf(exp1.getValue()) > Integer.valueOf(exp2.getValue()));
         }
 
         @Override
@@ -2161,7 +2177,7 @@ public class AST {
 
         @Override
         public String getValue() {
-            return null;
+            return String.valueOf(Integer.valueOf(exp1.getValue()) >= Integer.valueOf(exp2.getValue()));
         }
 
         @Override
@@ -2197,7 +2213,10 @@ public class AST {
 
         @Override
         public String getValue() {
-            return null;
+            if (exp1.getType().equals("Char")) {
+                return String.valueOf((int)((exp1).getValue().charAt(1)) < ((int)(exp2).getValue().charAt(1)));
+            }
+            return String.valueOf(Integer.valueOf(exp1.getValue()) < Integer.valueOf(exp2.getValue()));
         }
 
         @Override
@@ -2233,7 +2252,7 @@ public class AST {
 
         @Override
         public String getValue() {
-            return null;
+            return String.valueOf(Integer.valueOf(exp1.getValue()) <= Integer.valueOf(exp2.getValue()));
         }
 
         @Override
@@ -2267,7 +2286,12 @@ public class AST {
 
         @Override
         public String getValue() {
-            return null;
+            if (exp1 instanceof Str_literNode || exp2 instanceof Str_literNode) {
+                return "false";
+            } else if (exp1.getType().equals("String")) {
+                return String.valueOf(((IdentNode) exp1).getTypeNode().getIdent().equals(((IdentNode) exp2).getTypeNode().getIdent()));
+            }
+            return String.valueOf(exp1.getValue().equals(exp2.getValue()));
         }
 
         @Override
@@ -2300,7 +2324,12 @@ public class AST {
 
         @Override
         public String getValue() {
-            return null;
+            if (exp1 instanceof Str_literNode || exp2 instanceof Str_literNode) {
+                return "true";
+            } else if (exp1.getType().equals("String")) {
+                return String.valueOf(!((IdentNode) exp1).getTypeNode().getIdent().equals(((IdentNode) exp2).getTypeNode().getIdent()));
+            }
+            return String.valueOf(!exp1.getValue().equals(exp2.getValue()));
         }
 
         @Override
@@ -2330,7 +2359,7 @@ public class AST {
 
         @Override
         public String getValue() {
-            return null;
+            return String.valueOf(Boolean.valueOf(exp1.getValue()) && Boolean.valueOf(exp2.getValue()));
         }
 
         @Override
@@ -2359,7 +2388,7 @@ public class AST {
 
         @Override
         public String getValue() {
-            return null;
+            return String.valueOf(Boolean.valueOf(exp1.getValue()) || Boolean.valueOf(exp2.getValue()));
         }
 
         @Override
@@ -2424,6 +2453,10 @@ public class AST {
             return ident;
         }
 
+        public void setIdent(String ident) {
+            this.ident = ident;
+        }
+
         public TypeNode getTypeNode() {
 
             ASTNode parent = getParent();
@@ -2458,7 +2491,6 @@ public class AST {
 
         @Override
         public String getValue() {
-            System.out.println(getTypeNode());
             return getTypeNode().getValue();
         }
 
@@ -2655,7 +2687,6 @@ public class AST {
 
         @Override
         public void generate(AssemblyBuilder builder) {
-            System.out.println(value);
             Registers.Register firstEmptyRegister = registers.getFirstEmptyRegister();
             builder.getCurrent().append("MOV " + firstEmptyRegister + ", #" + value + "\n");
             builder.getCurrent().append("STRB " + firstEmptyRegister + getStackPointer() + "\n");
