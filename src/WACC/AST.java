@@ -101,8 +101,7 @@ public class AST {
 
         public abstract void check();
 
-        public abstract void generate(StringBuilder headerStringBuilder,
-                                      StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder);
+        public abstract void generate(AssemblyBuilder builder);
 
         public void setCurrentStack(Stack stack) {
             this.stack = stack;
@@ -161,20 +160,20 @@ public class AST {
             statNode.check();
         }
 
-        public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
-            headerStringBuilder.append(".data\n");
-            mainStringBuilder.append(".text\n");
-            mainStringBuilder.append(".global main\n");
-            mainStringBuilder.append("main: \n");
-            mainStringBuilder.append("PUSH {lr}  \n");
+        public void generate(AssemblyBuilder builder) {
+            builder.setCurrent(builder.getMain());
+            builder.getHeader().append(".data\n");
+            builder.getMain().append(".text\n");
+            builder.getMain().append(".global main\n");
+            builder.getMain().append("main: \n");
+            builder.getMain().append("PUSH {lr}  \n");
             for (FuncNode funcNode : functionNodes) {
-                funcNode.generate(headerStringBuilder, mainStringBuilder, labelStringBuilder, functionStringBuilder);
+                funcNode.generate(builder);
             }
-            statNode.generate(headerStringBuilder, mainStringBuilder, labelStringBuilder, mainStringBuilder);
-            mainStringBuilder.append("MOV " + resultReg + ", #0\n");
+            statNode.generate(builder);
+            builder.getMain().append("MOV " + resultReg + ", #0\n");
             registers.get(0).setValue(0);
-            mainStringBuilder.append("POP {pc}\n");
+            builder.getMain().append("POP {pc}\n");
         }
     }
 
@@ -238,12 +237,11 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
+        public void generate(AssemblyBuilder builder) {
 
             StringBuilder funcStringBuilder = new StringBuilder();
-            statNode.generate(headerStringBuilder, mainStringBuilder, funcStringBuilder, functionStringBuilder);
-            labelStringBuilder.append(funcStringBuilder);
+            statNode.generate(builder);
+            builder.getLabel().append(funcStringBuilder);
         }
 
     }
@@ -280,16 +278,15 @@ public class AST {
             return result;
         }
 
-        public void addBackToStack(StringBuilder headerStringBuilder, StringBuilder mainStringBuilder,
-                                   StringBuilder labelStringBuider, StringBuilder functionStringBuilder) {
+        public void addBackToStack(AssemblyBuilder builder) {
             int stackSize = stack.getSize();
             int num = stackSize / Stack.MAX_STACK_SIZE;
             int remainder = stackSize % Stack.MAX_STACK_SIZE;
             if (isLastState && stack.IfDeclarationCodeGenerated()) {
                 for (int i = 0; i < num; i++) {
-                    functionStringBuilder.append("ADD sp, sp, #" + Stack.MAX_STACK_SIZE + "\n");
+                    builder.getCurrent().append("ADD sp, sp, #" + Stack.MAX_STACK_SIZE + "\n");
                 }
-                functionStringBuilder.append("ADD sp, sp, #" + remainder + "\n");
+                builder.getCurrent().append("ADD sp, sp, #" + remainder + "\n");
             }
         }
 
@@ -311,8 +308,7 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
+        public void generate(AssemblyBuilder builder) {
 
         }
 
@@ -378,21 +374,20 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
+        public void generate(AssemblyBuilder builder) {
             int stackSize = stack.getSize();
             int num = stackSize / Stack.MAX_STACK_SIZE;
             int remainder = stackSize % Stack.MAX_STACK_SIZE;
             if (!stack.IfDeclarationCodeGenerated()) {
                 for (int i = 0; i < num; i++) {
-                    functionStringBuilder.append("SUB sp, sp, #" + Stack.MAX_STACK_SIZE + "\n");
+                    builder.getFunction().append("SUB sp, sp, #" + Stack.MAX_STACK_SIZE + "\n");
                 }
-                functionStringBuilder.append("SUB sp, sp, #" + remainder + "\n");
+                builder.getFunction().append("SUB sp, sp, #" + remainder + "\n");
                 stack.setIfDeclarationCodeGenerated(true);
             }
-            assign_rhsNode.generate(headerStringBuilder, mainStringBuilder, labelStringBuilder, functionStringBuilder);
+            assign_rhsNode.generate(builder);
             if (!(getParent() instanceof MultipleStatNode)) {
-                addBackToStack(headerStringBuilder, mainStringBuilder, labelStringBuilder, functionStringBuilder);
+                addBackToStack(builder);
             }
         }
 
@@ -458,8 +453,7 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
+        public void generate(AssemblyBuilder builder) {
             if (assign_lhsNode instanceof IdentNode && assign_rhsNode instanceof Str_literNode) {
                 getTypeNode((IdentNode) assign_lhsNode).setValue(((Str_literNode) assign_rhsNode).getValue());
             }
@@ -530,8 +524,7 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
+        public void generate(AssemblyBuilder builder) {
 
         }
     }
@@ -567,8 +560,7 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
+        public void generate(AssemblyBuilder builder) {
 
         }
 
@@ -610,8 +602,7 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
+        public void generate(AssemblyBuilder builder) {
 
         }
 
@@ -644,8 +635,7 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
+        public void generate(AssemblyBuilder builder) {
             int exitNum = 0;
             if (exprNode instanceof NegateOperNode) {
                 NegateOperNode negateOperNode = (NegateOperNode) exprNode;
@@ -654,8 +644,8 @@ public class AST {
                 Int_literNode int_literNode = (Int_literNode) exprNode;
                 exitNum = int_literNode.getvalue();
             }
-            mainStringBuilder.append("LDR " + resultReg + ", =" + exitNum + "\n");
-            mainStringBuilder.append("BL exit\n");
+            builder.getCurrent().append("LDR " + resultReg + ", =" + exitNum + "\n");
+            builder.getCurrent().append("BL exit\n");
         }
     }
 
@@ -682,120 +672,115 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
+        public void generate(AssemblyBuilder builder) {
 
             if (exprNode instanceof IdentNode) {
                 switch (exprNode.getType()) {
                     case ("String"):
-                        generatePrintStringLiter(headerStringBuilder, mainStringBuilder, labelStringBuilder);
+                        generatePrintStringLiter(builder);
                         break;
                     case ("Bool"):
-                        generatePrintBoolLiter(headerStringBuilder, mainStringBuilder, labelStringBuilder);
+                        generatePrintBoolLiter(builder);
                         break;
                     case ("Int"):
-                        generatePrintIntLiter(headerStringBuilder, mainStringBuilder, labelStringBuilder);
+                        generatePrintIntLiter(builder);
                         break;
                     case ("Char"):
-                        generatePrintCharLiter(headerStringBuilder, mainStringBuilder, labelStringBuilder);
+                        generatePrintCharLiter(builder);
                         break;
                 }
             } else if (exprNode instanceof Str_literNode) {
-                generatePrintStringLiter(headerStringBuilder, mainStringBuilder, labelStringBuilder);
+                generatePrintStringLiter(builder);
             } else if (exprNode instanceof Bool_literNode) {
-                generatePrintBoolLiter(headerStringBuilder, mainStringBuilder, labelStringBuilder);
+                generatePrintBoolLiter(builder);
             } else if (exprNode instanceof Int_literNode) {
-                generatePrintIntLiter(headerStringBuilder, mainStringBuilder, labelStringBuilder);
+                generatePrintIntLiter(builder);
             } else if (exprNode instanceof Char_literNode) {
-                generatePrintCharLiter(headerStringBuilder, mainStringBuilder, labelStringBuilder);
+                generatePrintCharLiter(builder);
             }
         }
 
-        private void generatePrintCharLiter(StringBuilder headerStringBuilder,
-                                            StringBuilder mainStringBuilder, StringBuilder labelStringBuilder) {
-            mainStringBuilder.append("MOV r0, #'" + exprNode.getValue() + "'\n");
-            mainStringBuilder.append("BL putchar\n");
+        private void generatePrintCharLiter(AssemblyBuilder builder) {
+            builder.getMain().append("MOV r0, #'" + exprNode.getValue() + "'\n");
+            builder.getMain().append("BL putchar\n");
         }
 
-        private void generatePrintIntLiter(StringBuilder headerStringBuilder,
-                                           StringBuilder mainStringBuilder, StringBuilder labelStringBuilder) {
+        private void generatePrintIntLiter(AssemblyBuilder builder) {
 
-            mainStringBuilder.append("LDR r0, =" + exprNode.getValue() + "\n");
-            mainStringBuilder.append("BL p_print_int\n");
+            builder.getMain().append("LDR r0, =" + exprNode.getValue() + "\n");
+            builder.getMain().append("BL p_print_int\n");
 
-            if (!labelStringBuilder.toString().contains("p_print_int:")) {
-                labelStringBuilder.append("p_print_int:\n");
-                labelStringBuilder.append("PUSH {lr}\n");
-                labelStringBuilder.append("MOV r1, r0\n");
-                labelStringBuilder.append("LDR r0, =msg_" + registers.getMessageCount() + "\n");
-                labelStringBuilder.append("ADD r0, r0, #4\n");
-                labelStringBuilder.append("BL printf\n");
-                labelStringBuilder.append("MOV r0, #0\n");
-                labelStringBuilder.append("BL fflush\n");
-                labelStringBuilder.append("POP {pc}\n");
-                headerStringBuilder.append("msg_" + registers.getMessageCount() + ":\n");
+            if (!builder.getLabel().toString().contains("p_print_int:")) {
+                builder.getLabel().append("p_print_int:\n");
+                builder.getLabel().append("PUSH {lr}\n");
+                builder.getLabel().append("MOV r1, r0\n");
+                builder.getLabel().append("LDR r0, =msg_" + registers.getMessageCount() + "\n");
+                builder.getLabel().append("ADD r0, r0, #4\n");
+                builder.getLabel().append("BL printf\n");
+                builder.getLabel().append("MOV r0, #0\n");
+                builder.getLabel().append("BL fflush\n");
+                builder.getLabel().append("POP {pc}\n");
+                builder.getMain().append("msg_" + registers.getMessageCount() + ":\n");
                 registers.incMessageCount();
-                headerStringBuilder.append(".word 3\n");
-                headerStringBuilder.append(".ascii\t\"%d\\0\"\n");
+                builder.getMain().append(".word 3\n");
+                builder.getMain().append(".ascii\t\"%d\\0\"\n");
             }
         }
 
-        private void generatePrintBoolLiter(StringBuilder headerStringBuilder,
-                                            StringBuilder mainStringBuilder, StringBuilder labelStringBuilder) {
+        private void generatePrintBoolLiter(AssemblyBuilder builder) {
 
-            mainStringBuilder.append("MOV r0, #" + (Boolean.valueOf(exprNode.getValue()) ? 1 : 0) + "\n");
-            mainStringBuilder.append("BL p_print_bool\n");
+            builder.getMain().append("MOV r0, #" + (Boolean.valueOf(exprNode.getValue()) ? 1 : 0) + "\n");
+            builder.getMain().append("BL p_print_bool\n");
 
-            if (!labelStringBuilder.toString().contains("p_print_bool:")) {
-                labelStringBuilder.append("p_print_bool:\n");
-                labelStringBuilder.append("PUSH {lr}\n");
-                labelStringBuilder.append("CMP r0, #0\n");
-                labelStringBuilder.append("LDRNE r0, =msg_" + registers.getMessageCount() + "\n");
-                headerStringBuilder.append("msg_" + registers.getMessageCount() + ":\n");
+            if (!builder.getLabel().toString().contains("p_print_bool:")) {
+                builder.getLabel().append("p_print_bool:\n");
+                builder.getLabel().append("PUSH {lr}\n");
+                builder.getLabel().append("CMP r0, #0\n");
+                builder.getLabel().append("LDRNE r0, =msg_" + registers.getMessageCount() + "\n");
+                builder.getHeader().append("msg_" + registers.getMessageCount() + ":\n");
                 registers.incMessageCount();
-                headerStringBuilder.append(".word 5\n");
-                headerStringBuilder.append(".ascii\t\"true\\0\"\n");
+                builder.getHeader().append(".word 5\n");
+                builder.getHeader().append(".ascii\t\"true\\0\"\n");
 
-                labelStringBuilder.append("LDREQ r0, =msg_" + registers.getMessageCount() + "\n");
-                headerStringBuilder.append("msg_" + registers.getMessageCount() + ":\n");
+                builder.getLabel().append("LDREQ r0, =msg_" + registers.getMessageCount() + "\n");
+                builder.getHeader().append("msg_" + registers.getMessageCount() + ":\n");
                 registers.incMessageCount();
-                headerStringBuilder.append(".word 6\n");
-                headerStringBuilder.append(".ascii\t\"false\\0\"\n");
-                labelStringBuilder.append("ADD r0, r0, #4\n");
-                labelStringBuilder.append("BL printf\n");
-                labelStringBuilder.append("MOV r0, #0\n");
-                labelStringBuilder.append("BL fflush\n");
-                labelStringBuilder.append("POP {pc}\n");
+                builder.getHeader().append(".word 6\n");
+                builder.getHeader().append(".ascii\t\"false\\0\"\n");
+                builder.getLabel().append("ADD r0, r0, #4\n");
+                builder.getLabel().append("BL printf\n");
+                builder.getLabel().append("MOV r0, #0\n");
+                builder.getLabel().append("BL fflush\n");
+                builder.getLabel().append("POP {pc}\n");
             }
         }
 
-        private void generatePrintStringLiter(StringBuilder headerStringBuilder,
-                                              StringBuilder mainStringBuilder, StringBuilder labelStringBuilder) {
+        private void generatePrintStringLiter(AssemblyBuilder builder) {
 
-            mainStringBuilder.append("LDR r0, =msg_" + registers.getMessageCount() + "\n");
-            mainStringBuilder.append("BL p_print_string\n");
+            builder.getCurrent().append("LDR r0, =msg_" + registers.getMessageCount() + "\n");
+            builder.getCurrent().append("BL p_print_string\n");
 
-            headerStringBuilder.append("msg_" + registers.getMessageCount() + ": \n");
-            headerStringBuilder.append(".word " + getWordLength(exprNode.getValue()) + "\n");
-            headerStringBuilder.append(".ascii\t" + exprNode.getValue() + "\n");
+            builder.getHeader().append("msg_" + registers.getMessageCount() + ": \n");
+            builder.getHeader().append(".word " + getWordLength(exprNode.getValue()) + "\n");
+            builder.getHeader().append(".ascii\t" + exprNode.getValue() + "\n");
             registers.incMessageCount();
 
-            if (!labelStringBuilder.toString().contains("p_print_string:")) {
+            if (!builder.getLabel().toString().contains("p_print_string:")) {
                 System.out.println("=====================");
-                labelStringBuilder.append("p_print_string:\n");
-                labelStringBuilder.append("PUSH {lr}\n");
-                labelStringBuilder.append("LDR r1, [r0]\n");
-                labelStringBuilder.append("ADD r2, r0, #4\n");
-                labelStringBuilder.append("LDR r0, =msg_" + registers.getMessageCount() + "\n");
-                labelStringBuilder.append("ADD r0, r0, #4\n");
-                labelStringBuilder.append("BL printf\n");
-                labelStringBuilder.append("MOV r0, #0\n");
-                labelStringBuilder.append("BL fflush\n");
-                labelStringBuilder.append("POP {pc}\n");
-                headerStringBuilder.append("msg_" + registers.getMessageCount() + ":\n");
+                builder.getLabel().append("p_print_string:\n");
+                builder.getLabel().append("PUSH {lr}\n");
+                builder.getLabel().append("LDR r1, [r0]\n");
+                builder.getLabel().append("ADD r2, r0, #4\n");
+                builder.getLabel().append("LDR r0, =msg_" + registers.getMessageCount() + "\n");
+                builder.getLabel().append("ADD r0, r0, #4\n");
+                builder.getLabel().append("BL printf\n");
+                builder.getLabel().append("MOV r0, #0\n");
+                builder.getLabel().append("BL fflush\n");
+                builder.getLabel().append("POP {pc}\n");
+                builder.getHeader().append("msg_" + registers.getMessageCount() + ":\n");
                 registers.incMessageCount();
-                headerStringBuilder.append(".word 5\n");
-                headerStringBuilder.append(".ascii\t\"%.*s\\0\"\n");
+                builder.getHeader().append(".word 5\n");
+                builder.getHeader().append(".ascii\t\"%.*s\\0\"\n");
             }
 
         }
@@ -825,138 +810,133 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
+        public void generate(AssemblyBuilder builder) {
 
             if (exprNode instanceof IdentNode) {
                 switch (exprNode.getType()) {
                     case ("String"):
-                        generatePrintStringLiter(headerStringBuilder, mainStringBuilder, labelStringBuilder);
+                        generatePrintStringLiter(builder);
                         break;
                     case ("Bool"):
-                        generatePrintBoolLiter(headerStringBuilder, mainStringBuilder, labelStringBuilder);
+                        generatePrintBoolLiter(builder);
                         break;
                     case ("Int"):
-                        generatePrintIntLiter(headerStringBuilder, mainStringBuilder, labelStringBuilder);
+                        generatePrintIntLiter(builder);
                         break;
                     case ("Char"):
-                        generatePrintCharLiter(headerStringBuilder, mainStringBuilder, labelStringBuilder);
+                        generatePrintCharLiter(builder);
                         break;
                 }
             } else if (exprNode instanceof Str_literNode) {
-                generatePrintStringLiter(headerStringBuilder, mainStringBuilder, labelStringBuilder);
+                generatePrintStringLiter(builder);
             } else if (exprNode instanceof Bool_literNode) {
-                generatePrintBoolLiter(headerStringBuilder, mainStringBuilder, labelStringBuilder);
+                generatePrintBoolLiter(builder);
             } else if (exprNode instanceof Int_literNode) {
-                generatePrintIntLiter(headerStringBuilder, mainStringBuilder, labelStringBuilder);
+                generatePrintIntLiter(builder);
             } else if (exprNode instanceof Char_literNode) {
-                generatePrintCharLiter(headerStringBuilder, mainStringBuilder, labelStringBuilder);
+                generatePrintCharLiter(builder);
             }
-            if (!labelStringBuilder.toString().contains("p_print_ln:")) {
-                labelStringBuilder.append("p_print_ln:\n");
-                labelStringBuilder.append("PUSH {lr}\n");
-                labelStringBuilder.append("LDR r0, =msg_" + registers.getMessageCount() + "\n");
-                labelStringBuilder.append("ADD r0, r0, #4\n");
-                labelStringBuilder.append("BL puts\n");
-                labelStringBuilder.append("MOV r0, #0\n");
-                labelStringBuilder.append("BL fflush\n");
-                labelStringBuilder.append("POP {pc}\n");
+            if (!builder.getLabel().toString().contains("p_print_ln:")) {
+                builder.getLabel().append("p_print_ln:\n");
+                builder.getLabel().append("PUSH {lr}\n");
+                builder.getLabel().append("LDR r0, =msg_" + registers.getMessageCount() + "\n");
+                builder.getLabel().append("ADD r0, r0, #4\n");
+                builder.getLabel().append("BL puts\n");
+                builder.getLabel().append("MOV r0, #0\n");
+                builder.getLabel().append("BL fflush\n");
+                builder.getLabel().append("POP {pc}\n");
 
-                headerStringBuilder.append("msg_" + registers.getMessageCount() + ":\n");
+                builder.getHeader().append("msg_" + registers.getMessageCount() + ":\n");
                 registers.incMessageCount();
-                headerStringBuilder.append(".word 1\n");
-                headerStringBuilder.append(".ascii\t\"\\0\"\n");
-            }
-        }
-
-        private void generatePrintCharLiter(StringBuilder headerStringBuilder,
-                                            StringBuilder mainStringBuilder, StringBuilder labelStringBuilder) {
-            mainStringBuilder.append("MOV r0, #'" + exprNode.getValue() + "'\n");
-            mainStringBuilder.append("BL putchar\n");
-            mainStringBuilder.append("BL p_print_ln\n");
-        }
-
-        private void generatePrintIntLiter(StringBuilder headerStringBuilder,
-                                           StringBuilder mainStringBuilder, StringBuilder labelStringBuilder) {
-
-            mainStringBuilder.append("LDR r0, =" + exprNode.getValue() + "\n");
-            mainStringBuilder.append("BL p_print_int\n");
-            mainStringBuilder.append("BL p_print_ln\n");
-
-            if (!labelStringBuilder.toString().contains("p_print_int:")) {
-                labelStringBuilder.append("p_print_int:\n");
-                labelStringBuilder.append("PUSH {lr}\n");
-                labelStringBuilder.append("MOV r1, r0\n");
-                labelStringBuilder.append("LDR r0, =msg_" + registers.getMessageCount() + "\n");
-                labelStringBuilder.append("ADD r0, r0, #4\n");
-                labelStringBuilder.append("BL printf\n");
-                labelStringBuilder.append("MOV r0, #0\n");
-                labelStringBuilder.append("BL fflush\n");
-                labelStringBuilder.append("POP {pc}\n");
-                headerStringBuilder.append("msg_" + registers.getMessageCount() + ":\n");
-                registers.incMessageCount();
-                headerStringBuilder.append(".word 3\n");
-                headerStringBuilder.append(".ascii\t\"%d\\0\"\n");
+                builder.getHeader().append(".word 1\n");
+                builder.getHeader().append(".ascii\t\"\\0\"\n");
             }
         }
 
-        private void generatePrintBoolLiter(StringBuilder headerStringBuilder,
-                                            StringBuilder mainStringBuilder, StringBuilder labelStringBuilder) {
+        private void generatePrintCharLiter(AssemblyBuilder builder) {
+            builder.getCurrent().append("MOV r0, #'" + exprNode.getValue() + "'\n");
+            builder.getCurrent().append("BL putchar\n");
+            builder.getCurrent().append("BL p_print_ln\n");
+        }
 
-            mainStringBuilder.append("MOV r0, #" + (Boolean.valueOf(exprNode.getValue()) ? 1 : 0) + "\n");
-            mainStringBuilder.append("BL p_print_bool\n");
-            mainStringBuilder.append("BL p_print_ln\n");
+        private void generatePrintIntLiter(AssemblyBuilder builder) {
 
-            if (!labelStringBuilder.toString().contains("p_print_bool:")) {
-                labelStringBuilder.append("p_print_bool:\n");
-                labelStringBuilder.append("PUSH {lr}\n");
-                labelStringBuilder.append("CMP r0, #0\n");
-                labelStringBuilder.append("LDRNE r0, =msg_" + registers.getMessageCount() + "\n");
-                headerStringBuilder.append("msg_" + registers.getMessageCount() + ":\n");
+            builder.getCurrent().append("LDR r0, =" + exprNode.getValue() + "\n");
+            builder.getCurrent().append("BL p_print_int\n");
+            builder.getCurrent().append("BL p_print_ln\n");
+
+            if (!builder.getLabel().toString().contains("p_print_int:")) {
+                builder.getLabel().append("p_print_int:\n");
+                builder.getLabel().append("PUSH {lr}\n");
+                builder.getLabel().append("MOV r1, r0\n");
+                builder.getLabel().append("LDR r0, =msg_" + registers.getMessageCount() + "\n");
+                builder.getLabel().append("ADD r0, r0, #4\n");
+                builder.getLabel().append("BL printf\n");
+                builder.getLabel().append("MOV r0, #0\n");
+                builder.getLabel().append("BL fflush\n");
+                builder.getLabel().append("POP {pc}\n");
+                builder.getHeader().append("msg_" + registers.getMessageCount() + ":\n");
                 registers.incMessageCount();
-                headerStringBuilder.append(".word 5\n");
-                headerStringBuilder.append(".ascii\t\"true\\0\"\n");
-
-                labelStringBuilder.append("LDREQ r0, =msg_" + registers.getMessageCount() + "\n");
-                headerStringBuilder.append("msg_" + registers.getMessageCount() + ":\n");
-                registers.incMessageCount();
-                headerStringBuilder.append(".word 6\n");
-                headerStringBuilder.append(".ascii\t\"false\\0\"\n");
-                labelStringBuilder.append("ADD r0, r0, #4\n");
-                labelStringBuilder.append("BL printf\n");
-                labelStringBuilder.append("MOV r0, #0\n");
-                labelStringBuilder.append("BL fflush\n");
-                labelStringBuilder.append("POP {pc}\n");
+                builder.getHeader().append(".word 3\n");
+                builder.getHeader().append(".ascii\t\"%d\\0\"\n");
             }
         }
 
-        private void generatePrintStringLiter(StringBuilder headerStringBuilder,
-                                              StringBuilder mainStringBuilder, StringBuilder labelStringBuilder) {
+        private void generatePrintBoolLiter(AssemblyBuilder builder) {
 
-            mainStringBuilder.append("LDR r0, =msg_" + registers.getMessageCount() + "\n");
-            mainStringBuilder.append("BL p_print_string\n");
-            mainStringBuilder.append("BL p_print_ln\n");
+            builder.getCurrent().append("MOV r0, #" + (Boolean.valueOf(exprNode.getValue()) ? 1 : 0) + "\n");
+            builder.getCurrent().append("BL p_print_bool\n");
+            builder.getCurrent().append("BL p_print_ln\n");
 
-            headerStringBuilder.append("msg_" + registers.getMessageCount() + ": \n");
-            headerStringBuilder.append(".word " + getWordLength(exprNode.getValue()) + "\n");
-            headerStringBuilder.append(".ascii\t" + exprNode.getValue() + "\n");
+            if (!builder.getLabel().toString().contains("p_print_bool:")) {
+                builder.getLabel().append("p_print_bool:\n");
+                builder.getLabel().append("PUSH {lr}\n");
+                builder.getLabel().append("CMP r0, #0\n");
+                builder.getLabel().append("LDRNE r0, =msg_" + registers.getMessageCount() + "\n");
+                builder.getHeader().append("msg_" + registers.getMessageCount() + ":\n");
+                registers.incMessageCount();
+                builder.getHeader().append(".word 5\n");
+                builder.getHeader().append(".ascii\t\"true\\0\"\n");
+
+                builder.getLabel().append("LDREQ r0, =msg_" + registers.getMessageCount() + "\n");
+                builder.getHeader().append("msg_" + registers.getMessageCount() + ":\n");
+                registers.incMessageCount();
+                builder.getHeader().append(".word 6\n");
+                builder.getHeader().append(".ascii\t\"false\\0\"\n");
+                builder.getLabel().append("ADD r0, r0, #4\n");
+                builder.getLabel().append("BL printf\n");
+                builder.getLabel().append("MOV r0, #0\n");
+                builder.getLabel().append("BL fflush\n");
+                builder.getLabel().append("POP {pc}\n");
+            }
+        }
+
+        private void generatePrintStringLiter(AssemblyBuilder builder) {
+
+            builder.getCurrent().append("LDR r0, =msg_" + registers.getMessageCount() + "\n");
+            builder.getCurrent().append("BL p_print_string\n");
+            builder.getCurrent().append("BL p_print_ln\n");
+
+            builder.getHeader().append("msg_" + registers.getMessageCount() + ": \n");
+            builder.getHeader().append(".word " + getWordLength(exprNode.getValue()) + "\n");
+            builder.getHeader().append(".ascii\t" + exprNode.getValue() + "\n");
             registers.incMessageCount();
 
-            if (!labelStringBuilder.toString().contains("p_print_string:")) {
-                labelStringBuilder.append("p_print_string:\n");
-                labelStringBuilder.append("PUSH {lr}\n");
-                labelStringBuilder.append("LDR r1, [r0]\n");
-                labelStringBuilder.append("ADD r2, r0, #4\n");
-                labelStringBuilder.append("LDR r0, =msg_" + registers.getMessageCount() + "\n");
-                labelStringBuilder.append("ADD r0, r0, #4\n");
-                labelStringBuilder.append("BL printf\n");
-                labelStringBuilder.append("MOV r0, #0\n");
-                labelStringBuilder.append("BL fflush\n");
-                labelStringBuilder.append("POP {pc}\n");
-                headerStringBuilder.append("msg_" + registers.getMessageCount() + ":\n");
+            if (!builder.getLabel().toString().contains("p_print_string:")) {
+                builder.getLabel().append("p_print_string:\n");
+                builder.getLabel().append("PUSH {lr}\n");
+                builder.getLabel().append("LDR r1, [r0]\n");
+                builder.getLabel().append("ADD r2, r0, #4\n");
+                builder.getLabel().append("LDR r0, =msg_" + registers.getMessageCount() + "\n");
+                builder.getLabel().append("ADD r0, r0, #4\n");
+                builder.getLabel().append("BL printf\n");
+                builder.getLabel().append("MOV r0, #0\n");
+                builder.getLabel().append("BL fflush\n");
+                builder.getLabel().append("POP {pc}\n");
+                builder.getHeader().append("msg_" + registers.getMessageCount() + ":\n");
                 registers.incMessageCount();
-                headerStringBuilder.append(".word 5\n");
-                headerStringBuilder.append(".ascii\t\"%.*s\\0\"\n");
+                builder.getHeader().append(".word 5\n");
+                builder.getHeader().append(".ascii\t\"%.*s\\0\"\n");
             }
 
         }
@@ -1029,8 +1009,7 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
+        public void generate(AssemblyBuilder builder) {
 
         }
 
@@ -1074,8 +1053,7 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
+        public void generate(AssemblyBuilder builder) {
 
         }
 
@@ -1100,15 +1078,15 @@ public class AST {
 
         @Override
         public void check() {
-
+            stack = new Stack();
+            statNode.setCurrentStack(stack);
             setScope(true);
             statNode.check();
 
         }
 
         @Override
-        public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
+        public void generate(AssemblyBuilder builder) {
 
         }
 
@@ -1147,15 +1125,14 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
+        public void generate(AssemblyBuilder builder) {
             isLastState = false;
-            statNodeFirst.generate(headerStringBuilder, mainStringBuilder, labelStringBuilder, functionStringBuilder);
+            statNodeFirst.generate(builder);
             if (!(getParent() instanceof MultipleStatNode)) {
                 isLastState = true;
             }
-            statNodeSecond.generate(headerStringBuilder, mainStringBuilder, labelStringBuilder, functionStringBuilder);
-            statNodeSecond.addBackToStack(headerStringBuilder, mainStringBuilder, labelStringBuilder, functionStringBuilder);
+            statNodeSecond.generate(builder);
+            statNodeSecond.addBackToStack(builder);
 
         }
 
@@ -1208,8 +1185,7 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
+        public void generate(AssemblyBuilder builder) {
 
         }
 
@@ -1244,8 +1220,7 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
+        public void generate(AssemblyBuilder builder) {
 
         }
 
@@ -1310,8 +1285,7 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
+        public void generate(AssemblyBuilder builder) {
 
         }
 
@@ -1334,8 +1308,7 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
+        public void generate(AssemblyBuilder builder) {
 
         }
 
@@ -1358,8 +1331,7 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
+        public void generate(AssemblyBuilder builder) {
 
         }
 
@@ -1382,8 +1354,7 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
+        public void generate(AssemblyBuilder builder) {
 
         }
 
@@ -1412,8 +1383,7 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
+        public void generate(AssemblyBuilder builder) {
 
         }
 
@@ -1458,8 +1428,7 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
+        public void generate(AssemblyBuilder builder) {
 
         }
 
@@ -1497,8 +1466,7 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
+        public void generate(AssemblyBuilder builder) {
 
         }
 
@@ -1522,8 +1490,7 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
+        public void generate(AssemblyBuilder builder) {
 
         }
     }
@@ -1586,8 +1553,7 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
+        public void generate(AssemblyBuilder builder) {
 
         }
 
@@ -1623,8 +1589,7 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
+        public void generate(AssemblyBuilder builder) {
 
         }
 
@@ -1662,8 +1627,7 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
+        public void generate(AssemblyBuilder builder) {
 
         }
     }
@@ -1700,8 +1664,7 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
+        public void generate(AssemblyBuilder builder) {
 
         }
     }
@@ -1738,8 +1701,7 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
+        public void generate(AssemblyBuilder builder) {
 
         }
 
@@ -1812,8 +1774,7 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
+        public void generate(AssemblyBuilder builder) {
 
         }
 
@@ -1844,8 +1805,7 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
+        public void generate(AssemblyBuilder builder) {
 
         }
     }
@@ -1875,8 +1835,7 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
+        public void generate(AssemblyBuilder builder) {
 
         }
 
@@ -1907,8 +1866,7 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
+        public void generate(AssemblyBuilder builder) {
 
         }
     }
@@ -1938,8 +1896,7 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
+        public void generate(AssemblyBuilder builder) {
 
         }
 
@@ -1975,8 +1932,7 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
+        public void generate(AssemblyBuilder builder) {
 
         }
 
@@ -2012,8 +1968,7 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
+        public void generate(AssemblyBuilder builder) {
 
         }
 
@@ -2049,8 +2004,7 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
+        public void generate(AssemblyBuilder builder) {
 
         }
     }
@@ -2086,8 +2040,7 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
+        public void generate(AssemblyBuilder builder) {
 
         }
 
@@ -2121,8 +2074,7 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
+        public void generate(AssemblyBuilder builder) {
 
         }
     }
@@ -2155,8 +2107,7 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
+        public void generate(AssemblyBuilder builder) {
 
         }
     }
@@ -2186,8 +2137,7 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
+        public void generate(AssemblyBuilder builder) {
 
         }
     }
@@ -2216,8 +2166,7 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
+        public void generate(AssemblyBuilder builder) {
 
         }
     }
@@ -2320,8 +2269,7 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
+        public void generate(AssemblyBuilder builder) {
 
         }
 
@@ -2362,8 +2310,7 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
+        public void generate(AssemblyBuilder builder) {
 
         }
 
@@ -2405,16 +2352,15 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
+        public void generate(AssemblyBuilder builder) {
 
             int num = Integer.parseInt(value);
             if (sign.equals("-")) {
                 num *= -1;
             }
             Registers.Register firstEmptyRegister = registers.getFirstEmptyRegister();
-            functionStringBuilder.append("LDR " + firstEmptyRegister + ", =" + num + "\n");
-            functionStringBuilder.append("STR " + firstEmptyRegister + getStackPointer() + "\n");
+            builder.getFunction().append("LDR " + firstEmptyRegister + ", =" + num + "\n");
+            builder.getFunction().append("STR " + firstEmptyRegister + getStackPointer() + "\n");
         }
 
         public int getvalue() {
@@ -2450,16 +2396,15 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
+        public void generate(AssemblyBuilder builder) {
 
             Registers.Register firstEmptyRegister = registers.getFirstEmptyRegister();
             if (value) {
-                labelStringBuilder.append("MOV " + firstEmptyRegister + ", #1\n");
+                builder.getCurrent().append("MOV " + firstEmptyRegister + ", #1\n");
             } else {
-                labelStringBuilder.append("MOV " + firstEmptyRegister + ", #0\n");
+                builder.getCurrent().append("MOV " + firstEmptyRegister + ", #0\n");
             }
-            labelStringBuilder.append("STRB " + firstEmptyRegister + getStackPointer() + "\n");
+            builder.getCurrent().append("STRB " + firstEmptyRegister + getStackPointer() + "\n");
         }
     }
 
@@ -2482,12 +2427,11 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
+        public void generate(AssemblyBuilder builder) {
 
             Registers.Register firstEmptyRegister = registers.getFirstEmptyRegister();
-            labelStringBuilder.append("MOV " + firstEmptyRegister + ", #" + value + "\n");
-            labelStringBuilder.append("STRB " + firstEmptyRegister + getStackPointer() + "\n");
+            builder.getCurrent().append("MOV " + firstEmptyRegister + ", #\'" + value + "\'\n");
+            builder.getCurrent().append("STRB " + firstEmptyRegister + getStackPointer() + "\n");
         }
 
         @Override
@@ -2511,12 +2455,11 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
+        public void generate(AssemblyBuilder builder) {
 
             Registers.Register firstEmptyRegister = registers.getFirstEmptyRegister();
-            labelStringBuilder.append("LDR " + firstEmptyRegister + ", =msg_0\n");
-            labelStringBuilder.append("STR " + firstEmptyRegister + getStackPointer() + "\n");
+            builder.getCurrent().append("LDR " + firstEmptyRegister + ", =msg_0\n");
+            builder.getCurrent().append("STR " + firstEmptyRegister + getStackPointer() + "\n");
         }
 
         @Override
@@ -2569,8 +2512,7 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
+        public void generate(AssemblyBuilder builder) {
 
         }
     }
@@ -2584,8 +2526,7 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
+        public void generate(AssemblyBuilder builder) {
 
         }
 
@@ -2674,8 +2615,7 @@ public class AST {
         }
 
         @Override
-        public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
+        public void generate(AssemblyBuilder builder) {
 
         }
     }

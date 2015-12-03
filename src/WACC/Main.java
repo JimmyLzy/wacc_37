@@ -42,25 +42,23 @@ public class Main {
 
         String fileName = args[0].substring(args[0].lastIndexOf("/") + 1, args[0].length() - "WACC".length());
 
-        StringBuilder mainStringBuilder = new StringBuilder();
-        StringBuilder headerStringBuilder = new StringBuilder();
-        StringBuilder labelStringBuilder = new StringBuilder();
-        StringBuilder functionStringBuilder = new StringBuilder();
-
-        astNode.generate(headerStringBuilder, mainStringBuilder, labelStringBuilder, functionStringBuilder);
+        AssemblyBuilder builder = new AssemblyBuilder(new StringBuilder(), new StringBuilder(),
+                new StringBuilder(), new StringBuilder(), new StringBuilder());
+        astNode.generate(builder);
         PrintWriter fileWriter = new PrintWriter(fileName + "s");
-        fileWriter.println(headerStringBuilder);
-        fileWriter.println(mainStringBuilder);
-        fileWriter.println(labelStringBuilder);
-        fileWriter.println(functionStringBuilder);
 
-        System.out.println(headerStringBuilder);
+        fileWriter.println(builder.getHeader());
+        fileWriter.println(builder.getFunction());
+        fileWriter.println(builder.getMain());
+        fileWriter.println(builder.getLabel());
+
+        System.out.println(builder.getHeader());
         System.out.println();
-        System.out.println(mainStringBuilder);
+        System.out.println(builder.getFunction());
         System.out.println();
-        System.out.println(labelStringBuilder);
+        System.out.println(builder.getMain());
         System.out.println();
-        System.out.println(functionStringBuilder);
+        System.out.println(builder.getLabel());
 
         fileWriter.close();
     }
