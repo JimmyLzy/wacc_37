@@ -468,8 +468,12 @@ public class AST {
 
         @Override
         public void generate(AssemblyBuilder builder) {
-            if (assign_lhsNode instanceof IdentNode && assign_rhsNode instanceof Str_literNode) {
-                getTypeNode((IdentNode) assign_lhsNode).setValue(((Str_literNode) assign_rhsNode).getValue());
+            if (assign_lhsNode instanceof IdentNode) {
+                if (assign_rhsNode instanceof Str_literNode) {
+                    getTypeNode((IdentNode) assign_lhsNode).setValue(((Str_literNode) assign_rhsNode).getValue());
+                } else if (assign_rhsNode instanceof Int_literNode) {
+                    getTypeNode((IdentNode) assign_lhsNode).setValue(((Int_literNode) assign_rhsNode).getValue());
+                }
             }
         }
 
@@ -719,7 +723,7 @@ public class AST {
                 NegateOperNode negateOperNode = (NegateOperNode) exprNode;
                 exitNum = ((Int_literNode) negateOperNode.getExprNdoe()).getvalue() / -1;
             } else if (exprNode instanceof IdentNode) {
-                builder.getCurrent().append("LDR " + resultReg + ", [sp]\n");
+                builder.getCurrent().append("LDR " + resultReg + ", =" + exprNode.getValue() + "\n");
                 builder.getCurrent().append("BL exit\n");
                 return;
             } else {
@@ -793,7 +797,13 @@ public class AST {
 
         private void generatePrintIntLiter(AssemblyBuilder builder) {
 
-            builder.getMain().append("LDR r0, =" + exprNode.getValue() + "\n");
+//            if (exprNode instanceof IdentNode) {
+//                builder.getMain().append("LDR r0, [sp]");
+//            } else {
+                builder.getMain().append("LDR r0, =" + exprNode.getValue() + "\n");
+//            }
+
+
             builder.getMain().append("BL p_print_int\n");
 
             if (!builder.getLabel().toString().contains("p_print_int:")) {
@@ -806,10 +816,10 @@ public class AST {
                 builder.getLabel().append("MOV r0, #0\n");
                 builder.getLabel().append("BL fflush\n");
                 builder.getLabel().append("POP {pc}\n");
-                builder.getMain().append("msg_" + messageCount + ":\n");
+                builder.getHeader().append("msg_" + messageCount + ":\n");
                 messageCount++;
-                builder.getMain().append(".word 3\n");
-                builder.getMain().append(".ascii\t\"%d\\0\"\n");
+                builder.getHeader().append(".word 3\n");
+                builder.getHeader().append(".ascii\t\"%d\\0\"\n");
             }
         }
 
