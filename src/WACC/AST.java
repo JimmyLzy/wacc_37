@@ -654,7 +654,7 @@ public class AST {
                 Int_literNode int_literNode = (Int_literNode) exprNode;
                 exitNum = int_literNode.getvalue();
             }
-            labelStringBuilder.append("LDR" + resultReg + ", =" + exitNum + "\n");
+            labelStringBuilder.append("LDR " + resultReg + ", =" + exitNum + "\n");
             mainStringBuilder.append("BL exit\n");
         }
     }
