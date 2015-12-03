@@ -823,7 +823,11 @@ public class AST {
         }
 
         private void generatePrintCharLiter(AssemblyBuilder builder) {
-            builder.getMain().append("MOV r0, #" + exprNode.getValue() + "\n");
+            if (exprNode instanceof IdentNode) {
+                builder.getMain().append("LDRSB r0, [sp]\n");
+            } else {
+                builder.getMain().append("MOV r0, #" + exprNode.getValue() + "\n");
+            }
             builder.getMain().append("BL putchar\n");
         }
 
@@ -970,7 +974,11 @@ public class AST {
         }
 
         private void generatePrintCharLiter(AssemblyBuilder builder) {
-            builder.getCurrent().append("MOV r0, #" + exprNode.getValue() + "\n");
+            if (exprNode instanceof IdentNode) {
+                builder.getCurrent().append("LDRSB r0, [sp]\n");
+            } else {
+                builder.getCurrent().append("MOV r0, #" + exprNode.getValue() + "\n");
+            }
             builder.getCurrent().append("BL putchar\n");
             builder.getCurrent().append("BL p_print_ln\n");
         }
