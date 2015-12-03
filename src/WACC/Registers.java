@@ -9,7 +9,6 @@ import java.util.List;
 public class Registers {
 
     private List<Register> registers = new ArrayList<>();
-    private int messageCount = 0;
 
     public Registers() {
         for (int i = 0; i < 15; i++) {
@@ -39,14 +38,6 @@ public class Registers {
 
     public Register get(int index) {
         return registers.get(index);
-    }
-
-    public int getMessageCount() {
-        return messageCount;
-    }
-
-    public void incMessageCount() {
-        this.messageCount++;
     }
 
     class Register<T> {

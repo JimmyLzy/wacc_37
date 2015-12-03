@@ -21,6 +21,10 @@ public class AST {
 
     private String resultReg = registers.get(0).toString();
 
+    // label counters
+    private int messageCount = 0;
+    private int labelCount = 0;
+
     public ProgramNode getRoot() {
         return root;
     }
@@ -239,9 +243,8 @@ public class AST {
         @Override
         public void generate(AssemblyBuilder builder) {
 
-            StringBuilder funcStringBuilder = new StringBuilder();
+            builder.setCurrent(builder.getFunction());
             statNode.generate(builder);
-            builder.getLabel().append(funcStringBuilder);
         }
 
     }
@@ -723,14 +726,14 @@ public class AST {
                 builder.getLabel().append("p_print_int:\n");
                 builder.getLabel().append("PUSH {lr}\n");
                 builder.getLabel().append("MOV r1, r0\n");
-                builder.getLabel().append("LDR r0, =msg_" + registers.getMessageCount() + "\n");
+                builder.getLabel().append("LDR r0, =msg_" + messageCount + "\n");
                 builder.getLabel().append("ADD r0, r0, #4\n");
                 builder.getLabel().append("BL printf\n");
                 builder.getLabel().append("MOV r0, #0\n");
                 builder.getLabel().append("BL fflush\n");
                 builder.getLabel().append("POP {pc}\n");
-                builder.getMain().append("msg_" + registers.getMessageCount() + ":\n");
-                registers.incMessageCount();
+                builder.getMain().append("msg_" + messageCount + ":\n");
+                messageCount++;
                 builder.getMain().append(".word 3\n");
                 builder.getMain().append(".ascii\t\"%d\\0\"\n");
             }
@@ -745,15 +748,15 @@ public class AST {
                 builder.getLabel().append("p_print_bool:\n");
                 builder.getLabel().append("PUSH {lr}\n");
                 builder.getLabel().append("CMP r0, #0\n");
-                builder.getLabel().append("LDRNE r0, =msg_" + registers.getMessageCount() + "\n");
-                builder.getHeader().append("msg_" + registers.getMessageCount() + ":\n");
-                registers.incMessageCount();
+                builder.getLabel().append("LDRNE r0, =msg_" + messageCount + "\n");
+                builder.getHeader().append("msg_" + messageCount + ":\n");
+                messageCount++;
                 builder.getHeader().append(".word 5\n");
                 builder.getHeader().append(".ascii\t\"true\\0\"\n");
 
-                builder.getLabel().append("LDREQ r0, =msg_" + registers.getMessageCount() + "\n");
-                builder.getHeader().append("msg_" + registers.getMessageCount() + ":\n");
-                registers.incMessageCount();
+                builder.getLabel().append("LDREQ r0, =msg_" + messageCount + "\n");
+                builder.getHeader().append("msg_" + messageCount + ":\n");
+                messageCount++;
                 builder.getHeader().append(".word 6\n");
                 builder.getHeader().append(".ascii\t\"false\\0\"\n");
                 builder.getLabel().append("ADD r0, r0, #4\n");
@@ -766,13 +769,13 @@ public class AST {
 
         private void generatePrintStringLiter(AssemblyBuilder builder) {
 
-            builder.getCurrent().append("LDR r0, =msg_" + registers.getMessageCount() + "\n");
+            builder.getCurrent().append("LDR r0, =msg_" + messageCount + "\n");
             builder.getCurrent().append("BL p_print_string\n");
 
-            builder.getHeader().append("msg_" + registers.getMessageCount() + ": \n");
+            builder.getHeader().append("msg_" + messageCount + ": \n");
             builder.getHeader().append(".word " + getWordLength(exprNode.getValue()) + "\n");
             builder.getHeader().append(".ascii\t" + exprNode.getValue() + "\n");
-            registers.incMessageCount();
+            messageCount++;
 
             if (!builder.getLabel().toString().contains("p_print_string:")) {
                 System.out.println("=====================");
@@ -780,14 +783,14 @@ public class AST {
                 builder.getLabel().append("PUSH {lr}\n");
                 builder.getLabel().append("LDR r1, [r0]\n");
                 builder.getLabel().append("ADD r2, r0, #4\n");
-                builder.getLabel().append("LDR r0, =msg_" + registers.getMessageCount() + "\n");
+                builder.getLabel().append("LDR r0, =msg_" + messageCount + "\n");
                 builder.getLabel().append("ADD r0, r0, #4\n");
                 builder.getLabel().append("BL printf\n");
                 builder.getLabel().append("MOV r0, #0\n");
                 builder.getLabel().append("BL fflush\n");
                 builder.getLabel().append("POP {pc}\n");
-                builder.getHeader().append("msg_" + registers.getMessageCount() + ":\n");
-                registers.incMessageCount();
+                builder.getHeader().append("msg_" + messageCount + ":\n");
+                messageCount++;
                 builder.getHeader().append(".word 5\n");
                 builder.getHeader().append(".ascii\t\"%.*s\\0\"\n");
             }
@@ -848,15 +851,15 @@ public class AST {
             if (!builder.getLabel().toString().contains("p_print_ln:")) {
                 builder.getLabel().append("p_print_ln:\n");
                 builder.getLabel().append("PUSH {lr}\n");
-                builder.getLabel().append("LDR r0, =msg_" + registers.getMessageCount() + "\n");
+                builder.getLabel().append("LDR r0, =msg_" + messageCount + "\n");
                 builder.getLabel().append("ADD r0, r0, #4\n");
                 builder.getLabel().append("BL puts\n");
                 builder.getLabel().append("MOV r0, #0\n");
                 builder.getLabel().append("BL fflush\n");
                 builder.getLabel().append("POP {pc}\n");
 
-                builder.getHeader().append("msg_" + registers.getMessageCount() + ":\n");
-                registers.incMessageCount();
+                builder.getHeader().append("msg_" + messageCount + ":\n");
+                messageCount++;
                 builder.getHeader().append(".word 1\n");
                 builder.getHeader().append(".ascii\t\"\\0\"\n");
             }
@@ -878,14 +881,14 @@ public class AST {
                 builder.getLabel().append("p_print_int:\n");
                 builder.getLabel().append("PUSH {lr}\n");
                 builder.getLabel().append("MOV r1, r0\n");
-                builder.getLabel().append("LDR r0, =msg_" + registers.getMessageCount() + "\n");
+                builder.getLabel().append("LDR r0, =msg_" + messageCount + "\n");
                 builder.getLabel().append("ADD r0, r0, #4\n");
                 builder.getLabel().append("BL printf\n");
                 builder.getLabel().append("MOV r0, #0\n");
                 builder.getLabel().append("BL fflush\n");
                 builder.getLabel().append("POP {pc}\n");
-                builder.getHeader().append("msg_" + registers.getMessageCount() + ":\n");
-                registers.incMessageCount();
+                builder.getHeader().append("msg_" + messageCount + ":\n");
+                messageCount++;
                 builder.getHeader().append(".word 3\n");
                 builder.getHeader().append(".ascii\t\"%d\\0\"\n");
             }
@@ -901,15 +904,15 @@ public class AST {
                 builder.getLabel().append("p_print_bool:\n");
                 builder.getLabel().append("PUSH {lr}\n");
                 builder.getLabel().append("CMP r0, #0\n");
-                builder.getLabel().append("LDRNE r0, =msg_" + registers.getMessageCount() + "\n");
-                builder.getHeader().append("msg_" + registers.getMessageCount() + ":\n");
-                registers.incMessageCount();
+                builder.getLabel().append("LDRNE r0, =msg_" + messageCount + "\n");
+                builder.getHeader().append("msg_" + messageCount + ":\n");
+                messageCount++;
                 builder.getHeader().append(".word 5\n");
                 builder.getHeader().append(".ascii\t\"true\\0\"\n");
 
-                builder.getLabel().append("LDREQ r0, =msg_" + registers.getMessageCount() + "\n");
-                builder.getHeader().append("msg_" + registers.getMessageCount() + ":\n");
-                registers.incMessageCount();
+                builder.getLabel().append("LDREQ r0, =msg_" + messageCount + "\n");
+                builder.getHeader().append("msg_" + messageCount + ":\n");
+                messageCount++;
                 builder.getHeader().append(".word 6\n");
                 builder.getHeader().append(".ascii\t\"false\\0\"\n");
                 builder.getLabel().append("ADD r0, r0, #4\n");
@@ -922,28 +925,28 @@ public class AST {
 
         private void generatePrintStringLiter(AssemblyBuilder builder) {
 
-            builder.getCurrent().append("LDR r0, =msg_" + registers.getMessageCount() + "\n");
+            builder.getCurrent().append("LDR r0, =msg_" + messageCount + "\n");
             builder.getCurrent().append("BL p_print_string\n");
             builder.getCurrent().append("BL p_print_ln\n");
 
-            builder.getHeader().append("msg_" + registers.getMessageCount() + ": \n");
+            builder.getHeader().append("msg_" + messageCount + ": \n");
             builder.getHeader().append(".word " + getWordLength(exprNode.getValue()) + "\n");
             builder.getHeader().append(".ascii\t" + exprNode.getValue() + "\n");
-            registers.incMessageCount();
+            messageCount++;
 
             if (!builder.getLabel().toString().contains("p_print_string:")) {
                 builder.getLabel().append("p_print_string:\n");
                 builder.getLabel().append("PUSH {lr}\n");
                 builder.getLabel().append("LDR r1, [r0]\n");
                 builder.getLabel().append("ADD r2, r0, #4\n");
-                builder.getLabel().append("LDR r0, =msg_" + registers.getMessageCount() + "\n");
+                builder.getLabel().append("LDR r0, =msg_" + messageCount + "\n");
                 builder.getLabel().append("ADD r0, r0, #4\n");
                 builder.getLabel().append("BL printf\n");
                 builder.getLabel().append("MOV r0, #0\n");
                 builder.getLabel().append("BL fflush\n");
                 builder.getLabel().append("POP {pc}\n");
-                builder.getHeader().append("msg_" + registers.getMessageCount() + ":\n");
-                registers.incMessageCount();
+                builder.getHeader().append("msg_" + messageCount + ":\n");
+                messageCount++;
                 builder.getHeader().append(".word 5\n");
                 builder.getHeader().append(".ascii\t\"%.*s\\0\"\n");
             }
@@ -1019,7 +1022,7 @@ public class AST {
 
         @Override
         public void generate(AssemblyBuilder builder) {
-
+            
         }
 
     }
@@ -2467,12 +2470,12 @@ public class AST {
         public void generate(AssemblyBuilder builder) {
 
             Registers.Register firstEmptyRegister = registers.getFirstEmptyRegister();
-            builder.getCurrent().append("LDR " + firstEmptyRegister + ", =msg_" + registers.getMessageCount() + "\n");
+            builder.getCurrent().append("LDR " + firstEmptyRegister + ", =msg_" + messageCount + "\n");
             builder.getCurrent().append("STR " + firstEmptyRegister + getStackPointer() + "\n");
-            builder.getHeader().append("msg_" + registers.getMessageCount() + ": \n");
+            builder.getHeader().append("msg_" + messageCount + ": \n");
             builder.getHeader().append(".word " + getWordLength(value) + "\n");
             builder.getHeader().append(".ascii\t" + value + "\n");
-            registers.incMessageCount();
+            messageCount++;
         }
 
         @Override
