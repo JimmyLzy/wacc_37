@@ -11,6 +11,13 @@ public class Registers {
     private List<Register> registers = new ArrayList<>();
     private int messageCount = 0;
 
+    public Registers() {
+        for (int i = 0; i < 15; i++) {
+            Register register =  new Register(null, "r" + String.valueOf(i));
+            registers.add(register);
+        }
+    }
+
     public List<Register> getEmptyRegisters() {
         List<Register> registersNotInUse = new ArrayList<>();
         for (Register register : registers) {
@@ -30,6 +37,10 @@ public class Registers {
         return null;
     }
 
+    public Register get(int index) {
+        return registers.get(index);
+    }
+
     public int getMessageCount() {
         return messageCount;
     }
@@ -38,8 +49,14 @@ public class Registers {
         this.messageCount++;
     }
 
-    private class Register<T> {
-        private T value = null;
+    class Register<T> {
+        private T value;
+        private String registerNum;
+
+        public Register(T value, String registerNum) {
+            this.value = value;
+            this.registerNum = registerNum;
+        }
 
         public Register(T value) {
             this.value = value;
@@ -55,6 +72,11 @@ public class Registers {
 
         public void setValue(T value) {
             this.value = value;
+        }
+
+        @Override
+        public String toString() {
+            return registerNum;
         }
     }
 }

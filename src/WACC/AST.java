@@ -17,6 +17,10 @@ public class AST {
 
     private ProgramNode root;
 
+    private boolean isLastState = true;
+
+    private String resultReg = registers.get(0).toString();
+
     public ProgramNode getRoot() {
         return root;
     }
@@ -28,7 +32,7 @@ public class AST {
     public int getWordLength(String s) {
         int count = 0;
         for (int i = 0; i < s.length(); i++) {
-            if (s.charAt(i)== '\\') {
+            if (s.charAt(i) == '\\') {
                 count++;
                 i++;
             } else {
@@ -51,6 +55,7 @@ public class AST {
 
         protected ASTNode parent;
         protected boolean scope = false;
+        protected Stack stack;
 
         public boolean getScope() {
             return scope;
@@ -97,7 +102,11 @@ public class AST {
         public abstract void check();
 
         public abstract void generate(StringBuilder headerStringBuilder,
-                                      StringBuilder mainStringBuilder, StringBuilder functionStringBuilder);
+                                      StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder);
+
+        public void setCurrentStack(Stack stack) {
+            this.stack = stack;
+        }
     }
 
     /*
@@ -131,6 +140,9 @@ public class AST {
 
         @Override
         public void check() {
+            stack = new Stack();
+            statNode.setCurrentStack(stack);
+
             setScope(true);
 
             for (FuncNode funcNode : functionNodes) {
@@ -150,17 +162,18 @@ public class AST {
         }
 
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
             headerStringBuilder.append(".data\n");
             mainStringBuilder.append(".text\n");
             mainStringBuilder.append(".global main\n");
             mainStringBuilder.append("main: \n");
             mainStringBuilder.append("PUSH {lr}  \n");
             for (FuncNode funcNode : functionNodes) {
-                funcNode.generate(headerStringBuilder, mainStringBuilder, functionStringBuilder);
+                funcNode.generate(headerStringBuilder, mainStringBuilder, labelStringBuilder, functionStringBuilder);
             }
-            statNode.generate(headerStringBuilder, mainStringBuilder, functionStringBuilder);
-            mainStringBuilder.append("MOV r0, #0\n");
+            statNode.generate(headerStringBuilder, mainStringBuilder, labelStringBuilder, mainStringBuilder);
+            mainStringBuilder.append("MOV " + resultReg + ", #0\n");
+            registers.get(0).setValue(0);
             mainStringBuilder.append("POP {pc}\n");
         }
     }
@@ -208,6 +221,9 @@ public class AST {
 
         @Override
         public void check() {
+            stack = new Stack();
+            statNode.setCurrentStack(stack);
+
             setScope(true);
 
             for (ParamNode paramNode : paramNodes) {
@@ -223,8 +239,11 @@ public class AST {
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
 
+            StringBuilder funcStringBuilder = new StringBuilder();
+            statNode.generate(headerStringBuilder, mainStringBuilder, funcStringBuilder, functionStringBuilder);
+            labelStringBuilder.append(funcStringBuilder);
         }
 
     }
@@ -261,6 +280,19 @@ public class AST {
             return result;
         }
 
+        public void addBackToStack(StringBuilder headerStringBuilder, StringBuilder mainStringBuilder,
+                                   StringBuilder labelStringBuider, StringBuilder functionStringBuilder) {
+            int stackSize = stack.getSize();
+            int num = stackSize / Stack.MAX_STACK_SIZE;
+            int remainder = stackSize % Stack.MAX_STACK_SIZE;
+            if (isLastState && stack.IfDeclarationCodeGenerated()) {
+                for (int i = 0; i < num; i++) {
+                    functionStringBuilder.append("ADD sp, sp, #" + Stack.MAX_STACK_SIZE + "\n");
+                }
+                functionStringBuilder.append("ADD sp, sp, #" + remainder + "\n");
+            }
+        }
+
     }
 
     public class SkipNode extends StatNode {
@@ -280,7 +312,7 @@ public class AST {
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
 
         }
 
@@ -324,6 +356,9 @@ public class AST {
 
             putIntoSymbolTable(this, identNode.getIdent(), typeNode);
             assign_rhsNode.check();
+            stack.add(identNode.getIdent(), typeNode.getNumOfByte());
+            assign_rhsNode.setCurrentStack(stack);
+
 
             if (assign_rhsNode.getType().equals("Null")) {
                 return;
@@ -344,11 +379,23 @@ public class AST {
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
-            if (assign_rhsNode instanceof Str_literNode) {
-                this.typeNode.setValue(((Str_literNode) assign_rhsNode).getValue());
+                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
+            int stackSize = stack.getSize();
+            int num = stackSize / Stack.MAX_STACK_SIZE;
+            int remainder = stackSize % Stack.MAX_STACK_SIZE;
+            if (!stack.IfDeclarationCodeGenerated()) {
+                for (int i = 0; i < num; i++) {
+                    functionStringBuilder.append("SUB sp, sp, #" + Stack.MAX_STACK_SIZE + "\n");
+                }
+                functionStringBuilder.append("SUB sp, sp, #" + remainder + "\n");
+                stack.setIfDeclarationCodeGenerated(true);
+            }
+            assign_rhsNode.generate(headerStringBuilder, mainStringBuilder, labelStringBuilder, functionStringBuilder);
+            if (!(getParent() instanceof MultipleStatNode)) {
+                addBackToStack(headerStringBuilder, mainStringBuilder, labelStringBuilder, functionStringBuilder);
             }
         }
+
 
 
         private void putIntoSymbolTable(ASTNode currentScope, String string, TypeNode node) {
@@ -412,7 +459,7 @@ public class AST {
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
             if (assign_lhsNode instanceof IdentNode && assign_rhsNode instanceof Str_literNode) {
                 getTypeNode((IdentNode) assign_lhsNode).setValue(((Str_literNode) assign_rhsNode).getValue());
             }
@@ -484,7 +531,7 @@ public class AST {
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
 
         }
     }
@@ -521,7 +568,7 @@ public class AST {
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
 
         }
 
@@ -564,7 +611,7 @@ public class AST {
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
 
         }
 
@@ -598,7 +645,7 @@ public class AST {
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
             int exitNum = 0;
             if (exprNode instanceof NegateOperNode) {
                 NegateOperNode negateOperNode = (NegateOperNode) exprNode;
@@ -607,7 +654,7 @@ public class AST {
                 Int_literNode int_literNode = (Int_literNode) exprNode;
                 exitNum = int_literNode.getvalue();
             }
-            mainStringBuilder.append("LDR r0, =" + exitNum + "\n");
+            labelStringBuilder.append("LDR" + resultReg + ", =" + exitNum + "\n");
             mainStringBuilder.append("BL exit\n");
         }
     }
@@ -634,88 +681,58 @@ public class AST {
             exprNode.check();
         }
 
-//        @Override
-//        public void generate(StringBuilder headerStringBuilder,
-//                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
-//
-//            mainStringBuilder.append("LDR r0, =msg_" + registers.getMessageCount() + "\n");
-//            mainStringBuilder.append("BL p_print_string\n");
-//
-//            headerStringBuilder.append("msg_" + registers.getMessageCount() + ": \n");
-//            registers.incMessageCount();
-//            headerStringBuilder.append(".word " + getWordLength(exprNode.getValue()) + "\n");
-//            headerStringBuilder.append(".ascii\t" + exprNode.getValue() + "\n");
-//            if (!functionStringBuilder.toString().contains("p_print_string:")) {
-//                functionStringBuilder.append("p_print_string:\n");
-//                functionStringBuilder.append("PUSH {lr}\n");
-//                functionStringBuilder.append("LDR r1, [r0]\n");
-//                functionStringBuilder.append("ADD r2, r0, #4\n");
-//                functionStringBuilder.append("LDR r0, =msg_" + registers.getMessageCount() + "\n");
-//                functionStringBuilder.append("ADD r0, r0, #4\n");
-//                functionStringBuilder.append("BL printf\n");
-//                functionStringBuilder.append("MOV r0, #0\n");
-//                functionStringBuilder.append("BL fflush\n");
-//                functionStringBuilder.append("POP {pc}\n");
-//                headerStringBuilder.append("msg_" + registers.getMessageCount() + ":\n");
-//                registers.incMessageCount();
-//                headerStringBuilder.append(".word 5\n");
-//                headerStringBuilder.append(".ascii\t\"%.*s\\0\"\n");
-//            }
-//
-//        }
-
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
 
             if (exprNode instanceof IdentNode) {
                 switch (exprNode.getType()) {
                     case ("String"):
-                        generatePrintStringLiter(headerStringBuilder, mainStringBuilder, functionStringBuilder);
+                        generatePrintStringLiter(headerStringBuilder, mainStringBuilder, labelStringBuilder);
                         break;
                     case ("Bool"):
-                        generatePrintBoolLiter(headerStringBuilder, mainStringBuilder, functionStringBuilder);
+                        generatePrintBoolLiter(headerStringBuilder, mainStringBuilder, labelStringBuilder);
                         break;
                     case ("Int"):
-                        generatePrintIntLiter(headerStringBuilder, mainStringBuilder, functionStringBuilder);
+                        generatePrintIntLiter(headerStringBuilder, mainStringBuilder, labelStringBuilder);
                         break;
                     case ("Char"):
-                        generatePrintCharLiter(headerStringBuilder, mainStringBuilder, functionStringBuilder);
+                        generatePrintCharLiter(headerStringBuilder, mainStringBuilder, labelStringBuilder);
                         break;
                 }
             } else if (exprNode instanceof Str_literNode) {
-                generatePrintStringLiter(headerStringBuilder, mainStringBuilder, functionStringBuilder);
+                generatePrintStringLiter(headerStringBuilder, mainStringBuilder, labelStringBuilder);
             } else if (exprNode instanceof Bool_literNode) {
-                generatePrintBoolLiter(headerStringBuilder, mainStringBuilder, functionStringBuilder);
+                generatePrintBoolLiter(headerStringBuilder, mainStringBuilder, labelStringBuilder);
             } else if (exprNode instanceof Int_literNode) {
-                generatePrintIntLiter(headerStringBuilder, mainStringBuilder, functionStringBuilder);
+                generatePrintIntLiter(headerStringBuilder, mainStringBuilder, labelStringBuilder);
             } else if (exprNode instanceof Char_literNode) {
-                generatePrintCharLiter(headerStringBuilder, mainStringBuilder, functionStringBuilder);
+                generatePrintCharLiter(headerStringBuilder, mainStringBuilder, labelStringBuilder);
             }
         }
 
         private void generatePrintCharLiter(StringBuilder headerStringBuilder,
-                                            StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                                            StringBuilder mainStringBuilder, StringBuilder labelStringBuilder) {
             mainStringBuilder.append("MOV r0, #'" + exprNode.getValue() + "'\n");
             mainStringBuilder.append("BL putchar\n");
         }
 
         private void generatePrintIntLiter(StringBuilder headerStringBuilder,
-                                           StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                                           StringBuilder mainStringBuilder, StringBuilder labelStringBuilder) {
 
             mainStringBuilder.append("LDR r0, =" + exprNode.getValue() + "\n");
             mainStringBuilder.append("BL p_print_int\n");
 
-            if (!functionStringBuilder.toString().contains("p_print_int:")) {
-                functionStringBuilder.append("p_print_int:\n");
-                functionStringBuilder.append("PUSH {lr}\n");
-                functionStringBuilder.append("MOV r1, r0\n");
-                functionStringBuilder.append("LDR r0, =msg_" + registers.getMessageCount() + "\n");
-                functionStringBuilder.append("ADD r0, r0, #4\n");
-                functionStringBuilder.append("BL printf\n");
-                functionStringBuilder.append("MOV r0, #0\n");
-                functionStringBuilder.append("BL fflush\n");
-                functionStringBuilder.append("POP {pc}\n");
+            if (!labelStringBuilder.toString().contains("p_print_int:")) {
+                labelStringBuilder.append("p_print_int:\n");
+                labelStringBuilder.append("PUSH {lr}\n");
+                labelStringBuilder.append("MOV r1, r0\n");
+                labelStringBuilder.append("LDR r0, =msg_" + registers.getMessageCount() + "\n");
+                labelStringBuilder.append("ADD r0, r0, #4\n");
+                labelStringBuilder.append("BL printf\n");
+                labelStringBuilder.append("MOV r0, #0\n");
+                labelStringBuilder.append("BL fflush\n");
+                labelStringBuilder.append("POP {pc}\n");
                 headerStringBuilder.append("msg_" + registers.getMessageCount() + ":\n");
                 registers.incMessageCount();
                 headerStringBuilder.append(".word 3\n");
@@ -724,36 +741,36 @@ public class AST {
         }
 
         private void generatePrintBoolLiter(StringBuilder headerStringBuilder,
-                                            StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                                            StringBuilder mainStringBuilder, StringBuilder labelStringBuilder) {
 
-            mainStringBuilder.append("MOV r0, #" + (Boolean.valueOf(exprNode.getValue())?1:0) + "\n");
+            mainStringBuilder.append("MOV r0, #" + (Boolean.valueOf(exprNode.getValue()) ? 1 : 0) + "\n");
             mainStringBuilder.append("BL p_print_bool\n");
 
-            if (!functionStringBuilder.toString().contains("p_print_bool:")) {
-                functionStringBuilder.append("p_print_bool:\n");
-                functionStringBuilder.append("PUSH {lr}\n");
-                functionStringBuilder.append("CMP r0, #0\n");
-                functionStringBuilder.append("LDRNE r0, =msg_" + registers.getMessageCount() + "\n");
+            if (!labelStringBuilder.toString().contains("p_print_bool:")) {
+                labelStringBuilder.append("p_print_bool:\n");
+                labelStringBuilder.append("PUSH {lr}\n");
+                labelStringBuilder.append("CMP r0, #0\n");
+                labelStringBuilder.append("LDRNE r0, =msg_" + registers.getMessageCount() + "\n");
                 headerStringBuilder.append("msg_" + registers.getMessageCount() + ":\n");
                 registers.incMessageCount();
                 headerStringBuilder.append(".word 5\n");
                 headerStringBuilder.append(".ascii\t\"true\\0\"\n");
 
-                functionStringBuilder.append("LDREQ r0, =msg_" + registers.getMessageCount() + "\n");
+                labelStringBuilder.append("LDREQ r0, =msg_" + registers.getMessageCount() + "\n");
                 headerStringBuilder.append("msg_" + registers.getMessageCount() + ":\n");
                 registers.incMessageCount();
                 headerStringBuilder.append(".word 6\n");
                 headerStringBuilder.append(".ascii\t\"false\\0\"\n");
-                functionStringBuilder.append("ADD r0, r0, #4\n");
-                functionStringBuilder.append("BL printf\n");
-                functionStringBuilder.append("MOV r0, #0\n");
-                functionStringBuilder.append("BL fflush\n");
-                functionStringBuilder.append("POP {pc}\n");
+                labelStringBuilder.append("ADD r0, r0, #4\n");
+                labelStringBuilder.append("BL printf\n");
+                labelStringBuilder.append("MOV r0, #0\n");
+                labelStringBuilder.append("BL fflush\n");
+                labelStringBuilder.append("POP {pc}\n");
             }
         }
 
         private void generatePrintStringLiter(StringBuilder headerStringBuilder,
-                                              StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                                              StringBuilder mainStringBuilder, StringBuilder labelStringBuilder) {
 
             mainStringBuilder.append("LDR r0, =msg_" + registers.getMessageCount() + "\n");
             mainStringBuilder.append("BL p_print_string\n");
@@ -763,17 +780,18 @@ public class AST {
             headerStringBuilder.append(".ascii\t" + exprNode.getValue() + "\n");
             registers.incMessageCount();
 
-            if (!functionStringBuilder.toString().contains("p_print_string:")) {
-                functionStringBuilder.append("p_print_string:\n");
-                functionStringBuilder.append("PUSH {lr}\n");
-                functionStringBuilder.append("LDR r1, [r0]\n");
-                functionStringBuilder.append("ADD r2, r0, #4\n");
-                functionStringBuilder.append("LDR r0, =msg_" + registers.getMessageCount() + "\n");
-                functionStringBuilder.append("ADD r0, r0, #4\n");
-                functionStringBuilder.append("BL printf\n");
-                functionStringBuilder.append("MOV r0, #0\n");
-                functionStringBuilder.append("BL fflush\n");
-                functionStringBuilder.append("POP {pc}\n");
+            if (!labelStringBuilder.toString().contains("p_print_string:")) {
+                System.out.println("=====================");
+                labelStringBuilder.append("p_print_string:\n");
+                labelStringBuilder.append("PUSH {lr}\n");
+                labelStringBuilder.append("LDR r1, [r0]\n");
+                labelStringBuilder.append("ADD r2, r0, #4\n");
+                labelStringBuilder.append("LDR r0, =msg_" + registers.getMessageCount() + "\n");
+                labelStringBuilder.append("ADD r0, r0, #4\n");
+                labelStringBuilder.append("BL printf\n");
+                labelStringBuilder.append("MOV r0, #0\n");
+                labelStringBuilder.append("BL fflush\n");
+                labelStringBuilder.append("POP {pc}\n");
                 headerStringBuilder.append("msg_" + registers.getMessageCount() + ":\n");
                 registers.incMessageCount();
                 headerStringBuilder.append(".word 5\n");
@@ -808,41 +826,41 @@ public class AST {
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
 
             if (exprNode instanceof IdentNode) {
                 switch (exprNode.getType()) {
                     case ("String"):
-                        generatePrintStringLiter(headerStringBuilder, mainStringBuilder, functionStringBuilder);
+                        generatePrintStringLiter(headerStringBuilder, mainStringBuilder, labelStringBuilder);
                         break;
                     case ("Bool"):
-                        generatePrintBoolLiter(headerStringBuilder, mainStringBuilder, functionStringBuilder);
+                        generatePrintBoolLiter(headerStringBuilder, mainStringBuilder, labelStringBuilder);
                         break;
                     case ("Int"):
-                        generatePrintIntLiter(headerStringBuilder, mainStringBuilder, functionStringBuilder);
+                        generatePrintIntLiter(headerStringBuilder, mainStringBuilder, labelStringBuilder);
                         break;
                     case ("Char"):
-                        generatePrintCharLiter(headerStringBuilder, mainStringBuilder, functionStringBuilder);
+                        generatePrintCharLiter(headerStringBuilder, mainStringBuilder, labelStringBuilder);
                         break;
                 }
             } else if (exprNode instanceof Str_literNode) {
-                generatePrintStringLiter(headerStringBuilder, mainStringBuilder, functionStringBuilder);
+                generatePrintStringLiter(headerStringBuilder, mainStringBuilder, labelStringBuilder);
             } else if (exprNode instanceof Bool_literNode) {
-                generatePrintBoolLiter(headerStringBuilder, mainStringBuilder, functionStringBuilder);
+                generatePrintBoolLiter(headerStringBuilder, mainStringBuilder, labelStringBuilder);
             } else if (exprNode instanceof Int_literNode) {
-                generatePrintIntLiter(headerStringBuilder, mainStringBuilder, functionStringBuilder);
+                generatePrintIntLiter(headerStringBuilder, mainStringBuilder, labelStringBuilder);
             } else if (exprNode instanceof Char_literNode) {
-                generatePrintCharLiter(headerStringBuilder, mainStringBuilder, functionStringBuilder);
+                generatePrintCharLiter(headerStringBuilder, mainStringBuilder, labelStringBuilder);
             }
-            if (!functionStringBuilder.toString().contains("p_print_ln:")) {
-                functionStringBuilder.append("p_print_ln:\n");
-                functionStringBuilder.append("PUSH {lr}\n");
-                functionStringBuilder.append("LDR r0, =msg_" + registers.getMessageCount() + "\n");
-                functionStringBuilder.append("ADD r0, r0, #4\n");
-                functionStringBuilder.append("BL puts\n");
-                functionStringBuilder.append("MOV r0, #0\n");
-                functionStringBuilder.append("BL fflush\n");
-                functionStringBuilder.append("POP {pc}\n");
+            if (!labelStringBuilder.toString().contains("p_print_ln:")) {
+                labelStringBuilder.append("p_print_ln:\n");
+                labelStringBuilder.append("PUSH {lr}\n");
+                labelStringBuilder.append("LDR r0, =msg_" + registers.getMessageCount() + "\n");
+                labelStringBuilder.append("ADD r0, r0, #4\n");
+                labelStringBuilder.append("BL puts\n");
+                labelStringBuilder.append("MOV r0, #0\n");
+                labelStringBuilder.append("BL fflush\n");
+                labelStringBuilder.append("POP {pc}\n");
 
                 headerStringBuilder.append("msg_" + registers.getMessageCount() + ":\n");
                 registers.incMessageCount();
@@ -852,29 +870,29 @@ public class AST {
         }
 
         private void generatePrintCharLiter(StringBuilder headerStringBuilder,
-                                            StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                                            StringBuilder mainStringBuilder, StringBuilder labelStringBuilder) {
             mainStringBuilder.append("MOV r0, #'" + exprNode.getValue() + "'\n");
             mainStringBuilder.append("BL putchar\n");
             mainStringBuilder.append("BL p_print_ln\n");
         }
 
         private void generatePrintIntLiter(StringBuilder headerStringBuilder,
-                                           StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                                           StringBuilder mainStringBuilder, StringBuilder labelStringBuilder) {
 
             mainStringBuilder.append("LDR r0, =" + exprNode.getValue() + "\n");
             mainStringBuilder.append("BL p_print_int\n");
             mainStringBuilder.append("BL p_print_ln\n");
 
-            if (!functionStringBuilder.toString().contains("p_print_int:")) {
-                functionStringBuilder.append("p_print_int:\n");
-                functionStringBuilder.append("PUSH {lr}\n");
-                functionStringBuilder.append("MOV r1, r0\n");
-                functionStringBuilder.append("LDR r0, =msg_" + registers.getMessageCount() + "\n");
-                functionStringBuilder.append("ADD r0, r0, #4\n");
-                functionStringBuilder.append("BL printf\n");
-                functionStringBuilder.append("MOV r0, #0\n");
-                functionStringBuilder.append("BL fflush\n");
-                functionStringBuilder.append("POP {pc}\n");
+            if (!labelStringBuilder.toString().contains("p_print_int:")) {
+                labelStringBuilder.append("p_print_int:\n");
+                labelStringBuilder.append("PUSH {lr}\n");
+                labelStringBuilder.append("MOV r1, r0\n");
+                labelStringBuilder.append("LDR r0, =msg_" + registers.getMessageCount() + "\n");
+                labelStringBuilder.append("ADD r0, r0, #4\n");
+                labelStringBuilder.append("BL printf\n");
+                labelStringBuilder.append("MOV r0, #0\n");
+                labelStringBuilder.append("BL fflush\n");
+                labelStringBuilder.append("POP {pc}\n");
                 headerStringBuilder.append("msg_" + registers.getMessageCount() + ":\n");
                 registers.incMessageCount();
                 headerStringBuilder.append(".word 3\n");
@@ -883,37 +901,37 @@ public class AST {
         }
 
         private void generatePrintBoolLiter(StringBuilder headerStringBuilder,
-                                            StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                                            StringBuilder mainStringBuilder, StringBuilder labelStringBuilder) {
 
-            mainStringBuilder.append("MOV r0, #" + (Boolean.valueOf(exprNode.getValue())?1:0) + "\n");
+            mainStringBuilder.append("MOV r0, #" + (Boolean.valueOf(exprNode.getValue()) ? 1 : 0) + "\n");
             mainStringBuilder.append("BL p_print_bool\n");
             mainStringBuilder.append("BL p_print_ln\n");
 
-            if (!functionStringBuilder.toString().contains("p_print_bool:")) {
-                functionStringBuilder.append("p_print_bool:\n");
-                functionStringBuilder.append("PUSH {lr}\n");
-                functionStringBuilder.append("CMP r0, #0\n");
-                functionStringBuilder.append("LDRNE r0, =msg_" + registers.getMessageCount() + "\n");
+            if (!labelStringBuilder.toString().contains("p_print_bool:")) {
+                labelStringBuilder.append("p_print_bool:\n");
+                labelStringBuilder.append("PUSH {lr}\n");
+                labelStringBuilder.append("CMP r0, #0\n");
+                labelStringBuilder.append("LDRNE r0, =msg_" + registers.getMessageCount() + "\n");
                 headerStringBuilder.append("msg_" + registers.getMessageCount() + ":\n");
                 registers.incMessageCount();
                 headerStringBuilder.append(".word 5\n");
                 headerStringBuilder.append(".ascii\t\"true\\0\"\n");
 
-                functionStringBuilder.append("LDREQ r0, =msg_" + registers.getMessageCount() + "\n");
+                labelStringBuilder.append("LDREQ r0, =msg_" + registers.getMessageCount() + "\n");
                 headerStringBuilder.append("msg_" + registers.getMessageCount() + ":\n");
                 registers.incMessageCount();
                 headerStringBuilder.append(".word 6\n");
                 headerStringBuilder.append(".ascii\t\"false\\0\"\n");
-                functionStringBuilder.append("ADD r0, r0, #4\n");
-                functionStringBuilder.append("BL printf\n");
-                functionStringBuilder.append("MOV r0, #0\n");
-                functionStringBuilder.append("BL fflush\n");
-                functionStringBuilder.append("POP {pc}\n");
+                labelStringBuilder.append("ADD r0, r0, #4\n");
+                labelStringBuilder.append("BL printf\n");
+                labelStringBuilder.append("MOV r0, #0\n");
+                labelStringBuilder.append("BL fflush\n");
+                labelStringBuilder.append("POP {pc}\n");
             }
         }
 
         private void generatePrintStringLiter(StringBuilder headerStringBuilder,
-                                              StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                                              StringBuilder mainStringBuilder, StringBuilder labelStringBuilder) {
 
             mainStringBuilder.append("LDR r0, =msg_" + registers.getMessageCount() + "\n");
             mainStringBuilder.append("BL p_print_string\n");
@@ -924,17 +942,17 @@ public class AST {
             headerStringBuilder.append(".ascii\t" + exprNode.getValue() + "\n");
             registers.incMessageCount();
 
-            if (!functionStringBuilder.toString().contains("p_print_string:")) {
-                functionStringBuilder.append("p_print_string:\n");
-                functionStringBuilder.append("PUSH {lr}\n");
-                functionStringBuilder.append("LDR r1, [r0]\n");
-                functionStringBuilder.append("ADD r2, r0, #4\n");
-                functionStringBuilder.append("LDR r0, =msg_" + registers.getMessageCount() + "\n");
-                functionStringBuilder.append("ADD r0, r0, #4\n");
-                functionStringBuilder.append("BL printf\n");
-                functionStringBuilder.append("MOV r0, #0\n");
-                functionStringBuilder.append("BL fflush\n");
-                functionStringBuilder.append("POP {pc}\n");
+            if (!labelStringBuilder.toString().contains("p_print_string:")) {
+                labelStringBuilder.append("p_print_string:\n");
+                labelStringBuilder.append("PUSH {lr}\n");
+                labelStringBuilder.append("LDR r1, [r0]\n");
+                labelStringBuilder.append("ADD r2, r0, #4\n");
+                labelStringBuilder.append("LDR r0, =msg_" + registers.getMessageCount() + "\n");
+                labelStringBuilder.append("ADD r0, r0, #4\n");
+                labelStringBuilder.append("BL printf\n");
+                labelStringBuilder.append("MOV r0, #0\n");
+                labelStringBuilder.append("BL fflush\n");
+                labelStringBuilder.append("POP {pc}\n");
                 headerStringBuilder.append("msg_" + registers.getMessageCount() + ":\n");
                 registers.incMessageCount();
                 headerStringBuilder.append(".word 5\n");
@@ -992,6 +1010,11 @@ public class AST {
 
         @Override
         public void check() {
+            Stack stackTrue = new Stack();
+            Stack stackFalse = new Stack();
+            statNodeTrue.setCurrentStack(stackTrue);
+            statNodeFalse.setCurrentStack(stackFalse);
+
             statNodeTrue.setScope(true);
             statNodeFalse.setScope(true);
             exprNode.check();
@@ -1007,7 +1030,7 @@ public class AST {
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
 
         }
 
@@ -1039,6 +1062,8 @@ public class AST {
 
         @Override
         public void check() {
+            Stack whileBodyStack = new Stack();
+            statNode.setCurrentStack(whileBodyStack);
 
             exprNode.check();
 
@@ -1050,7 +1075,7 @@ public class AST {
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
 
         }
 
@@ -1083,7 +1108,7 @@ public class AST {
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
 
         }
 
@@ -1114,39 +1139,61 @@ public class AST {
 
         @Override
         public void check() {
+            statNodeFirst.setCurrentStack(stack);
+            statNodeSecond.setCurrentStack(stack);
+
             statNodeFirst.check();
             statNodeSecond.check();
         }
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
-            statNodeFirst.generate(headerStringBuilder, mainStringBuilder, functionStringBuilder);
-            statNodeSecond.generate(headerStringBuilder, mainStringBuilder, functionStringBuilder);
+                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
+            isLastState = false;
+            statNodeFirst.generate(headerStringBuilder, mainStringBuilder, labelStringBuilder, functionStringBuilder);
+            if (!(getParent() instanceof MultipleStatNode)) {
+                isLastState = true;
+            }
+            statNodeSecond.generate(headerStringBuilder, mainStringBuilder, labelStringBuilder, functionStringBuilder);
+            statNodeSecond.addBackToStack(headerStringBuilder, mainStringBuilder, labelStringBuilder, functionStringBuilder);
+
         }
 
+    }
+
+    public abstract class Pair_elemNode extends ASTNode {
+
+        protected IdentNode exprNode;
+
+        public Pair_elemNode(IdentNode exprNode) {
+            this.exprNode = exprNode;
+            exprNode.setParent(this);
+        }
+
+        public IdentNode getIdentNode() {
+            return exprNode;
+        }
+
+        public TypeNode getTypeNode() {
+            return exprNode.getTypeNode();
+        }
     }
 
     /*
      * FSTNode has the type Pair
      * Need to return to correct type
      */
-    public class FSTNode extends ASTNode {
+    public class FSTNode extends Pair_elemNode {
 
         private IdentNode exprNode;
 
         public FSTNode(IdentNode exprNode) {
-            this.exprNode = exprNode;
-            exprNode.setParent(this);
+            super(exprNode);
         }
 
         public String getType() {
 
-            return ((Pair_typeNode) (exprNode.getTypeNode())).getFirstElem();
-        }
-
-        public TypeNode getTypeNode() {
-            return exprNode.getTypeNode();
+            return ((Pair_typeNode) getTypeNode()).getFirstElem();
         }
 
         @Override
@@ -1162,7 +1209,7 @@ public class AST {
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
 
         }
 
@@ -1172,22 +1219,17 @@ public class AST {
      * SNDNode has the type Pair
      * Need to return to correct type
      */
-    public class SNDNode extends ASTNode {
+    public class SNDNode extends Pair_elemNode {
 
         private IdentNode exprNode;
 
         public SNDNode(IdentNode exprNode) {
-            this.exprNode = exprNode;
-            exprNode.setParent(this);
+            super(exprNode);
         }
 
         public String getType() {
 
-            return ((Pair_typeNode) (exprNode.getTypeNode())).getSecondElem();
-        }
-
-        public TypeNode getTypeNode() {
-            return exprNode.getTypeNode();
+            return ((Pair_typeNode) getTypeNode()).getSecondElem();
         }
 
         @Override
@@ -1203,7 +1245,7 @@ public class AST {
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
 
         }
 
@@ -1231,6 +1273,8 @@ public class AST {
         public void check() {
         }
 
+        public abstract int getNumOfByte();
+
         public String getValue() {
             return value;
         }
@@ -1256,13 +1300,18 @@ public class AST {
         }
 
         @Override
+        public int getNumOfByte() {
+            return 4;
+        }
+
+        @Override
         public String getType() {
             return "Int";
         }
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
 
         }
 
@@ -1275,13 +1324,18 @@ public class AST {
         }
 
         @Override
+        public int getNumOfByte() {
+            return 1;
+        }
+
+        @Override
         public String getType() {
             return "Bool";
         }
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
 
         }
 
@@ -1294,13 +1348,18 @@ public class AST {
         }
 
         @Override
+        public int getNumOfByte() {
+            return 1;
+        }
+
+        @Override
         public String getType() {
             return "Char";
         }
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
 
         }
 
@@ -1313,13 +1372,18 @@ public class AST {
         }
 
         @Override
+        public int getNumOfByte() {
+            return 4;
+        }
+
+        @Override
         public String getType() {
             return "String";
         }
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
 
         }
 
@@ -1338,13 +1402,18 @@ public class AST {
         }
 
         @Override
+        public int getNumOfByte() {
+            return -1;
+        }
+
+        @Override
         public String getType() {
             return typeNode.getType() + "[]";
         }
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
 
         }
 
@@ -1390,7 +1459,7 @@ public class AST {
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
 
         }
 
@@ -1418,19 +1487,29 @@ public class AST {
         }
 
         @Override
+        public int getNumOfByte() {
+            return -1;
+        }
+
+        @Override
         public String getType() {
             return "Pair";
         }
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
 
         }
 
     }
 
     public class PairNode extends TypeNode {
+
+        @Override
+        public int getNumOfByte() {
+            return -1;
+        }
 
         @Override
         public String getType() {
@@ -1444,7 +1523,7 @@ public class AST {
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
 
         }
     }
@@ -1508,7 +1587,7 @@ public class AST {
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
 
         }
 
@@ -1545,7 +1624,7 @@ public class AST {
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
 
         }
 
@@ -1584,7 +1663,7 @@ public class AST {
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
 
         }
     }
@@ -1622,7 +1701,7 @@ public class AST {
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
 
         }
     }
@@ -1660,7 +1739,7 @@ public class AST {
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
 
         }
 
@@ -1734,7 +1813,7 @@ public class AST {
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
 
         }
 
@@ -1766,7 +1845,7 @@ public class AST {
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
 
         }
     }
@@ -1797,7 +1876,7 @@ public class AST {
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
 
         }
 
@@ -1829,7 +1908,7 @@ public class AST {
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
 
         }
     }
@@ -1860,7 +1939,7 @@ public class AST {
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
 
         }
 
@@ -1897,7 +1976,7 @@ public class AST {
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
 
         }
 
@@ -1934,7 +2013,7 @@ public class AST {
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
 
         }
 
@@ -1971,7 +2050,7 @@ public class AST {
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
 
         }
     }
@@ -2008,7 +2087,7 @@ public class AST {
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
 
         }
 
@@ -2043,7 +2122,7 @@ public class AST {
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
 
         }
     }
@@ -2077,7 +2156,7 @@ public class AST {
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
 
         }
     }
@@ -2108,7 +2187,7 @@ public class AST {
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
 
         }
     }
@@ -2138,7 +2217,7 @@ public class AST {
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
 
         }
     }
@@ -2148,7 +2227,38 @@ public class AST {
         public void check() {
         }
 
+        protected int getStackOffset() {
+            ASTNode parent = getParent();
+            int stackOffset = 0;
+            if (parent instanceof DeclarationNode) {
+                stackOffset = stack.getStackElemOffset(((DeclarationNode) parent).identNode.getIdent());
+            } else if (parent instanceof AssignmentNode) {
+                ASTNode assignLHS = ((AssignmentNode) parent).assign_lhsNode;
+                String ident;
+                if (assignLHS instanceof IdentNode) {
+                    ident = ((IdentNode) assignLHS).getIdent();
+                } else if (assignLHS instanceof Array_elemNode) {
+                    ident = ((Array_elemNode) assignLHS).identNode.getIdent();
+                } else {
+                    ident = ((Pair_elemNode) assignLHS).getIdentNode().getIdent();
+                }
+                stackOffset = stack.getStackElemOffset(ident);
+            }
+            return stackOffset;
+        }
+
         public abstract String getValue();
+
+        protected String getStackPointer() {
+            int stackOffset = getStackOffset();
+            String result;
+            if (stackOffset == 0) {
+                result = ", [sp";
+            } else {
+                result = ", [sp, #" + stackOffset;
+            }
+            return result + "]";
+        }
     }
 
     /*
@@ -2211,7 +2321,7 @@ public class AST {
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
 
         }
 
@@ -2253,7 +2363,7 @@ public class AST {
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
 
         }
 
@@ -2296,8 +2406,15 @@ public class AST {
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
 
+            int num = Integer.parseInt(value);
+            if (sign.equals("-")) {
+                num *= -1;
+            }
+            Registers.Register firstEmptyRegister = registers.getFirstEmptyRegister();
+            functionStringBuilder.append("LDR " + firstEmptyRegister + ", =" + num + "\n");
+            functionStringBuilder.append("STR " + firstEmptyRegister + getStackPointer() + "\n");
         }
 
         public int getvalue() {
@@ -2309,7 +2426,7 @@ public class AST {
 
         @Override
         public String getValue() {
-            return String.valueOf(getvalue()) ;
+            return String.valueOf(getvalue());
         }
     }
 
@@ -2334,8 +2451,15 @@ public class AST {
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
 
+            Registers.Register firstEmptyRegister = registers.getFirstEmptyRegister();
+            if (value) {
+                labelStringBuilder.append("MOV " + firstEmptyRegister + ", #1\n");
+            } else {
+                labelStringBuilder.append("MOV " + firstEmptyRegister + ", #0\n");
+            }
+            labelStringBuilder.append("STRB " + firstEmptyRegister + getStackPointer() + "\n");
         }
     }
 
@@ -2359,8 +2483,11 @@ public class AST {
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
 
+            Registers.Register firstEmptyRegister = registers.getFirstEmptyRegister();
+            labelStringBuilder.append("MOV " + firstEmptyRegister + ", #" + value + "\n");
+            labelStringBuilder.append("STRB " + firstEmptyRegister + getStackPointer() + "\n");
         }
 
         @Override
@@ -2385,8 +2512,11 @@ public class AST {
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
 
+            Registers.Register firstEmptyRegister = registers.getFirstEmptyRegister();
+            labelStringBuilder.append("LDR " + firstEmptyRegister + ", =msg_0\n");
+            labelStringBuilder.append("STR " + firstEmptyRegister + getStackPointer() + "\n");
         }
 
         @Override
@@ -2440,7 +2570,7 @@ public class AST {
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
 
         }
     }
@@ -2455,7 +2585,7 @@ public class AST {
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
 
         }
 
@@ -2545,7 +2675,7 @@ public class AST {
 
         @Override
         public void generate(StringBuilder headerStringBuilder,
-                             StringBuilder mainStringBuilder, StringBuilder functionStringBuilder) {
+                             StringBuilder mainStringBuilder, StringBuilder labelStringBuilder, StringBuilder functionStringBuilder) {
 
         }
     }

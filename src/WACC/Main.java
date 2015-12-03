@@ -44,18 +44,21 @@ public class Main {
 
         StringBuilder mainStringBuilder = new StringBuilder();
         StringBuilder headerStringBuilder = new StringBuilder();
+        StringBuilder labelStringBuilder = new StringBuilder();
         StringBuilder functionStringBuilder = new StringBuilder();
-        Registers registers = new Registers();
 
-        astNode.generate(headerStringBuilder, mainStringBuilder, functionStringBuilder);
+        astNode.generate(headerStringBuilder, mainStringBuilder, labelStringBuilder, functionStringBuilder);
         PrintWriter fileWriter = new PrintWriter(fileName + "s");
         fileWriter.println(headerStringBuilder);
         fileWriter.println(mainStringBuilder);
+        fileWriter.println(labelStringBuilder);
         fileWriter.println(functionStringBuilder);
 
         System.out.println(headerStringBuilder);
         System.out.println();
         System.out.println(mainStringBuilder);
+        System.out.println();
+        System.out.println(labelStringBuilder);
         System.out.println();
         System.out.println(functionStringBuilder);
 
