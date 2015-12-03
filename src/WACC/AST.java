@@ -811,39 +811,19 @@ public class AST {
 
         @Override
         public void generate(AssemblyBuilder builder) {
-
-            if (exprNode instanceof IdentNode) {
-                switch (exprNode.getType()) {
-                    case ("String"):
-                        generatePrintStringLiter(builder);
-                        break;
-                    case ("Bool"):
-                        generatePrintBoolLiter(builder);
-                        break;
-                    case ("Int"):
-                        generatePrintIntLiter(builder);
-                        break;
-                    case ("Char"):
-                        generatePrintCharLiter(builder);
-                        break;
-                }
-            } else if (exprNode instanceof Str_literNode) {
+            if (exprNode.getType().equals("String")) {
                 generatePrintStringLiter(builder);
-            } else if (exprNode instanceof Bool_literNode) {
+            }else if (exprNode.getType().equals("Bool")) {
                 generatePrintBoolLiter(builder);
-            } else if (exprNode instanceof Int_literNode) {
+            }else if (exprNode.getType().equals("Int")) {
                 generatePrintIntLiter(builder);
-            } else if (exprNode instanceof Char_literNode) {
+            }else if (exprNode.getType().equals("Char")) {
                 generatePrintCharLiter(builder);
             }
         }
 
         private void generatePrintCharLiter(AssemblyBuilder builder) {
-            if (exprNode instanceof IdentNode) {
-                builder.getMain().append("LDRSB r0, [sp]\n");
-            } else {
-                builder.getMain().append("MOV r0, #" + exprNode.getValue() + "\n");
-            }
+            builder.getMain().append("MOV r0, #" + exprNode.getValue() + "\n");
             builder.getMain().append("BL putchar\n");
         }
 
@@ -963,32 +943,6 @@ public class AST {
 
         @Override
         public void generate(AssemblyBuilder builder) {
-
-//            if (exprNode instanceof IdentNode) {
-//                switch (exprNode.getType()) {
-//                    case ("String"):
-//                        generatePrintStringLiter(builder);
-//                        break;
-//                    case ("Bool"):
-//                        generatePrintBoolLiter(builder);
-//                        break;
-//                    case ("Int"):
-//                        generatePrintIntLiter(builder);
-//                        break;
-//                    case ("Char"):
-//                        generatePrintCharLiter(builder);
-//                        break;
-//                }
-//            } else if (exprNode instanceof Str_literNode) {
-//                generatePrintStringLiter(builder);
-//            } else if (exprNode instanceof Bool_literNode) {
-//                generatePrintBoolLiter(builder);
-//            } else if (exprNode instanceof Int_literNode) {
-//                generatePrintIntLiter(builder);
-//            } else if (exprNode instanceof Char_literNode) {
-//                generatePrintCharLiter(builder);
-//            }
-
             if (exprNode.getType().equals("String")) {
                 generatePrintStringLiter(builder);
             }else if (exprNode.getType().equals("Bool")) {
@@ -1016,17 +970,12 @@ public class AST {
         }
 
         private void generatePrintCharLiter(AssemblyBuilder builder) {
-            if (exprNode instanceof IdentNode) {
-                builder.getCurrent().append("LDRSB r0, [sp]\n");
-            } else {
-                builder.getCurrent().append("MOV r0, #" + exprNode.getValue() + "\n");
-            }
+            builder.getCurrent().append("MOV r0, #" + exprNode.getValue() + "\n");
             builder.getCurrent().append("BL putchar\n");
             builder.getCurrent().append("BL p_print_ln\n");
         }
 
         private void generatePrintIntLiter(AssemblyBuilder builder) {
-            System.out.println(exprNode.getValue());
             String value =  exprNode.getValue().equals("[sp]") ? "[sp]" : "=" + exprNode.getValue();
 
             builder.getCurrent().append("LDR r0, " + value + "\n");
@@ -1873,7 +1822,7 @@ public class AST {
 
         @Override
         public String getValue() {
-            return null;
+            return String.valueOf((int)exprNode.getValue().charAt(1));
         }
 
         @Override
@@ -1894,7 +1843,7 @@ public class AST {
         @Override
         public String getType() {
 
-            return "Int";
+            return "Char";
         }
 
         @Override
@@ -1910,7 +1859,8 @@ public class AST {
 
         @Override
         public String getValue() {
-            return null;
+            int value = Integer.valueOf(exprNode.getValue());
+            return "\'" + (char) value + "\'";
         }
 
         @Override
@@ -2141,6 +2091,9 @@ public class AST {
 
         @Override
         public String getValue() {
+            if (exp1.getType().equals("Char")) {
+                return String.valueOf((int)((exp1).getValue().charAt(1)) > ((int)(exp2).getValue().charAt(1)));
+            }
             return String.valueOf(Integer.valueOf(exp1.getValue()) > Integer.valueOf(exp2.getValue()));
         }
 
@@ -2177,6 +2130,9 @@ public class AST {
 
         @Override
         public String getValue() {
+            if (exp1.getType().equals("Char")) {
+                return String.valueOf((int)((exp1).getValue().charAt(1)) >= ((int)(exp2).getValue().charAt(1)));
+            }
             return String.valueOf(Integer.valueOf(exp1.getValue()) >= Integer.valueOf(exp2.getValue()));
         }
 
@@ -2252,6 +2208,9 @@ public class AST {
 
         @Override
         public String getValue() {
+            if (exp1.getType().equals("Char")) {
+                return String.valueOf((int)((exp1).getValue().charAt(1)) <= ((int)(exp2).getValue().charAt(1)));
+            }
             return String.valueOf(Integer.valueOf(exp1.getValue()) <= Integer.valueOf(exp2.getValue()));
         }
 
@@ -2641,8 +2600,10 @@ public class AST {
     public class Char_literNode extends ExprNode {
 
         private String value;
+        private char c;
 
         public Char_literNode(String v) {
+            c = v.charAt(1);
             if (v.charAt(1) == '\\') {
                 switch (v.charAt(2)) {
                     case '0':
@@ -2677,6 +2638,10 @@ public class AST {
             } else {
                 this.value = "\'" + v.charAt(1) + "\'";
             }
+        }
+
+        public char getChar() {
+            return c;
         }
 
         @Override
