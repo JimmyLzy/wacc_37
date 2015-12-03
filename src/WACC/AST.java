@@ -375,14 +375,15 @@ public class AST {
 
         @Override
         public void generate(AssemblyBuilder builder) {
+            setTypeNodeValue(typeNode, assign_rhsNode);
             int stackSize = stack.getSize();
             int num = stackSize / Stack.MAX_STACK_SIZE;
             int remainder = stackSize % Stack.MAX_STACK_SIZE;
             if (!stack.IfDeclarationCodeGenerated()) {
                 for (int i = 0; i < num; i++) {
-                    builder.getFunction().append("SUB sp, sp, #" + Stack.MAX_STACK_SIZE + "\n");
+                    builder.getCurrent().append("SUB sp, sp, #" + Stack.MAX_STACK_SIZE + "\n");
                 }
-                builder.getFunction().append("SUB sp, sp, #" + remainder + "\n");
+                builder.getCurrent().append("SUB sp, sp, #" + remainder + "\n");
                 stack.setIfDeclarationCodeGenerated(true);
             }
             assign_rhsNode.generate(builder);
@@ -391,6 +392,10 @@ public class AST {
             }
         }
 
+        private void setTypeNodeValue(TypeNode typeNode, ASTNode assign_rhsNode) {
+            if (assign_rhsNode instanceof Int_literNode)
+            typeNode.setValue(((Int_literNode) assign_rhsNode).getValue());
+        }
 
 
         private void putIntoSymbolTable(ASTNode currentScope, String string, TypeNode node) {
@@ -640,6 +645,10 @@ public class AST {
             if (exprNode instanceof NegateOperNode) {
                 NegateOperNode negateOperNode = (NegateOperNode) exprNode;
                 exitNum = ((Int_literNode) negateOperNode.getExprNdoe()).getvalue() / -1;
+            } else if (exprNode instanceof IdentNode) {
+                builder.getCurrent().append("LDR " + resultReg + ", [sp]\n");
+                builder.getCurrent().append("BL exit\n");
+                return;
             } else {
                 Int_literNode int_literNode = (Int_literNode) exprNode;
                 exitNum = int_literNode.getvalue();
@@ -2261,7 +2270,7 @@ public class AST {
 
         @Override
         public String getValue() {
-            return value;
+            return getTypeNode().getValue();
         }
 
         public void setValue(String value) {
@@ -2359,8 +2368,8 @@ public class AST {
                 num *= -1;
             }
             Registers.Register firstEmptyRegister = registers.getFirstEmptyRegister();
-            builder.getFunction().append("LDR " + firstEmptyRegister + ", =" + num + "\n");
-            builder.getFunction().append("STR " + firstEmptyRegister + getStackPointer() + "\n");
+            builder.getCurrent().append("LDR " + firstEmptyRegister + ", =" + num + "\n");
+            builder.getCurrent().append("STR " + firstEmptyRegister + getStackPointer() + "\n");
         }
 
         public int getvalue() {
@@ -2458,8 +2467,12 @@ public class AST {
         public void generate(AssemblyBuilder builder) {
 
             Registers.Register firstEmptyRegister = registers.getFirstEmptyRegister();
-            builder.getCurrent().append("LDR " + firstEmptyRegister + ", =msg_0\n");
+            builder.getCurrent().append("LDR " + firstEmptyRegister + ", =msg_" + registers.getMessageCount() + "\n");
             builder.getCurrent().append("STR " + firstEmptyRegister + getStackPointer() + "\n");
+            builder.getHeader().append("msg_" + registers.getMessageCount() + ": \n");
+            builder.getHeader().append(".word " + getWordLength(value) + "\n");
+            builder.getHeader().append(".ascii\t" + value + "\n");
+            registers.incMessageCount();
         }
 
         @Override
