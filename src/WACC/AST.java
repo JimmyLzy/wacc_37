@@ -531,6 +531,7 @@ public class AST {
         public void check() {
             assign_lhsNode.check();
             assign_rhsNode.check();
+            assign_rhsNode.setCurrentStack(stack);
 
             if (assign_rhsNode.getType().equals("Null")) {
                 return;
@@ -552,7 +553,14 @@ public class AST {
 
         @Override
         public void generate(AssemblyBuilder builder) {
-
+            currentlyUsedRegister = registers.getFirstEmptyRegister();
+            assign_rhsNode.generate(builder);
+            if (assign_rhsNode instanceof  Int_literNode || assign_rhsNode instanceof Str_literNode) {
+                builder.getCurrent().append("STR " + currentlyUsedRegister + getStackPointer() + "\n");
+            } else {
+                builder.getCurrent().append("STRB " + currentlyUsedRegister + getStackPointer() + "\n");
+            }
+            currentlyUsedRegister.setValue(null);
         }
 
 
