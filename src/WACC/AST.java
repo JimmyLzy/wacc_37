@@ -184,6 +184,7 @@ public class AST {
                 funcNode.generate(builder);
             }
             statNode.generate(builder);
+            statNode.setValue();
             builder.getMain().append("MOV " + resultReg + ", #0\n");
             registers.get(0).setValue(0);
             builder.getMain().append("POP {pc}\n");
@@ -259,6 +260,7 @@ public class AST {
 
             builder.setCurrent(builder.getFunction());
             statNode.generate(builder);
+            statNode.setValue();
         }
 
     }
@@ -343,6 +345,8 @@ public class AST {
             return result + "]";
         }
 
+        public abstract void setValue();
+
     }
 
     public class SkipNode extends StatNode {
@@ -359,6 +363,11 @@ public class AST {
         @Override
         public String getValue() {
             return null;
+        }
+
+        @Override
+        public void setValue() {
+
         }
 
         @Override
@@ -409,6 +418,11 @@ public class AST {
         @Override
         public String getValue() {
             return null;
+        }
+
+        @Override
+        public void setValue() {
+
         }
 
         @Override
@@ -606,6 +620,11 @@ public class AST {
         }
 
         @Override
+        public void setValue() {
+
+        }
+
+        @Override
         public void check() {
             assign_lhsNode.check();
             String type = assign_lhsNode.getType();
@@ -717,6 +736,11 @@ public class AST {
         }
 
         @Override
+        public void setValue() {
+
+        }
+
+        @Override
         public void check() {
 
             exprNode.check();
@@ -757,6 +781,11 @@ public class AST {
         @Override
         public String getValue() {
             return null;
+        }
+
+        @Override
+        public void setValue() {
+
         }
 
         @Override
@@ -802,6 +831,11 @@ public class AST {
         @Override
         public String getValue() {
             return null;
+        }
+
+        @Override
+        public void setValue() {
+
         }
 
         @Override
@@ -852,6 +886,11 @@ public class AST {
         @Override
         public String getValue() {
             return null;
+        }
+
+        @Override
+        public void setValue() {
+
         }
 
         @Override
@@ -985,6 +1024,11 @@ public class AST {
         @Override
         public String getValue() {
             return null;
+        }
+
+        @Override
+        public void setValue() {
+
         }
 
         @Override
@@ -1166,6 +1210,11 @@ public class AST {
         }
 
         @Override
+        public void setValue() {
+
+        }
+
+        @Override
         public void check() {
             Stack stackTrue = new Stack();
             Stack stackFalse = new Stack();
@@ -1257,10 +1306,17 @@ public class AST {
         }
 
         @Override
+        public void setValue() {
+
+        }
+
+        @Override
         public void check() {
+            exprNode.setCurrentStack(stack);
             Stack whileBodyStack = new Stack();
             statNode.setCurrentStack(whileBodyStack);
 
+            setScope(true);
             exprNode.check();
 
             if (!exprNode.getType().equals("Bool")) {
@@ -1271,7 +1327,29 @@ public class AST {
 
         @Override
         public void generate(AssemblyBuilder builder) {
+            StringBuilder currentStringBuilder = builder.getCurrent();
 
+            String labelWhileBody = "L" + labelCount;
+            labelCount++;
+
+            String labelWhileEnd = "L" + labelCount;
+            labelCount++;
+
+            builder.getCurrent().append("B " + labelWhileEnd + "\n");
+
+            currentStringBuilder.append(labelWhileBody + ":\n");
+            statNode.generate(builder);
+            statNode.setValue();
+
+            currentStringBuilder.append(labelWhileEnd + ":\n");
+
+            currentlyUsedRegister = registers.getFirstEmptyRegister();
+            exprNode.generate(builder);
+
+            currentStringBuilder.append("CMP " + currentlyUsedRegister + ", #1\n");
+            currentlyUsedRegister.setValue(null);
+
+            currentStringBuilder.append("BEQ " + labelWhileBody + "\n");
         }
 
     }
@@ -1296,6 +1374,11 @@ public class AST {
         @Override
         public String getValue() {
             return null;
+        }
+
+        @Override
+        public void setValue() {
+
         }
 
         @Override
@@ -1343,6 +1426,11 @@ public class AST {
         }
 
         @Override
+        public void setValue() {
+
+        }
+
+        @Override
         public void check() {
             statNodeFirst.setCurrentStack(stack);
             statNodeSecond.setCurrentStack(stack);
@@ -1355,10 +1443,12 @@ public class AST {
         public void generate(AssemblyBuilder builder) {
             isLastState = false;
             statNodeFirst.generate(builder);
+            statNodeFirst.setValue();
             if (!(getParent() instanceof MultipleStatNode)) {
                 isLastState = true;
             }
             statNodeSecond.generate(builder);
+            statNodeSecond.setValue();
             statNodeSecond.addBackToStack(builder);
 
         }
@@ -1805,6 +1895,11 @@ public class AST {
         }
 
         @Override
+        public void setValue() {
+
+        }
+
+        @Override
         public void generate(AssemblyBuilder builder) {
 
         }
@@ -1838,6 +1933,11 @@ public class AST {
         @Override
         public String getValue() {
             return String.valueOf(-Integer.valueOf(exprNode.getValue()));
+        }
+
+        @Override
+        public void setValue() {
+
         }
 
         @Override
@@ -1879,6 +1979,11 @@ public class AST {
         }
 
         @Override
+        public void setValue() {
+
+        }
+
+        @Override
         public void generate(AssemblyBuilder builder) {
 
         }
@@ -1913,6 +2018,11 @@ public class AST {
         @Override
         public String getValue() {
             return String.valueOf((int)exprNode.getValue().charAt(1));
+        }
+
+        @Override
+        public void setValue() {
+
         }
 
         @Override
@@ -1951,6 +2061,11 @@ public class AST {
         public String getValue() {
             int value = Integer.valueOf(exprNode.getValue());
             return "\'" + (char) value + "\'";
+        }
+
+        @Override
+        public void setValue() {
+
         }
 
         @Override
@@ -2053,6 +2168,11 @@ public class AST {
         }
 
         @Override
+        public void setValue() {
+
+        }
+
+        @Override
         public void generate(AssemblyBuilder builder) {
 
         }
@@ -2086,6 +2206,11 @@ public class AST {
         }
 
         @Override
+        public void setValue() {
+
+        }
+
+        @Override
         public void generate(AssemblyBuilder builder) {
 
         }
@@ -2113,6 +2238,11 @@ public class AST {
         @Override
         public String getValue() {
             return String.valueOf(Integer.valueOf(exp1.getValue()) % Integer.valueOf(exp2.getValue()));
+        }
+
+        @Override
+        public void setValue() {
+
         }
 
         @Override
@@ -2147,6 +2277,11 @@ public class AST {
         }
 
         @Override
+        public void setValue() {
+
+        }
+
+        @Override
         public void generate(AssemblyBuilder builder) {
 
         }
@@ -2174,6 +2309,11 @@ public class AST {
         @Override
         public String getValue() {
             return String.valueOf(Integer.valueOf(exp1.getValue()) - Integer.valueOf(exp2.getValue()));
+        }
+
+        @Override
+        public void setValue() {
+
         }
 
         @Override
@@ -2213,6 +2353,11 @@ public class AST {
                 return String.valueOf((int)((exp1).getValue().charAt(1)) > ((int)(exp2).getValue().charAt(1)));
             }
             return String.valueOf(Integer.valueOf(exp1.getValue()) > Integer.valueOf(exp2.getValue()));
+        }
+
+        @Override
+        public void setValue() {
+
         }
 
         @Override
@@ -2259,6 +2404,11 @@ public class AST {
         }
 
         @Override
+        public void setValue() {
+
+        }
+
+        @Override
         public void generate(AssemblyBuilder builder) {
 
             generateBranchCode(builder);
@@ -2299,6 +2449,11 @@ public class AST {
                 return String.valueOf((int)((exp1).getValue().charAt(1)) < ((int)(exp2).getValue().charAt(1)));
             }
             return String.valueOf(Integer.valueOf(exp1.getValue()) < Integer.valueOf(exp2.getValue()));
+        }
+
+        @Override
+        public void setValue() {
+
         }
 
         @Override
@@ -2345,6 +2500,11 @@ public class AST {
         }
 
         @Override
+        public void setValue() {
+
+        }
+
+        @Override
         public void generate(AssemblyBuilder builder) {
             generateBranchCode(builder);
 
@@ -2384,6 +2544,11 @@ public class AST {
                 return String.valueOf(((IdentNode) exp1).getTypeNode().getIdent().equals(((IdentNode) exp2).getTypeNode().getIdent()));
             }
             return String.valueOf(exp1.getValue().equals(exp2.getValue()));
+        }
+
+        @Override
+        public void setValue() {
+
         }
 
         @Override
@@ -2428,6 +2593,11 @@ public class AST {
         }
 
         @Override
+        public void setValue() {
+
+        }
+
+        @Override
         public void generate(AssemblyBuilder builder) {
             generateBranchCode(builder);
 
@@ -2458,6 +2628,11 @@ public class AST {
         @Override
         public String getValue() {
             return String.valueOf(Boolean.valueOf(exp1.getValue()) && Boolean.valueOf(exp2.getValue()));
+        }
+
+        @Override
+        public void setValue() {
+
         }
 
         @Override
@@ -2503,6 +2678,11 @@ public class AST {
         @Override
         public String getValue() {
             return String.valueOf(Boolean.valueOf(exp1.getValue()) || Boolean.valueOf(exp2.getValue()));
+        }
+
+        @Override
+        public void setValue() {
+
         }
 
         @Override
@@ -2592,6 +2772,11 @@ public class AST {
             return getTypeNode().getValue();
         }
 
+        @Override
+        public void setValue() {
+
+        }
+
         public void setValue(String value) {
             this.value = value;
         }
@@ -2640,6 +2825,11 @@ public class AST {
         @Override
         public String getValue() {
             return null;
+        }
+
+        @Override
+        public void setValue() {
+
         }
 
         @Override
@@ -2706,6 +2896,11 @@ public class AST {
         public String getValue() {
             return String.valueOf(getvalue());
         }
+
+        @Override
+        public void setValue() {
+
+        }
     }
 
 
@@ -2719,6 +2914,11 @@ public class AST {
 
         public String getValue() {
             return String.valueOf(value);
+        }
+
+        @Override
+        public void setValue() {
+
         }
 
         @Override
@@ -2801,6 +3001,11 @@ public class AST {
         public String getValue() {
             return value;
         }
+
+        @Override
+        public void setValue() {
+
+        }
     }
 
     public class Str_literNode extends ExprNode {
@@ -2831,6 +3036,11 @@ public class AST {
         @Override
         public String getValue() {
             return value;
+        }
+
+        @Override
+        public void setValue() {
+
         }
     }
 
@@ -2904,6 +3114,11 @@ public class AST {
         @Override
         public String getValue() {
             return null;
+        }
+
+        @Override
+        public void setValue() {
+
         }
     }
 
