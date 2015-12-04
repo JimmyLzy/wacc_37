@@ -1,6 +1,5 @@
 package WACC;
 
-import javax.print.DocFlavor;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -43,6 +42,14 @@ public class Stack {
 
     public int getSize() {
         return size;
+    }
+
+    public void incSize(int sizeOfType) {
+        size += sizeOfType;
+    }
+
+    public void decSize(int sizeOfType) {
+        size -= sizeOfType;
     }
 
 

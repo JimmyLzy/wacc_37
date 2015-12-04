@@ -308,12 +308,11 @@ public class AST {
         }
 
         protected int getStackOffset() {
-            ASTNode parent = getParent();
             int stackOffset = 0;
-            if (parent instanceof DeclarationNode) {
-                stackOffset = stack.getStackElemOffset(((DeclarationNode) parent).identNode.getIdent());
-            } else if (parent instanceof AssignmentNode) {
-                ASTNode assignLHS = ((AssignmentNode) parent).assign_lhsNode;
+            if (this instanceof DeclarationNode) {
+                stackOffset = stack.getStackElemOffset(((DeclarationNode) this).identNode.getIdent());
+            } else if (this instanceof AssignmentNode) {
+                ASTNode assignLHS = ((AssignmentNode) this).assign_lhsNode;
                 String ident;
                 if (assignLHS instanceof IdentNode) {
                     ident = ((IdentNode) assignLHS).getIdent();
@@ -1166,6 +1165,7 @@ public class AST {
         public void check() {
             Stack stackTrue = new Stack();
             Stack stackFalse = new Stack();
+            exprNode.setCurrentStack(stack);
             statNodeTrue.setCurrentStack(stackTrue);
             statNodeFalse.setCurrentStack(stackFalse);
 
@@ -1996,6 +1996,7 @@ public class AST {
             exp1.generate(builder);
             currentBuilder.append("PUSH {" + exp1Register + "}\n");
             exp1Register.setValue(null);
+            stack.incSize(4);
 
             Registers.Register exp2Register = registers.getFirstEmptyRegister();
             currentlyUsedRegister = exp2Register;
@@ -2007,6 +2008,7 @@ public class AST {
 
             currentBuilder.append("MOV " + exp2Register + ", " + currentlyUsedRegister + "\n");
             currentBuilder.append("POP {" + currentlyUsedRegister + "}\n");
+            stack.decSize(4);
             currentBuilder.append("CMP " + currentlyUsedRegister + ", " + exp2Register + "\n");
 
         }
