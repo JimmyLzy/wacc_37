@@ -21,6 +21,8 @@ public class AST {
 
     private String resultReg = registers.get(0).toString();
 
+    private Registers.Register currentlyUsedRegister;
+
     // label counters
     private int messageCount = 0;
     private int labelCount = 0;
@@ -305,6 +307,43 @@ public class AST {
             }
         }
 
+        protected int getStackOffset() {
+            ASTNode parent = getParent();
+            int stackOffset = 0;
+            if (parent instanceof DeclarationNode) {
+                stackOffset = stack.getStackElemOffset(((DeclarationNode) parent).identNode.getIdent());
+            } else if (parent instanceof AssignmentNode) {
+                ASTNode assignLHS = ((AssignmentNode) parent).assign_lhsNode;
+                String ident;
+                if (assignLHS instanceof IdentNode) {
+                    ident = ((IdentNode) assignLHS).getIdent();
+                } else if (assignLHS instanceof Array_elemNode) {
+                    ident = ((Array_elemNode) assignLHS).identNode.getIdent();
+                } else {
+                    ident = ((Pair_elemNode) assignLHS).getIdentNode().getIdent();
+                }
+                stackOffset = stack.getStackElemOffset(ident);
+            } else if (this instanceof IdentNode) {
+                String ident = ((IdentNode) this).getIdent();
+                TypeNode typeNode = ((IdentNode) this).getTypeNode();
+                stackOffset = typeNode.stack.getStackElemOffset(ident);
+            }
+            return stackOffset;
+        }
+
+        public abstract String getValue();
+
+        protected String getStackPointer() {
+            int stackOffset = getStackOffset();
+            String result;
+            if (stackOffset == 0) {
+                result = ", [sp";
+            } else {
+                result = ", [sp, #" + stackOffset;
+            }
+            return result + "]";
+        }
+
     }
 
     public class SkipNode extends StatNode {
@@ -379,6 +418,7 @@ public class AST {
             putIntoSymbolTable(this, identNode.getIdent(), typeNode);
             assign_rhsNode.check();
             stack.add(identNode.getIdent(), typeNode.getNumOfByte());
+            typeNode.setCurrentStack(stack);
             assign_rhsNode.setCurrentStack(stack);
 
 
@@ -408,6 +448,7 @@ public class AST {
             int stackSize = stack.getSize();
             int num = stackSize / Stack.MAX_STACK_SIZE;
             int remainder = stackSize % Stack.MAX_STACK_SIZE;
+            currentlyUsedRegister = registers.getFirstEmptyRegister();
             if (!stack.IfDeclarationCodeGenerated()) {
                 for (int i = 0; i < num; i++) {
                     builder.getCurrent().append("SUB sp, sp, #" + Stack.MAX_STACK_SIZE + "\n");
@@ -416,6 +457,12 @@ public class AST {
                 stack.setIfDeclarationCodeGenerated(true);
             }
             assign_rhsNode.generate(builder);
+            if (assign_rhsNode instanceof Int_literNode || assign_rhsNode instanceof Str_literNode) {
+                builder.getCurrent().append("STR " + currentlyUsedRegister + getStackPointer() + "\n");
+            } else {
+                builder.getCurrent().append("STRB " + currentlyUsedRegister + getStackPointer() + "\n");
+            }
+            currentlyUsedRegister.setValue(null);
             if (!(getParent() instanceof MultipleStatNode)) {
                 addBackToStack(builder);
             }
@@ -824,7 +871,7 @@ public class AST {
 
         private void generatePrintCharLiter(AssemblyBuilder builder) {
             if (exprNode instanceof IdentNode) {
-                builder.getMain().append("LDRSB r0, [sp]\n");
+                builder.getMain().append("LDRSB r0" + getStackPointer() + "\n");
             } else {
                 builder.getMain().append("MOV r0, #" + exprNode.getValue() + "\n");
             }
@@ -838,9 +885,6 @@ public class AST {
 //            } else {
                 builder.getMain().append("LDR r0, =" + exprNode.getValue() + "\n");
 //            }
-
-
-            builder.getMain().append("BL p_print_int\n");
 
             if (!builder.getLabel().toString().contains("p_print_int:")) {
                 builder.getLabel().append("p_print_int:\n");
@@ -975,7 +1019,7 @@ public class AST {
 
         private void generatePrintCharLiter(AssemblyBuilder builder) {
             if (exprNode instanceof IdentNode) {
-                builder.getCurrent().append("LDRSB r0, [sp]\n");
+                builder.getCurrent().append("LDRSB r0" + getStackPointer() + "\n");
             } else {
                 builder.getCurrent().append("MOV r0, #" + exprNode.getValue() + "\n");
             }
@@ -1141,6 +1185,28 @@ public class AST {
         @Override
         public void generate(AssemblyBuilder builder) {
 
+            StringBuilder currentStringBuilder = builder.getCurrent();
+            String labelFalse = "L" + labelCount;
+            StringBuilder stringBuilderFalse = new StringBuilder();
+            stringBuilderFalse.append(labelFalse + ":\n");
+            labelCount++;
+
+            String labelTrue = "L" + labelCount;
+            labelCount++;
+
+            exprNode.generate(builder);
+
+            builder.getCurrent().append("CMP " + currentlyUsedRegister + ", #0\n");
+            builder.getCurrent().append("BEQ " + labelFalse + "\n");
+
+            statNodeTrue.generate(builder);
+            builder.getCurrent().append("B " + labelTrue + "\n");
+            builder.setCurrent(stringBuilderFalse);
+            statNodeFalse.generate(builder);
+
+            builder.setCurrent(currentStringBuilder);
+            builder.getCurrent().append(stringBuilderFalse);
+            builder.getCurrent().append(labelTrue + ":\n");
         }
 
     }
@@ -1918,6 +1984,30 @@ public class AST {
                 throwSemanticError("Binary operation for pair need to have type pair on both sides");
             }
         }
+
+        protected void generateBranchCode(AssemblyBuilder builder) {
+            StringBuilder currentBuilder = builder.getCurrent();
+
+            Registers.Register exp1Register = registers.getFirstEmptyRegister();
+            currentlyUsedRegister = exp1Register;
+
+            exp1.generate(builder);
+            currentBuilder.append("PUSH {" + exp1Register + "}\n");
+            exp1Register.setValue(null);
+
+            Registers.Register exp2Register = registers.getFirstEmptyRegister();
+            currentlyUsedRegister = exp2Register;
+            exp2.generate(builder);
+
+            exp2Register = registers.getFirstEmptyRegister();
+            currentlyUsedRegister.setValue(null);
+            exp2Register.setValue(null);
+
+            currentBuilder.append("MOV " + exp2Register + ", " + currentlyUsedRegister + "\n");
+            currentBuilder.append("POP {" + currentlyUsedRegister + "}\n");
+            currentBuilder.append("CMP " + currentlyUsedRegister + ", " + exp2Register + "\n");
+
+        }
     }
 
     public class MultNode extends Binary_operNode {
@@ -1948,6 +2038,8 @@ public class AST {
         public void generate(AssemblyBuilder builder) {
 
         }
+
+
 
     }
 
@@ -2108,6 +2200,10 @@ public class AST {
         @Override
         public void generate(AssemblyBuilder builder) {
 
+            generateBranchCode(builder);
+            builder.getCurrent().append("MOVGT " + currentlyUsedRegister + ", #1\n");
+            builder.getCurrent().append("MOVLE " + currentlyUsedRegister + ", #0\n");
+
         }
 
     }
@@ -2147,6 +2243,10 @@ public class AST {
         @Override
         public void generate(AssemblyBuilder builder) {
 
+            generateBranchCode(builder);
+            builder.getCurrent().append("MOVGE " + currentlyUsedRegister + ", #1\n");
+            builder.getCurrent().append("MOVLT " + currentlyUsedRegister + ", #0\n");
+
         }
 
     }
@@ -2185,6 +2285,10 @@ public class AST {
 
         @Override
         public void generate(AssemblyBuilder builder) {
+            generateBranchCode(builder);
+
+            builder.getCurrent().append("MOVLT " + currentlyUsedRegister + ", #1\n");
+            builder.getCurrent().append("MOVGE " + currentlyUsedRegister + ", #0\n");
 
         }
     }
@@ -2224,7 +2328,10 @@ public class AST {
 
         @Override
         public void generate(AssemblyBuilder builder) {
+            generateBranchCode(builder);
 
+            builder.getCurrent().append("MOVLE " + currentlyUsedRegister + ", #1\n");
+            builder.getCurrent().append("MOVGT " + currentlyUsedRegister + ", #0\n");
         }
 
     }
@@ -2263,7 +2370,10 @@ public class AST {
 
         @Override
         public void generate(AssemblyBuilder builder) {
+            generateBranchCode(builder);
 
+            builder.getCurrent().append("MOVEQ " + currentlyUsedRegister + ", #1\n");
+            builder.getCurrent().append("MOVNE " + currentlyUsedRegister + ", #0\n");
         }
     }
 
@@ -2301,7 +2411,10 @@ public class AST {
 
         @Override
         public void generate(AssemblyBuilder builder) {
+            generateBranchCode(builder);
 
+            builder.getCurrent().append("MOVNE " + currentlyUsedRegister + ", #1\n");
+            builder.getCurrent().append("MOVEQ " + currentlyUsedRegister + ", #0\n");
         }
     }
 
@@ -2331,7 +2444,23 @@ public class AST {
 
         @Override
         public void generate(AssemblyBuilder builder) {
+            StringBuilder currentBuilder = builder.getCurrent();
 
+            Registers.Register exp1Register = registers.getFirstEmptyRegister();
+            currentlyUsedRegister = exp1Register;
+            exp1.generate(builder);
+            currentlyUsedRegister.setValue(null);
+
+            String label = "L" + labelCount;
+            labelCount++;
+            currentBuilder.append("CMP " + currentlyUsedRegister + ", #0\n");
+            currentBuilder.append("BEQ " + label + "\n");
+
+            Registers.Register exp2Register = registers.getFirstEmptyRegister();
+            currentlyUsedRegister = exp2Register;
+            exp2.generate(builder);
+            exp2Register.setValue(null);
+            currentBuilder.append(label + ":\n");
         }
     }
 
@@ -2360,7 +2489,23 @@ public class AST {
 
         @Override
         public void generate(AssemblyBuilder builder) {
+            StringBuilder currentBuilder = builder.getCurrent();
 
+            Registers.Register exp1Register = registers.getFirstEmptyRegister();
+            currentlyUsedRegister = exp1Register;
+            exp1.generate(builder);
+            currentlyUsedRegister.setValue(null);
+
+            String label = "L" + labelCount;
+            labelCount++;
+            currentBuilder.append("CMP " + currentlyUsedRegister + ", #1\n");
+            currentBuilder.append("BEQ " + label + "\n");
+
+            Registers.Register exp2Register = registers.getFirstEmptyRegister();
+            currentlyUsedRegister = exp2Register;
+            exp2.generate(builder);
+            exp2Register.setValue(null);
+            currentBuilder.append(label + ":\n");
         }
     }
 
@@ -2369,38 +2514,6 @@ public class AST {
         public void check() {
         }
 
-        protected int getStackOffset() {
-            ASTNode parent = getParent();
-            int stackOffset = 0;
-            if (parent instanceof DeclarationNode) {
-                stackOffset = stack.getStackElemOffset(((DeclarationNode) parent).identNode.getIdent());
-            } else if (parent instanceof AssignmentNode) {
-                ASTNode assignLHS = ((AssignmentNode) parent).assign_lhsNode;
-                String ident;
-                if (assignLHS instanceof IdentNode) {
-                    ident = ((IdentNode) assignLHS).getIdent();
-                } else if (assignLHS instanceof Array_elemNode) {
-                    ident = ((Array_elemNode) assignLHS).identNode.getIdent();
-                } else {
-                    ident = ((Pair_elemNode) assignLHS).getIdentNode().getIdent();
-                }
-                stackOffset = stack.getStackElemOffset(ident);
-            }
-            return stackOffset;
-        }
-
-        public abstract String getValue();
-
-        protected String getStackPointer() {
-            int stackOffset = getStackOffset();
-            String result;
-            if (stackOffset == 0) {
-                result = ", [sp";
-            } else {
-                result = ", [sp, #" + stackOffset;
-            }
-            return result + "]";
-        }
     }
 
     /*
@@ -2467,7 +2580,12 @@ public class AST {
 
         @Override
         public void generate(AssemblyBuilder builder) {
-
+            if (getType().equals("Int")) {
+                builder.getCurrent().append("LDR " + currentlyUsedRegister + getStackPointer() + "\n");
+            } else {
+                builder.getCurrent().append("LDRSB " + currentlyUsedRegister + getStackPointer() + "\n");
+            }
+            currentlyUsedRegister.setValue(getValue());
         }
 
     }
@@ -2555,9 +2673,8 @@ public class AST {
             if (sign.equals("-")) {
                 num *= -1;
             }
-            Registers.Register firstEmptyRegister = registers.getFirstEmptyRegister();
-            builder.getCurrent().append("LDR " + firstEmptyRegister + ", =" + num + "\n");
-            builder.getCurrent().append("STR " + firstEmptyRegister + getStackPointer() + "\n");
+            builder.getCurrent().append("LDR " + currentlyUsedRegister + ", =" + num + "\n");
+            currentlyUsedRegister.setValue(num);
         }
 
         public int getvalue() {
@@ -2594,14 +2711,12 @@ public class AST {
 
         @Override
         public void generate(AssemblyBuilder builder) {
-
-            Registers.Register firstEmptyRegister = registers.getFirstEmptyRegister();
             if (value) {
-                builder.getCurrent().append("MOV " + firstEmptyRegister + ", #1\n");
+                builder.getCurrent().append("MOV " + currentlyUsedRegister + ", #1\n");
             } else {
-                builder.getCurrent().append("MOV " + firstEmptyRegister + ", #0\n");
+                builder.getCurrent().append("MOV " + currentlyUsedRegister + ", #0\n");
             }
-            builder.getCurrent().append("STRB " + firstEmptyRegister + getStackPointer() + "\n");
+            currentlyUsedRegister.setValue(value);
         }
     }
 
@@ -2660,9 +2775,8 @@ public class AST {
 
         @Override
         public void generate(AssemblyBuilder builder) {
-            Registers.Register firstEmptyRegister = registers.getFirstEmptyRegister();
-            builder.getCurrent().append("MOV " + firstEmptyRegister + ", #" + value + "\n");
-            builder.getCurrent().append("STRB " + firstEmptyRegister + getStackPointer() + "\n");
+            builder.getCurrent().append("MOV " + currentlyUsedRegister + ", #\'" + value + "\'\n");
+            currentlyUsedRegister.setValue(value);
         }
 
         @Override
@@ -2688,9 +2802,8 @@ public class AST {
         @Override
         public void generate(AssemblyBuilder builder) {
 
-            Registers.Register firstEmptyRegister = registers.getFirstEmptyRegister();
-            builder.getCurrent().append("LDR " + firstEmptyRegister + ", =msg_" + messageCount + "\n");
-            builder.getCurrent().append("STR " + firstEmptyRegister + getStackPointer() + "\n");
+            builder.getCurrent().append("LDR " + currentlyUsedRegister + ", =msg_" + messageCount + "\n");
+            currentlyUsedRegister.setValue(value);
             builder.getHeader().append("msg_" + messageCount + ": \n");
             builder.getHeader().append(".word " + getWordLength(value) + "\n");
             builder.getHeader().append(".ascii\t" + value + "\n");
