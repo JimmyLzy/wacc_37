@@ -538,16 +538,7 @@ public class AST {
 
         @Override
         public void generate(AssemblyBuilder builder) {
-            if (assign_lhsNode instanceof IdentNode) {
-                if (assign_rhsNode instanceof IdentNode) {
-                    ((IdentNode) assign_lhsNode).getTypeNode().setIdent(((IdentNode) assign_rhsNode).getIdent());
-                }
-                if (assign_rhsNode instanceof Str_literNode) {
-                    getTypeNode((IdentNode) assign_lhsNode).setValue((assign_rhsNode).getValue());
-                } else if (assign_rhsNode.getType().equals("Int")) {
-                    getTypeNode((IdentNode) assign_lhsNode).setValue((assign_rhsNode.getValue()));
-                }
-            }
+
         }
 
 
@@ -571,6 +562,19 @@ public class AST {
                 return null;
             }
             return null;
+        }
+
+        public void setValue() {
+            if (assign_lhsNode instanceof IdentNode) {
+                if (assign_rhsNode instanceof IdentNode) {
+                    ((IdentNode) assign_lhsNode).getTypeNode().setIdent(((IdentNode) assign_rhsNode).getIdent());
+                }
+                if (assign_rhsNode instanceof Str_literNode) {
+                    getTypeNode((IdentNode) assign_lhsNode).setValue((assign_rhsNode).getValue());
+                } else if (assign_rhsNode.getType().equals("Int")) {
+                    getTypeNode((IdentNode) assign_lhsNode).setValue((assign_rhsNode.getValue()));
+                }
+            }
         }
     }
 
@@ -879,11 +883,11 @@ public class AST {
 
         private void generatePrintIntLiter(AssemblyBuilder builder) {
 
-//            if (exprNode instanceof IdentNode) {
-//                builder.getMain().append("LDR r0, [sp]");
-//            } else {
-                builder.getMain().append("LDR r0, =" + exprNode.getValue() + "\n");
-//            }
+            String value =  exprNode.getValue().equals("[sp]") ? "[sp]" : "=" + exprNode.getValue();
+
+            builder.getCurrent().append("LDR r0, " + value + "\n");
+            builder.getCurrent().append("BL p_print_int\n");
+            builder.getCurrent().append("BL p_print_ln\n");
 
             if (!builder.getLabel().toString().contains("p_print_int:")) {
                 builder.getLabel().append("p_print_int:\n");
@@ -1209,6 +1213,16 @@ public class AST {
             builder.setCurrent(currentStringBuilder);
             builder.getCurrent().append(stringBuilderFalse);
             builder.getCurrent().append(labelTrue + ":\n");
+
+            if (exprNode.getValue().equals("true")) {
+                if (statNodeTrue instanceof AssignmentNode) {
+                    ((AssignmentNode)statNodeTrue).setValue();
+                }
+            } else {
+                if (statNodeFalse instanceof AssignmentNode) {
+                    ((AssignmentNode)statNodeFalse).setValue();
+                }
+            }
         }
 
     }
