@@ -1194,10 +1194,12 @@ public class AST {
             String labelTrue = "L" + labelCount;
             labelCount++;
 
+            currentlyUsedRegister = registers.getFirstEmptyRegister();
             exprNode.generate(builder);
 
             builder.getCurrent().append("CMP " + currentlyUsedRegister + ", #0\n");
             builder.getCurrent().append("BEQ " + labelFalse + "\n");
+            currentlyUsedRegister.setValue(null);
 
             statNodeTrue.generate(builder);
             builder.getCurrent().append("B " + labelTrue + "\n");
@@ -2775,7 +2777,7 @@ public class AST {
 
         @Override
         public void generate(AssemblyBuilder builder) {
-            builder.getCurrent().append("MOV " + currentlyUsedRegister + ", #\'" + value + "\'\n");
+            builder.getCurrent().append("MOV " + currentlyUsedRegister + ", #" + value + "\n");
             currentlyUsedRegister.setValue(value);
         }
 
