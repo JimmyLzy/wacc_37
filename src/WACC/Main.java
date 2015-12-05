@@ -52,6 +52,16 @@ public class Main {
         fileWriter.println(builder.getMain());
         fileWriter.println(builder.getLabel());
 
+        //test purpose only=======================
+        PrintWriter testFileWriter = new PrintWriter("testFile.s");
+        testFileWriter.println(builder.getHeader());
+        testFileWriter.println(builder.getFunction());
+        testFileWriter.println(builder.getMain());
+        testFileWriter.println(builder.getLabel());
+        testFileWriter.close();
+        //===========================
+
+
         System.out.println(builder.getHeader());
         System.out.println();
         System.out.println(builder.getFunction());
