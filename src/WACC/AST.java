@@ -184,7 +184,6 @@ public class AST {
                 funcNode.generate(builder);
             }
             statNode.generate(builder);
-            statNode.setValue();
             builder.getMain().append("MOV " + resultReg + ", #0\n");
             registers.get(0).setValue(0);
             builder.getMain().append("POP {pc}\n");
@@ -260,7 +259,6 @@ public class AST {
 
             builder.setCurrent(builder.getFunction());
             statNode.generate(builder);
-            statNode.setValue();
         }
 
     }
@@ -301,12 +299,11 @@ public class AST {
             int stackSize = stack.getSize();
             int num = stackSize / Stack.MAX_STACK_SIZE;
             int remainder = stackSize % Stack.MAX_STACK_SIZE;
-            if (isLastState && stack.IfDeclarationCodeGenerated()) {
-                for (int i = 0; i < num; i++) {
-                    builder.getCurrent().append("ADD sp, sp, #" + Stack.MAX_STACK_SIZE + "\n");
-                }
-                builder.getCurrent().append("ADD sp, sp, #" + remainder + "\n");
+
+            for (int i = 0; i < num; i++) {
+                builder.getCurrent().append("ADD sp, sp, #" + Stack.MAX_STACK_SIZE + "\n");
             }
+            builder.getCurrent().append("ADD sp, sp, #" + remainder + "\n");
         }
 
         protected int getStackOffset() {
@@ -470,7 +467,7 @@ public class AST {
                 stack.setIfDeclarationCodeGenerated(true);
             }
             assign_rhsNode.generate(builder);
-            if (assign_rhsNode instanceof Int_literNode || assign_rhsNode instanceof Str_literNode) {
+            if (assign_rhsNode.getType().equals("Int") || assign_rhsNode.getType().equals("String")) {
                 builder.getCurrent().append("STR " + currentlyUsedRegister + getStackPointer() + "\n");
             } else {
                 builder.getCurrent().append("STRB " + currentlyUsedRegister + getStackPointer() + "\n");
@@ -555,12 +552,13 @@ public class AST {
         public void generate(AssemblyBuilder builder) {
             currentlyUsedRegister = registers.getFirstEmptyRegister();
             assign_rhsNode.generate(builder);
-            if (assign_rhsNode instanceof  Int_literNode || assign_rhsNode instanceof Str_literNode) {
+            if (assign_rhsNode.getType().equals("Int") || assign_rhsNode.getType().equals("String")) {
                 builder.getCurrent().append("STR " + currentlyUsedRegister + getStackPointer() + "\n");
             } else {
                 builder.getCurrent().append("STRB " + currentlyUsedRegister + getStackPointer() + "\n");
             }
             currentlyUsedRegister.setValue(null);
+            setValue();
         }
 
 
@@ -590,11 +588,8 @@ public class AST {
             if (assign_lhsNode instanceof IdentNode) {
                 if (assign_rhsNode instanceof IdentNode) {
                     ((IdentNode) assign_lhsNode).getTypeNode().setIdent(((IdentNode) assign_rhsNode).getIdent());
-                }
-                if (assign_rhsNode instanceof Str_literNode) {
+                } else {
                     getTypeNode((IdentNode) assign_lhsNode).setValue((assign_rhsNode).getValue());
-                } else if (assign_rhsNode.getType().equals("Int")) {
-                    getTypeNode((IdentNode) assign_lhsNode).setValue((assign_rhsNode.getValue()));
                 }
             }
         }
@@ -910,11 +905,11 @@ public class AST {
         public void generate(AssemblyBuilder builder) {
             if (exprNode.getType().equals("String")) {
                 generatePrintStringLiter(builder);
-            }else if (exprNode.getType().equals("Bool")) {
+            } else if (exprNode.getType().equals("Bool")) {
                 generatePrintBoolLiter(builder);
-            }else if (exprNode.getType().equals("Int")) {
+            } else if (exprNode.getType().equals("Int")) {
                 generatePrintIntLiter(builder);
-            }else if (exprNode.getType().equals("Char")) {
+            } else if (exprNode.getType().equals("Char")) {
                 generatePrintCharLiter(builder);
             }
         }
@@ -930,7 +925,7 @@ public class AST {
 
         private void generatePrintIntLiter(AssemblyBuilder builder) {
 
-            String value =  exprNode.getValue().equals("[sp]") ? "[sp]" : "=" + exprNode.getValue();
+            String value = exprNode.getValue().equals("[sp]") ? "[sp]" : "=" + exprNode.getValue();
 
             builder.getCurrent().append("LDR r0, " + value + "\n");
             builder.getCurrent().append("BL p_print_int\n");
@@ -1048,11 +1043,11 @@ public class AST {
         public void generate(AssemblyBuilder builder) {
             if (exprNode.getType().equals("String")) {
                 generatePrintStringLiter(builder);
-            }else if (exprNode.getType().equals("Bool")) {
+            } else if (exprNode.getType().equals("Bool")) {
                 generatePrintBoolLiter(builder);
-            }else if (exprNode.getType().equals("Int")) {
+            } else if (exprNode.getType().equals("Int")) {
                 generatePrintIntLiter(builder);
-            }else if (exprNode.getType().equals("Char")) {
+            } else if (exprNode.getType().equals("Char")) {
                 generatePrintCharLiter(builder);
             }
             if (!builder.getLabel().toString().contains("p_print_ln:")) {
@@ -1083,7 +1078,7 @@ public class AST {
         }
 
         private void generatePrintIntLiter(AssemblyBuilder builder) {
-            String value =  exprNode.getValue().equals("[sp]") ? "[sp]" : "=" + exprNode.getValue();
+            String value = exprNode.getValue().equals("[sp]") ? "[sp]" : "=" + exprNode.getValue();
 
             builder.getCurrent().append("LDR r0, " + value + "\n");
             builder.getCurrent().append("BL p_print_int\n");
@@ -1271,15 +1266,15 @@ public class AST {
             builder.getCurrent().append(stringBuilderFalse);
             builder.getCurrent().append(labelTrue + ":\n");
 
-            if (exprNode.getValue().equals("true")) {
-                if (statNodeTrue instanceof AssignmentNode) {
-                    ((AssignmentNode)statNodeTrue).setValue();
-                }
-            } else {
-                if (statNodeFalse instanceof AssignmentNode) {
-                    ((AssignmentNode)statNodeFalse).setValue();
-                }
-            }
+//            if (exprNode.getValue().equals("true")) {
+//                if (statNodeTrue instanceof AssignmentNode) {
+//                    ((AssignmentNode) statNodeTrue).setValue();
+//                }
+//            } else {
+//                if (statNodeFalse instanceof AssignmentNode) {
+//                    ((AssignmentNode) statNodeFalse).setValue();
+//                }
+//            }
         }
 
     }
@@ -1335,29 +1330,32 @@ public class AST {
 
         @Override
         public void generate(AssemblyBuilder builder) {
-            StringBuilder currentStringBuilder = builder.getCurrent();
-
-            String labelWhileBody = "L" + labelCount;
-            labelCount++;
-
-            String labelWhileEnd = "L" + labelCount;
-            labelCount++;
-
-            builder.getCurrent().append("B " + labelWhileEnd + "\n");
-
-            currentStringBuilder.append(labelWhileBody + ":\n");
-            statNode.generate(builder);
-            statNode.setValue();
-
-            currentStringBuilder.append(labelWhileEnd + ":\n");
-
-            currentlyUsedRegister = registers.getFirstEmptyRegister();
-            exprNode.generate(builder);
-
-            currentStringBuilder.append("CMP " + currentlyUsedRegister + ", #1\n");
-            currentlyUsedRegister.setValue(null);
-
-            currentStringBuilder.append("BEQ " + labelWhileBody + "\n");
+//            StringBuilder currentStringBuilder = builder.getCurrent();
+//
+//            String labelWhileBody = "L" + labelCount;
+//            labelCount++;
+//
+//            String labelWhileEnd = "L" + labelCount;
+//            labelCount++;
+//
+//            builder.getCurrent().append("B " + labelWhileEnd + "\n");
+//
+//            currentStringBuilder.append(labelWhileBody + ":\n");
+//            statNode.generate(builder);
+//            statNode.setValue();
+//
+//            currentStringBuilder.append(labelWhileEnd + ":\n");
+//
+//            currentlyUsedRegister = registers.getFirstEmptyRegister();
+//            exprNode.generate(builder);
+//
+//            currentStringBuilder.append("CMP " + currentlyUsedRegister + ", #1\n");
+//            currentlyUsedRegister.setValue(null);
+//
+//            currentStringBuilder.append("BEQ " + labelWhileBody + "\n");
+            while (Boolean.valueOf(exprNode.getValue())) {
+                statNode.generate(builder);
+            }
         }
 
     }
@@ -1451,14 +1449,16 @@ public class AST {
         public void generate(AssemblyBuilder builder) {
             isLastState = false;
             statNodeFirst.generate(builder);
-            statNodeFirst.setValue();
             if (!(getParent() instanceof MultipleStatNode)) {
                 isLastState = true;
             }
             statNodeSecond.generate(builder);
-            statNodeSecond.setValue();
-            statNodeSecond.addBackToStack(builder);
 
+            if (isLastState && stack.IfDeclarationCodeGenerated()) {
+                statNodeSecond.addBackToStack(builder);
+            }
+
+            isLastState = false;
         }
 
     }
@@ -2025,7 +2025,7 @@ public class AST {
 
         @Override
         public String getValue() {
-            return String.valueOf((int)exprNode.getValue().charAt(1));
+            return String.valueOf((int) exprNode.getValue().charAt(1));
         }
 
         @Override
@@ -2184,7 +2184,6 @@ public class AST {
         public void generate(AssemblyBuilder builder) {
 
         }
-
 
 
     }
@@ -2358,7 +2357,7 @@ public class AST {
         @Override
         public String getValue() {
             if (exp1.getType().equals("Char")) {
-                return String.valueOf((int)((exp1).getValue().charAt(1)) > ((int)(exp2).getValue().charAt(1)));
+                return String.valueOf((int) ((exp1).getValue().charAt(1)) > ((int) (exp2).getValue().charAt(1)));
             }
             return String.valueOf(Integer.valueOf(exp1.getValue()) > Integer.valueOf(exp2.getValue()));
         }
@@ -2406,7 +2405,7 @@ public class AST {
         @Override
         public String getValue() {
             if (exp1.getType().equals("Char")) {
-                return String.valueOf((int)((exp1).getValue().charAt(1)) >= ((int)(exp2).getValue().charAt(1)));
+                return String.valueOf((int) ((exp1).getValue().charAt(1)) >= ((int) (exp2).getValue().charAt(1)));
             }
             return String.valueOf(Integer.valueOf(exp1.getValue()) >= Integer.valueOf(exp2.getValue()));
         }
@@ -2454,7 +2453,7 @@ public class AST {
         @Override
         public String getValue() {
             if (exp1.getType().equals("Char")) {
-                return String.valueOf((int)((exp1).getValue().charAt(1)) < ((int)(exp2).getValue().charAt(1)));
+                return String.valueOf((int) ((exp1).getValue().charAt(1)) < ((int) (exp2).getValue().charAt(1)));
             }
             return String.valueOf(Integer.valueOf(exp1.getValue()) < Integer.valueOf(exp2.getValue()));
         }
@@ -2502,7 +2501,7 @@ public class AST {
         @Override
         public String getValue() {
             if (exp1.getType().equals("Char")) {
-                return String.valueOf((int)((exp1).getValue().charAt(1)) <= ((int)(exp2).getValue().charAt(1)));
+                return String.valueOf((int) ((exp1).getValue().charAt(1)) <= ((int) (exp2).getValue().charAt(1)));
             }
             return String.valueOf(Integer.valueOf(exp1.getValue()) <= Integer.valueOf(exp2.getValue()));
         }
@@ -2546,11 +2545,14 @@ public class AST {
 
         @Override
         public String getValue() {
+            System.out.println("============================");
             if (exp1 instanceof Str_literNode || exp2 instanceof Str_literNode) {
                 return "false";
             } else if (exp1.getType().equals("String")) {
                 return String.valueOf(((IdentNode) exp1).getTypeNode().getIdent().equals(((IdentNode) exp2).getTypeNode().getIdent()));
             }
+            System.out.println(exp1.getValue());
+            System.out.println(exp2.getValue());
             return String.valueOf(exp1.getValue().equals(exp2.getValue()));
         }
 
@@ -2627,7 +2629,9 @@ public class AST {
             exp2.check();
 
             if (!exp1.getType().equals(exp2.getType())) {
-                throwSemanticError("Both expressions must have the same type on not logical and operator");
+                System.out.println(exp1.getType());
+                System.out.println(exp2.getType());
+                throwSemanticError("Both expressions must have the same type on logical and operator");
             } else if (!exp1.getType().equals("Bool")) {
                 throwSemanticError("Logical and operator can only take bool arguments");
             }
@@ -2780,13 +2784,13 @@ public class AST {
             return getTypeNode().getValue();
         }
 
+        public void setValue(String value) {
+            this.value = value;
+        }
+
         @Override
         public void setValue() {
 
-        }
-
-        public void setValue(String value) {
-            this.value = value;
         }
 
         @Override
