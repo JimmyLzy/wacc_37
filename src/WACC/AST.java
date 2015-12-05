@@ -389,6 +389,8 @@ public class AST {
                 headerBuilder.append(".ascii\t\"%d\\0\"\n");
             }
 
+            currentlyUsedRegister.setValue(null);
+
         }
 
         protected void generatePrintBoolLiter(AssemblyBuilder builder, ExprNode exprNode) {
@@ -430,9 +432,9 @@ public class AST {
                 labelBuilder.append("BL fflush\n");
                 labelBuilder.append("POP {pc}\n");
 
-                currentlyUsedRegister.setValue(null);
-
             }
+
+            currentlyUsedRegister.setValue(null);
 
         }
 
@@ -481,6 +483,8 @@ public class AST {
                 registerZero.setValue(null);
 
             }
+
+            currentlyUsedRegister.setValue(null);
 
         }
     }
@@ -1157,7 +1161,6 @@ public class AST {
                 headerBuilder.append(".ascii\t\"\\0\"\n");
 
                 currentlyUsedRegister.setValue(null);
-
             }
         }
 
@@ -2850,7 +2853,7 @@ public class AST {
 
         @Override
         public void generate(AssemblyBuilder builder) {
-            if (getType().equals("Int")) {
+            if (getType().equals("Int") || getType().equals("String")) {
                 builder.getCurrent().append("LDR " + currentlyUsedRegister + getStackPointer() + "\n");
             } else {
                 builder.getCurrent().append("LDRSB " + currentlyUsedRegister + getStackPointer() + "\n");
