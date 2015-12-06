@@ -83,9 +83,21 @@ expr: unary_oper expr
 | pair_liter
 | ident
 | array_elem
-| expr binary_oper expr
+| expr (GREATER | GREATER_OR_EQUAL | SMALLER | SMALLER_OR_EQUAL ) expr
+| expr (EQUAL | NOT_EQUAL) expr
+| expr LOGICAL_AND expr
+| expr LOGICAL_OR expr
+| expr (MULT | DIV | MOD ) expr
+| expr (PLUS | MINUS ) expr
+//| expr binary_oper expr
+
+
+
+
 | int_liter
 | OPEN_PARENTHESES expr CLOSE_PARENTHESES;
+
+
 
 int_sign: PLUS | MINUS ;
 
