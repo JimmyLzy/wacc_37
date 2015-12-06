@@ -1902,6 +1902,11 @@ public class AST {
         @Override
         public void generate(AssemblyBuilder builder) {
 
+            currentlyUsedRegister = registers.getFirstEmptyRegister();
+            exprNode.generate(builder);
+            builder.getCurrent().append("EOR " + currentlyUsedRegister + ", " + currentlyUsedRegister + ", #1\n");
+            currentlyUsedRegister.setValue(null);
+
         }
 
     }
@@ -1975,7 +1980,7 @@ public class AST {
 
             exprNode.check();
 
-            if (!exprNode.getType().contains("[]")) {
+            if (!(exprNode.getType().contains("[]") || exprNode.getType().equals("String"))) {
                 throwSemanticError("Len operator only take int argument");
             }
 
@@ -1993,6 +1998,11 @@ public class AST {
 
         @Override
         public void generate(AssemblyBuilder builder) {
+
+            currentlyUsedRegister = registers.getFirstEmptyRegister();
+            exprNode.generate(builder);
+            builder.getCurrent().append("LDR " + currentlyUsedRegister + ", [" + currentlyUsedRegister + "]\n");
+            currentlyUsedRegister.setValue(null);
 
         }
     }
@@ -2863,7 +2873,7 @@ public class AST {
             } else {
                 builder.getCurrent().append("LDRSB " + currentlyUsedRegister + getStackPointer() + "\n");
             }
-            currentlyUsedRegister.setValue(getValue());
+            currentlyUsedRegister.setValue(true);
         }
 
     }
