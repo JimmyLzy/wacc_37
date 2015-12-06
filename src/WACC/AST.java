@@ -1902,7 +1902,7 @@ public class AST {
 
         @Override
         public void generate(AssemblyBuilder builder) {
-            
+
             exprNode.generate(builder);
             builder.getCurrent().append("EOR " + currentlyUsedRegister + ", " + currentlyUsedRegister + ", #1\n");
 
@@ -1938,7 +1938,9 @@ public class AST {
 
         @Override
         public String getValue() {
-            return String.valueOf(-Integer.valueOf(exprNode.getValue()));
+            long x = Long.parseLong(exprNode.getValue());
+            x = x / (-1);
+            return String.valueOf(x);
         }
 
         @Override
@@ -1948,11 +1950,68 @@ public class AST {
 
         @Override
         public void generate(AssemblyBuilder builder) {
+            if (exprNode instanceof Int_literNode) {
+                builder.getCurrent().append("LDR " + currentlyUsedRegister + ", =" + getValue() + "\n");
+                currentlyUsedRegister.setValue(getValue());
+            } else {
+                builder.getCurrent().append("LDR " + currentlyUsedRegister + getStackPointer() + "\n");
+                currentlyUsedRegister.setValue(true);
+                builder.getCurrent().append("RSBS " + currentlyUsedRegister + ", " + currentlyUsedRegister+ ", #0\n");
+                builder.getCurrent().append("BLVS p_throw_overflow_error\n");
+                if (!builder.getLabel().toString().contains("p_throw_overflow_error:")) {
+                    builder.getLabel().append("p_throw_overflow_error:\n");
+                    builder.getLabel().append("LDR " + currentlyUsedRegister + " , =msg_" + messageCount + "\n");
+                    currentlyUsedRegister.setValue(true);
+                    builder.getLabel().append("BL p_throw_runtime_error\n");
 
-            int num = Integer.parseInt(getValue());
-            currentlyUsedRegister.setValue(true);
-            builder.getCurrent().append("LDR " + currentlyUsedRegister + ", =" + num + "\n");
+                    builder.getHeader().append("msg_" + messageCount + ":\n");
+                    builder.getHeader().append(".word 82\n");
+                    builder.getHeader().append(".ascii\t\"OverflowError: the result is too small/large"
+                            + "to store in a 4-byte signed-integer.\\n\"\n");
+                    messageCount++;
 
+                    if (!builder.getLabel().toString().contains("p_throw_runtime_error:")) {
+                        builder.getLabel().append("p_throw_runtime_error:\n");
+                        builder.getLabel().append("BL p_print_string\n");
+                        builder.getLabel().append("MOV r0, #-1\n");
+                        builder.getLabel().append("BL exit\n");
+
+                        if (!builder.getLabel().toString().contains("p_print_string:")) {
+                            builder.getLabel().append("p_print_string:\n");
+                            builder.getLabel().append("PUSH {lr}\n");
+                            Registers.Register registerZero = currentlyUsedRegister;
+                            currentlyUsedRegister = registers.getFirstEmptyRegister();
+                            builder.getLabel().append("LDR " + currentlyUsedRegister + ", [" + registerZero + "]\n");
+                            currentlyUsedRegister.setValue(registerZero.getValue());
+                            Registers.Register registerFirst = currentlyUsedRegister;
+                            currentlyUsedRegister = registers.getFirstEmptyRegister();
+                            builder.getLabel().append("ADD " + currentlyUsedRegister + ", " + registerZero + ", #4\n");
+
+                            //r2 need to set value
+                            currentlyUsedRegister.setValue(0);
+                            registerZero.setValue(null);
+                            registerFirst.setValue(null);
+                            currentlyUsedRegister.setValue(null);
+
+                            currentlyUsedRegister = registers.getFirstEmptyRegister();
+
+                            builder.getLabel().append("LDR " + currentlyUsedRegister + ", =msg_" + messageCount + "\n");
+                            builder.getLabel().append("ADD " + currentlyUsedRegister + ", " + currentlyUsedRegister + ", #4\n");
+                            builder.getLabel().append("BL printf\n");
+                            builder.getLabel().append("MOV " + currentlyUsedRegister + ", #0\n");
+                            builder.getLabel().append("BL fflush\n");
+                            builder.getLabel().append("POP {pc}\n");
+
+                            builder.getHeader().append("msg_" + messageCount + ":\n");
+                            messageCount++;
+                            builder.getHeader().append(".word 5\n");
+                            builder.getHeader().append(".ascii\t\"%.*s\\0\"\n");
+
+                            registerZero.setValue(null);
+                        }
+                    }
+                }
+            }
         }
 
     }
@@ -2169,6 +2228,118 @@ public class AST {
 
         }
 
+        private void generateCheckDivideByZero(AssemblyBuilder builder) {
+            builder.getCurrent().append("BL p_check_divide_by_zero\n");
+            if (!builder.getLabel().toString().contains("p_check_divide_by_zero:")) {
+                builder.getLabel().append("p_check_divide_by_zero:\n");
+                builder.getLabel().append("PUSH {lr}\n");
+                builder.getLabel().append("CMP r1, #0\n");
+                builder.getLabel().append("LDREQ r0, =msg_" + messageCount + "\n");
+                builder.getLabel().append("BLEQ p_throw_runtime_error\n");
+                builder.getLabel().append("POP {pc}\n");
+                builder.getHeader().append("msg_" + messageCount + ":\n");
+                builder.getHeader().append(".word 45\n");
+                builder.getHeader().append(".ascii\t\"DivideByZeroError: divide or modulo by zero\\n\\0\"\n");
+                messageCount++;
+            }
+            if (!builder.getLabel().toString().contains("p_throw_runtime_error:")) {
+                builder.getLabel().append("p_throw_runtime_error:\n");
+                builder.getLabel().append("BL p_print_string\n");
+                builder.getLabel().append("MOV r0, #-1\n");
+                builder.getLabel().append("BL exit\n");
+                if (!builder.getLabel().toString().contains("p_print_string:")) {
+                    builder.getLabel().append("p_print_string:\n");
+                    builder.getLabel().append("PUSH {lr}\n");
+                    Registers.Register registerZero = currentlyUsedRegister;
+                    currentlyUsedRegister = registers.getFirstEmptyRegister();
+                    builder.getLabel().append("LDR " + currentlyUsedRegister + ", [" + registerZero + "]\n");
+                    currentlyUsedRegister.setValue(registerZero.getValue());
+                    Registers.Register registerFirst = currentlyUsedRegister;
+                    currentlyUsedRegister = registers.getFirstEmptyRegister();
+                    builder.getLabel().append("ADD " + currentlyUsedRegister + ", " + registerZero + ", #4\n");
+
+                    //r2 need to set value
+                    currentlyUsedRegister.setValue(0);
+                    registerZero.setValue(null);
+                    registerFirst.setValue(null);
+                    currentlyUsedRegister.setValue(null);
+
+                    currentlyUsedRegister = registers.getFirstEmptyRegister();
+
+                    builder.getLabel().append("LDR " + currentlyUsedRegister + ", =msg_" + messageCount + "\n");
+                    builder.getLabel().append("ADD " + currentlyUsedRegister + ", " + currentlyUsedRegister + ", #4\n");
+                    builder.getLabel().append("BL printf\n");
+                    builder.getLabel().append("MOV " + currentlyUsedRegister + ", #0\n");
+                    builder.getLabel().append("BL fflush\n");
+                    builder.getLabel().append("POP {pc}\n");
+
+                    builder.getHeader().append("msg_" + messageCount + ":\n");
+                    messageCount++;
+                    builder.getHeader().append(".word 5\n");
+                    builder.getHeader().append(".ascii\t\"%.*s\\0\"\n");
+
+                    registerZero.setValue(null);
+                }
+            }
+        }
+
+        private void generateCheckOverflow(AssemblyBuilder builder) {
+            if (!builder.getLabel().toString().contains("p_throw_overflow_error:")) {
+                builder.getLabel().append("p_throw_overflow_error:\n");
+                builder.getLabel().append("LDR " + currentlyUsedRegister + " , =msg_" + messageCount + "\n");
+                currentlyUsedRegister.setValue(true);
+                builder.getLabel().append("BL p_throw_runtime_error\n");
+
+                builder.getHeader().append("msg_" + messageCount + ":\n");
+                builder.getHeader().append(".word 82\n");
+                builder.getHeader().append(".ascii\t\"OverflowError: the result is too small/large"
+                        + "to store in a 4-byte signed-integer.\\n\"\n");
+                messageCount++;
+
+                if (!builder.getLabel().toString().contains("p_throw_runtime_error:")) {
+                    builder.getLabel().append("p_throw_runtime_error:\n");
+                    builder.getLabel().append("BL p_print_string\n");
+                    builder.getLabel().append("MOV r0, #-1\n");
+                    builder.getLabel().append("BL exit\n");
+
+                    if (!builder.getLabel().toString().contains("p_print_string:")) {
+                        builder.getLabel().append("p_print_string:\n");
+                        builder.getLabel().append("PUSH {lr}\n");
+                        Registers.Register registerZero = currentlyUsedRegister;
+                        currentlyUsedRegister = registers.getFirstEmptyRegister();
+                        builder.getLabel().append("LDR " + currentlyUsedRegister + ", [" + registerZero + "]\n");
+                        currentlyUsedRegister.setValue(registerZero.getValue());
+                        Registers.Register registerFirst = currentlyUsedRegister;
+                        currentlyUsedRegister = registers.getFirstEmptyRegister();
+                        builder.getLabel().append("ADD " + currentlyUsedRegister + ", " + registerZero + ", #4\n");
+
+                        //r2 need to set value
+                        currentlyUsedRegister.setValue(0);
+                        registerZero.setValue(null);
+                        registerFirst.setValue(null);
+                        currentlyUsedRegister.setValue(null);
+
+                        currentlyUsedRegister = registers.getFirstEmptyRegister();
+
+                        builder.getLabel().append("LDR " + currentlyUsedRegister + ", =msg_" + messageCount + "\n");
+                        builder.getLabel().append("ADD " + currentlyUsedRegister + ", " + currentlyUsedRegister + ", #4\n");
+                        builder.getLabel().append("BL printf\n");
+                        builder.getLabel().append("MOV " + currentlyUsedRegister + ", #0\n");
+                        builder.getLabel().append("BL fflush\n");
+                        builder.getLabel().append("POP {pc}\n");
+
+                        builder.getHeader().append("msg_" + messageCount + ":\n");
+                        messageCount++;
+                        builder.getHeader().append(".word 5\n");
+                        builder.getHeader().append(".ascii\t\"%.*s\\0\"\n");
+
+                        registerZero.setValue(null);
+                    }
+                }
+            }
+        }
+
+
         protected void generateMathsmaticsOperationCode(AssemblyBuilder builder, String operation) {
             StringBuilder currentBuilder = builder.getCurrent();
 
@@ -2201,19 +2372,29 @@ public class AST {
                 case "ADDS":
                     currentBuilder.append(operation + " " + currentlyUsedRegister + ", " + currentlyUsedRegister +
                             ", " + registerFirst + "\n");
+                    currentBuilder.append("BLVS p_throw_overflow_error\n");
+                    generateCheckOverflow(builder);
                     break;
                 case "SUBS":
                     currentBuilder.append(operation + " " + currentlyUsedRegister + ", " + currentlyUsedRegister +
                             ", " + registerFirst + "\n");
+                    currentBuilder.append("BLVS p_throw_overflow_error\n");
+                    generateCheckOverflow(builder);
                     break;
                 case "SMULL":
                     currentBuilder.append(operation + " " + currentlyUsedRegister + ", " + registerFirst + ", " +
                             currentlyUsedRegister + ", " + registerFirst + "\n");
                     currentBuilder.append("CMP " + registerFirst + ", " + currentlyUsedRegister + ", ASR #31\n");
+                    currentBuilder.append("BLNE p_throw_overflow_error\n");
+                    generateCheckOverflow(builder);
                     break;
                 case "DIVS":
+                    generateCheckDivideByZero(builder);
+                    currentBuilder.append("BL __aeabi_idiv" + "\n");
                     break;
                 case "MODS":
+                    generateCheckDivideByZero(builder);
+                    currentBuilder.append("BL __aeabi_idivmod" + "\n");
                     break;
             }
         }
@@ -3027,7 +3208,12 @@ public class AST {
 
         @Override
         public String getValue() {
-            return String.valueOf(getvalue());
+            long v = 0;
+            if (sign.equals("-")) {
+                v = Long.parseLong(value) / (-1);
+            }
+            v =  Long.parseLong(value);
+            return String.valueOf(v);
         }
 
         @Override
