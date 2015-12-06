@@ -144,37 +144,32 @@ public class MyVisitor extends BasicParserBaseVisitor<AST.ASTNode> {
     public AST.ASTNode visitExpr(@NotNull BasicParser.ExprContext ctx) {
         if (ctx.OPEN_PARENTHESES() != null) {
             return visit(ctx.expr(0));
-
-        } else if (ctx.binary_oper() != null) {
-            switch (ctx.binary_oper().getText()) {
-                case "*":
-                    return ast.new MultNode(visit(ctx.expr(0)), visit(ctx.expr(1)));
-                case "/":
-                    return ast.new DivNode(visit(ctx.expr(0)), visit(ctx.expr(1)));
-                case "%":
-                    return ast.new ModNode(visit(ctx.expr(0)), visit(ctx.expr(1)));
-                case "+":
-                    return ast.new PlusNode(visit(ctx.expr(0)), visit(ctx.expr(1)));
-                case "-":
-                    return ast.new MinusNode(visit(ctx.expr(0)), visit(ctx.expr(1)));
-                case ">":
-                    return ast.new GreaterNode(visit(ctx.expr(0)), visit(ctx.expr(1)));
-                case ">=":
-                    return ast.new GreaterOrEqualNode(visit(ctx.expr(0)), visit(ctx.expr(1)));
-                case "<":
-                    return ast.new SmallerNode(visit(ctx.expr(0)), visit(ctx.expr(1)));
-                case "<=":
-                    return ast.new SmallerOrEqualNode(visit(ctx.expr(0)), visit(ctx.expr(1)));
-                case "==":
-                    return ast.new EqualNode(visit(ctx.expr(0)), visit(ctx.expr(1)));
-                case "!=":
-                    return ast.new NotEqualNode(visit(ctx.expr(0)), visit(ctx.expr(1)));
-                case "&&":
-                    return ast.new LogicalAndNode(visit(ctx.expr(0)), visit(ctx.expr(1)));
-                case "||":
-                    return ast.new LogicalOrNode(visit(ctx.expr(0)), visit(ctx.expr(1)));
-            }
-
+        } else if (ctx.GREATER() != null) {
+            return ast.new GreaterNode(visit(ctx.expr(0)), visit(ctx.expr(1)));
+        } else if (ctx.GREATER_OR_EQUAL() != null) {
+            return ast.new GreaterOrEqualNode(visit(ctx.expr(0)), visit(ctx.expr(1)));
+        } else if (ctx.SMALLER() != null) {
+            return ast.new SmallerNode(visit(ctx.expr(0)), visit(ctx.expr(1)));
+        } else if (ctx.SMALLER_OR_EQUAL() != null) {
+            return ast.new SmallerOrEqualNode(visit(ctx.expr(0)), visit(ctx.expr(1)));
+        } else if (ctx.EQUAL() != null) {
+            return ast.new EqualNode(visit(ctx.expr(0)), visit(ctx.expr(1)));
+        } else if (ctx.NOT_EQUAL() != null) {
+            return ast.new NotEqualNode(visit(ctx.expr(0)), visit(ctx.expr(1)));
+        } else if (ctx.LOGICAL_AND() != null) {
+            return ast.new LogicalAndNode(visit(ctx.expr(0)), visit(ctx.expr(1)));
+        } else if (ctx.LOGICAL_OR() != null) {
+            return ast.new LogicalOrNode(visit(ctx.expr(0)), visit(ctx.expr(1)));
+        } else if (ctx.MULT() != null) {
+            return ast.new MultNode(visit(ctx.expr(0)), visit(ctx.expr(1)));
+        } else if (ctx.DIV() != null) {
+            return ast.new DivNode(visit(ctx.expr(0)), visit(ctx.expr(1)));
+        } else if (ctx.MOD() != null) {
+            return ast.new ModNode(visit(ctx.expr(0)), visit(ctx.expr(1)));
+        } else if (ctx.PLUS() != null) {
+            return ast.new PlusNode(visit(ctx.expr(0)), visit(ctx.expr(1)));
+        } else if (ctx.MINUS() != null) {
+            return ast.new MinusNode(visit(ctx.expr(0)), visit(ctx.expr(1)));
         } else if (ctx.unary_oper() != null) {
             switch (ctx.unary_oper().getText()) {
                 case "!":
@@ -512,21 +507,6 @@ public class MyVisitor extends BasicParserBaseVisitor<AST.ASTNode> {
             exprNodeList.add((AST.ExprNode) visit(exprContext));
         }
         return ast.new Array_elemNode((AST.IdentNode) visit(ctx.ident()), exprNodeList);
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * @author WangJiaYing & Jimmy
-     * <p>The default implementation returns the result of calling
-     * {@link #visitChildren} on {@code ctx}.</p>
-     */
-    @Override
-    public AST.ASTNode visitBinary_oper(@NotNull BasicParser.Binary_operContext ctx) {
-
-        //TODO
-        System.out.println("Not Implemented");
-        return visitChildren(ctx);
     }
 
     /**
