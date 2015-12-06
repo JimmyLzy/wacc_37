@@ -374,6 +374,7 @@ public class AST {
                 labelBuilder.append("p_print_int:\n");
                 labelBuilder.append("PUSH {lr}\n");
                 Registers.Register registerZero = currentlyUsedRegister;
+                registerZero.setValue(true);
                 currentlyUsedRegister = registers.getFirstEmptyRegister();
                 labelBuilder.append("MOV " + currentlyUsedRegister + ", " + registerZero + "\n");
                 currentlyUsedRegister.setValue(true);
@@ -2237,7 +2238,7 @@ public class AST {
             stack.decSize(4);
             currentBuilder.append("CMP " + currentlyUsedRegister + ", " + registerFirst + "\n");
 
-            currentlyUsedRegister.setValue(null);
+//            currentlyUsedRegister.setValue(null);
             registerFirst.setValue(null);
 
         }
@@ -2372,7 +2373,6 @@ public class AST {
             }
 
             Registers.Register registerFirst = registers.getFirstEmptyRegister();
-
             currentBuilder.append("MOV " + registerFirst + ", " + currentlyUsedRegister + "\n");
             registerFirst.setValue(true);
             currentBuilder.append("POP {" + currentlyUsedRegister + "}\n");
