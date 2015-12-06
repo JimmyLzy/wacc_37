@@ -1055,6 +1055,9 @@ public class AST {
 
         @Override
         public void check() {
+
+            exprNode.setCurrentStack(stack);
+
             exprNode.check();
         }
 
@@ -1108,6 +1111,9 @@ public class AST {
 
         @Override
         public void check() {
+
+            exprNode.setCurrentStack(stack);
+
             exprNode.check();
         }
 
@@ -2117,6 +2123,10 @@ public class AST {
 
         @Override
         public void check() {
+
+            exp1.setCurrentStack(stack);
+            exp2.setCurrentStack(stack);
+
             exp1.check();
             exp2.check();
 
