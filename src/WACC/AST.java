@@ -990,6 +990,7 @@ public class AST {
 
         @Override
         public void check() {
+            exprNode.setCurrentStack(stack);
             exprNode.check();
 
             if (!exprNode.getType().equals("Int")) {
@@ -999,29 +1000,9 @@ public class AST {
 
         @Override
         public void generate(AssemblyBuilder builder) {
-//            int exitNum = 0;
-//            if (exprNode instanceof NegateOperNode) {
-//                NegateOperNode negateOperNode = (NegateOperNode) exprNode;
-//                exitNum = ((Int_literNode) negateOperNode.getExprNdoe()).getvalue() / -1;
-//            } else if (exprNode instanceof IdentNode) {
-//                builder.getCurrent().append("LDR " + resultReg + ", =" + exprNode.getValue() + "\n");
-//                builder.getCurrent().append("BL exit\n");
-//                return;
-//            } else {
-//                Int_literNode int_literNode = (Int_literNode) exprNode;
-//                exitNum = int_literNode.getvalue();
-//            }
-//            builder.getCurrent().append("LDR " + resultReg + ", =" + exitNum + "\n");
-            if (exprNode instanceof Int_literNode) {
-                builder.getCurrent().append("LDR " + resultReg + ", =" + exprNode.getValue() + "\n");
-            } else if (exprNode instanceof NegateOperNode) {
-                NegateOperNode negateOperNode = (NegateOperNode) exprNode;
-                int exitNum = ((Int_literNode) negateOperNode.getExprNdoe()).getvalue() / -1;
-                builder.getCurrent().append("LDR " + resultReg + ", =" + exitNum + "\n");
-            } else {
-                IdentNode identNode = (IdentNode) exprNode;
-                builder.getCurrent().append("LDR " + resultReg + identNode.getStackPointer() + "\n");
-            }
+            currentlyUsedRegister = registers.getFirstEmptyRegister();
+            exprNode.generate(builder);
+            currentlyUsedRegister.setValue(null);
             builder.getCurrent().append("BL exit\n");
         }
     }
@@ -1899,6 +1880,8 @@ public class AST {
         @Override
         public void check() {
 
+            exprNode.setCurrentStack(stack);
+
             exprNode.check();
             if (!exprNode.getType().equals("Bool")) {
                 throwSemanticError("Not operator only take boolean argument");
@@ -1940,6 +1923,8 @@ public class AST {
         @Override
         public void check() {
 
+            exprNode.setCurrentStack(stack);
+
             exprNode.check();
             if (!exprNode.getType().equals("Int")) {
                 throwSemanticError("Negate operator only take int argument");
@@ -1959,6 +1944,10 @@ public class AST {
 
         @Override
         public void generate(AssemblyBuilder builder) {
+
+            int num = Integer.parseInt(exprNode.getValue());
+            currentlyUsedRegister.setValue(true);
+            builder.getCurrent().append("LDR " + currentlyUsedRegister + ", =" + num + "\n");
 
         }
 
@@ -1981,6 +1970,8 @@ public class AST {
 
         @Override
         public void check() {
+
+            exprNode.setCurrentStack(stack);
 
             exprNode.check();
 
@@ -2024,6 +2015,8 @@ public class AST {
         @Override
         public void check() {
 
+            exprNode.setCurrentStack(stack);
+
             exprNode.check();
 
             if (!exprNode.getType().equals("Char")) {
@@ -2065,6 +2058,8 @@ public class AST {
 
         @Override
         public void check() {
+
+            exprNode.setCurrentStack(stack);
 
             exprNode.check();
 
