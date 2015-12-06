@@ -97,6 +97,12 @@ public class AST {
             }
         }
 
+        public void throwSyntaxError(String errorMessage) {
+            System.out.println(errorMessage);
+            System.out.println("#syntax_error#");
+            System.exit(100);
+        }
+
         public void throwSemanticError(String errorMessage) {
             System.out.println(errorMessage);
             System.out.println("#semantic_error#");
@@ -573,6 +579,15 @@ public class AST {
             stack.add(identNode.getIdent(), typeNode.getNumOfByte());
 
             putIntoSymbolTable(this, identNode.getIdent(), typeNode);
+
+            if (typeNode.getType().equals("Int") && assign_rhsNode.getType().equals("Int")) {
+                try {
+                    Integer.parseInt(assign_rhsNode.getValue());
+                } catch (NumberFormatException e) {
+                    throwSyntaxError("Integer value is too large for a 32-bit signed integer");
+                }
+            }
+
             assign_rhsNode.check();
 
             if (assign_rhsNode.getType().equals("Null")) {
@@ -2464,6 +2479,9 @@ public class AST {
 
         @Override
         public String getValue() {
+            if (exp2.getValue().equals("0")) {
+                return "-1";
+            }
             return String.valueOf(Integer.valueOf(exp1.getValue()) / Integer.valueOf(exp2.getValue()));
         }
 
