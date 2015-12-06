@@ -2048,6 +2048,10 @@ public class AST {
         @Override
         public void generate(AssemblyBuilder builder) {
 
+            currentlyUsedRegister = registers.getFirstEmptyRegister();
+            exprNode.generate(builder);
+            currentlyUsedRegister.setValue(null);
+
         }
     }
 
@@ -2092,6 +2096,10 @@ public class AST {
 
         @Override
         public void generate(AssemblyBuilder builder) {
+
+            currentlyUsedRegister = registers.getFirstEmptyRegister();
+            exprNode.generate(builder);
+            currentlyUsedRegister.setValue(null);
 
         }
 
