@@ -2409,6 +2409,7 @@ public class AST {
                 case "MODS":
                     generateCheckDivideByZero(builder);
                     currentBuilder.append("BL __aeabi_idivmod" + "\n");
+                    currentBuilder.append("MOV " + currentlyUsedRegister + ", " + registerFirst + "\n");
                     break;
             }
         }
