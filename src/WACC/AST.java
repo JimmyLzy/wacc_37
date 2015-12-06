@@ -2154,71 +2154,71 @@ public class AST {
         protected void generateBranchCode(AssemblyBuilder builder) {
             StringBuilder currentBuilder = builder.getCurrent();
 
-            Registers.Register exp1Register = registers.getFirstEmptyRegister();
-            currentlyUsedRegister = exp1Register;
-
-            exp1.generate(builder);
-            currentBuilder.append("PUSH {" + exp1Register + "}\n");
-            exp1Register.setValue(null);
-            stack.incSize(4);
-
             Registers.Register exp2Register = registers.getFirstEmptyRegister();
             currentlyUsedRegister = exp2Register;
+
             exp2.generate(builder);
+            currentBuilder.append("PUSH {" + exp2Register + "}\n");
+            exp2Register.setValue(null);
+            stack.incSize(4);
 
-            exp2Register = registers.getFirstEmptyRegister();
+            Registers.Register exp1Register = registers.getFirstEmptyRegister();
+            currentlyUsedRegister = exp1Register;
+            exp1.generate(builder);
 
-            currentBuilder.append("MOV " + exp2Register + ", " + currentlyUsedRegister + "\n");
+            exp1Register = registers.getFirstEmptyRegister();
+
+            currentBuilder.append("MOV " + exp1Register + ", " + currentlyUsedRegister + "\n");
             // need to set value
             currentBuilder.append("POP {" + currentlyUsedRegister + "}\n");
             // need to set value
             stack.decSize(4);
-            currentBuilder.append("CMP " + currentlyUsedRegister + ", " + exp2Register + "\n");
+            currentBuilder.append("CMP " + currentlyUsedRegister + ", " + exp1Register + "\n");
 
             currentlyUsedRegister.setValue(null);
-            exp2Register.setValue(null);
+            exp1Register.setValue(null);
 
         }
 
         protected void generateMathsmaticsOperationCode(AssemblyBuilder builder, String operation) {
             StringBuilder currentBuilder = builder.getCurrent();
 
-            Registers.Register exp1Register = registers.getFirstEmptyRegister();
-            currentlyUsedRegister = exp1Register;
-
-            exp1.generate(builder);
-            currentBuilder.append("PUSH {" + exp1Register + "}\n");
-            exp1Register.setValue(null);
-            stack.incSize(4);
-
             Registers.Register exp2Register = registers.getFirstEmptyRegister();
             currentlyUsedRegister = exp2Register;
+
             exp2.generate(builder);
+            currentBuilder.append("PUSH {" + exp2Register + "}\n");
+            exp2Register.setValue(null);
+            stack.incSize(4);
 
-            exp2Register = registers.getFirstEmptyRegister();
+            Registers.Register exp1Register = registers.getFirstEmptyRegister();
+            currentlyUsedRegister = exp1Register;
+            exp1.generate(builder);
 
-            currentBuilder.append("MOV " + exp2Register + ", " + currentlyUsedRegister + "\n");
+            exp1Register = registers.getFirstEmptyRegister();
+
+            currentBuilder.append("MOV " + exp1Register + ", " + currentlyUsedRegister + "\n");
             // need to set value
             currentBuilder.append("POP {" + currentlyUsedRegister + "}\n");
             // need to set value
             stack.decSize(4);
 
             currentlyUsedRegister.setValue(null);
-            exp2Register.setValue(null);
+            exp1Register.setValue(null);
 
             switch (operation) {
                 case "ADDS":
                     currentBuilder.append(operation + " " + currentlyUsedRegister + ", " + currentlyUsedRegister +
-                            ", " + exp2Register + "\n");
+                            ", " + exp1Register + "\n");
                     break;
                 case "SUBS":
                     currentBuilder.append(operation + " " + currentlyUsedRegister + ", " + currentlyUsedRegister +
-                            ", " + exp2Register + "\n");
+                            ", " + exp1Register + "\n");
                     break;
                 case "SMULL":
-                    currentBuilder.append(operation + " " + currentlyUsedRegister + ", " + exp2Register + ", " +
-                            currentlyUsedRegister + ", " + exp2Register + "\n");
-                    currentBuilder.append("CMP " + exp2Register + ", " + currentlyUsedRegister + ", ARS #31\n");
+                    currentBuilder.append(operation + " " + currentlyUsedRegister + ", " + exp1Register + ", " +
+                            currentlyUsedRegister + ", " + exp1Register + "\n");
+                    currentBuilder.append("CMP " + exp1Register + ", " + currentlyUsedRegister + ", ASR #31\n");
                     break;
                 case "DIVS":
                     break;
@@ -3024,7 +3024,7 @@ public class AST {
                 num *= -1;
             }
             builder.getCurrent().append("LDR " + currentlyUsedRegister + ", =" + num + "\n");
-            currentlyUsedRegister.setValue(num);
+            currentlyUsedRegister.setValue(true);
         }
 
         public int getvalue() {
