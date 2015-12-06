@@ -580,14 +580,6 @@ public class AST {
 
             putIntoSymbolTable(this, identNode.getIdent(), typeNode);
 
-            if (typeNode.getType().equals("Int") && assign_rhsNode.getType().equals("Int")) {
-                try {
-                    Integer.parseInt(assign_rhsNode.getValue());
-                } catch (NumberFormatException e) {
-                    throwSyntaxError("Integer value is too large for a 32-bit signed integer");
-                }
-            }
-
             assign_rhsNode.check();
 
             if (assign_rhsNode.getType().equals("Null")) {
@@ -613,6 +605,13 @@ public class AST {
                 typeNode.setIdent(((IdentNode) assign_rhsNode).getIdent());
             }
             setTypeNodeValue(typeNode, assign_rhsNode);
+            if (typeNode.getType().equals("Int") && assign_rhsNode.getType().equals("Int")) {
+                try {
+                    Integer.parseInt(assign_rhsNode.getValue());
+                } catch (NumberFormatException e) {
+                    throwSyntaxError("Integer value is too large for a 32-bit signed integer");
+                }
+            }
             int stackSize = stack.getSize();
             int num = stackSize / Stack.MAX_STACK_SIZE;
             int remainder = stackSize % Stack.MAX_STACK_SIZE;
