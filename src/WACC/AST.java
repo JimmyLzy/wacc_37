@@ -186,7 +186,7 @@ public class AST {
             statNode.generate(builder);
             statNode.setValue();
             builder.getMain().append("MOV " + resultReg + ", #0\n");
-            registers.get(0).setValue(0);
+            registers.get(0).setValue(true);
             builder.getMain().append("POP {pc}\n");
         }
     }
@@ -370,7 +370,7 @@ public class AST {
                 Registers.Register registerZero = currentlyUsedRegister;
                 currentlyUsedRegister = registers.getFirstEmptyRegister();
                 labelBuilder.append("MOV " + currentlyUsedRegister + ", " + registerZero + "\n");
-                currentlyUsedRegister.setValue(registerZero.getValue());
+                currentlyUsedRegister.setValue(true);
 
                 registerZero.setValue(null);
                 currentlyUsedRegister.setValue(null);
@@ -428,7 +428,7 @@ public class AST {
                 currentlyUsedRegister.setValue(null);
                 currentlyUsedRegister = registers.getFirstEmptyRegister();
                 labelBuilder.append("MOV " + currentlyUsedRegister + ", #0\n");
-                currentlyUsedRegister.setValue(0);
+                currentlyUsedRegister.setValue(true);
                 labelBuilder.append("BL fflush\n");
                 labelBuilder.append("POP {pc}\n");
 
@@ -455,7 +455,7 @@ public class AST {
                 Registers.Register registerZero = currentlyUsedRegister;
                 currentlyUsedRegister = registers.getFirstEmptyRegister();
                 labelBuilder.append("LDR " + currentlyUsedRegister + ", [" + registerZero + "]\n");
-                currentlyUsedRegister.setValue(registerZero.getValue());
+                currentlyUsedRegister.setValue(true);
                 Registers.Register registerFirst = currentlyUsedRegister;
                 currentlyUsedRegister = registers.getFirstEmptyRegister();
                 labelBuilder.append("ADD " + currentlyUsedRegister + ", " + registerZero + ", #4\n");
@@ -1902,11 +1902,9 @@ public class AST {
 
         @Override
         public void generate(AssemblyBuilder builder) {
-
-            currentlyUsedRegister = registers.getFirstEmptyRegister();
+            
             exprNode.generate(builder);
             builder.getCurrent().append("EOR " + currentlyUsedRegister + ", " + currentlyUsedRegister + ", #1\n");
-            currentlyUsedRegister.setValue(null);
 
         }
 
@@ -2000,10 +1998,8 @@ public class AST {
         @Override
         public void generate(AssemblyBuilder builder) {
 
-            currentlyUsedRegister = registers.getFirstEmptyRegister();
             exprNode.generate(builder);
             builder.getCurrent().append("LDR " + currentlyUsedRegister + ", [" + currentlyUsedRegister + "]\n");
-            currentlyUsedRegister.setValue(null);
 
         }
     }
@@ -2048,11 +2044,7 @@ public class AST {
 
         @Override
         public void generate(AssemblyBuilder builder) {
-
-            currentlyUsedRegister = registers.getFirstEmptyRegister();
             exprNode.generate(builder);
-            currentlyUsedRegister.setValue(null);
-
         }
     }
 
@@ -2097,11 +2089,7 @@ public class AST {
 
         @Override
         public void generate(AssemblyBuilder builder) {
-
-            currentlyUsedRegister = registers.getFirstEmptyRegister();
             exprNode.generate(builder);
-            currentlyUsedRegister.setValue(null);
-
         }
 
     }
@@ -2187,7 +2175,7 @@ public class AST {
             currentlyUsedRegister = registers.getFirstEmptyRegister();
 
             exp1.generate(builder);
-            
+
             currentBuilder.append("PUSH {" + currentlyUsedRegister + "}\n");
             currentlyUsedRegister.setValue(null);
             stack.incSize(4);
@@ -3079,7 +3067,7 @@ public class AST {
             } else {
                 builder.getCurrent().append("MOV " + currentlyUsedRegister + ", #0\n");
             }
-            currentlyUsedRegister.setValue(value);
+            currentlyUsedRegister.setValue(true);
         }
     }
 
@@ -3139,7 +3127,7 @@ public class AST {
         @Override
         public void generate(AssemblyBuilder builder) {
             builder.getCurrent().append("MOV " + currentlyUsedRegister + ", #" + value + "\n");
-            currentlyUsedRegister.setValue(value);
+            currentlyUsedRegister.setValue(true);
         }
 
         @Override
@@ -3171,7 +3159,7 @@ public class AST {
         public void generate(AssemblyBuilder builder) {
 
             builder.getCurrent().append("LDR " + currentlyUsedRegister + ", =msg_" + messageCount + "\n");
-            currentlyUsedRegister.setValue(value);
+            currentlyUsedRegister.setValue(true);
             builder.getHeader().append("msg_" + messageCount + ": \n");
             builder.getHeader().append(".word " + getWordLength(value) + "\n");
             builder.getHeader().append(".ascii\t" + value + "\n");
