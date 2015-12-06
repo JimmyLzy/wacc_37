@@ -1945,7 +1945,7 @@ public class AST {
         @Override
         public void generate(AssemblyBuilder builder) {
 
-            int num = Integer.parseInt(exprNode.getValue());
+            int num = Integer.parseInt(getValue());
             currentlyUsedRegister.setValue(true);
             builder.getCurrent().append("LDR " + currentlyUsedRegister + ", =" + num + "\n");
 
