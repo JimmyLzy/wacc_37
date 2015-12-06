@@ -568,12 +568,12 @@ public class AST {
         @Override
         public void check() {
 
-            putIntoSymbolTable(this, identNode.getIdent(), typeNode);
-            assign_rhsNode.check();
-            stack.add(identNode.getIdent(), typeNode.getNumOfByte());
             typeNode.setCurrentStack(stack);
             assign_rhsNode.setCurrentStack(stack);
+            stack.add(identNode.getIdent(), typeNode.getNumOfByte());
 
+            putIntoSymbolTable(this, identNode.getIdent(), typeNode);
+            assign_rhsNode.check();
 
             if (assign_rhsNode.getType().equals("Null")) {
                 return;
@@ -669,9 +669,10 @@ public class AST {
 
         @Override
         public void check() {
+            assign_rhsNode.setCurrentStack(stack);
+
             assign_lhsNode.check();
             assign_rhsNode.check();
-            assign_rhsNode.setCurrentStack(stack);
 
             if (assign_rhsNode.getType().equals("Null")) {
                 return;
@@ -2237,6 +2238,10 @@ public class AST {
 
         @Override
         public void check() {
+
+            exp1.setCurrentStack(stack);
+            exp2.setCurrentStack(stack);
+
             exp1.check();
             exp2.check();
 
@@ -2312,6 +2317,10 @@ public class AST {
 
         @Override
         public void check() {
+
+            exp1.setCurrentStack(stack);
+            exp2.setCurrentStack(stack);
+
             exp1.check();
             exp2.check();
 
@@ -2350,6 +2359,10 @@ public class AST {
 
         @Override
         public void check() {
+
+            exp1.setCurrentStack(stack);
+            exp2.setCurrentStack(stack);
+
             exp1.check();
             exp2.check();
 
@@ -2387,6 +2400,10 @@ public class AST {
 
         @Override
         public void check() {
+
+            exp1.setCurrentStack(stack);
+            exp2.setCurrentStack(stack);
+
             exp1.check();
             exp2.check();
 
@@ -2430,6 +2447,10 @@ public class AST {
 
         @Override
         public void check() {
+
+            exp1.setCurrentStack(stack);
+            exp2.setCurrentStack(stack);
+
             exp1.check();
             exp2.check();
 
@@ -2478,6 +2499,10 @@ public class AST {
 
         @Override
         public void check() {
+
+            exp1.setCurrentStack(stack);
+            exp2.setCurrentStack(stack);
+
             exp1.check();
             exp2.check();
 
@@ -2526,6 +2551,10 @@ public class AST {
 
         @Override
         public void check() {
+
+            exp1.setCurrentStack(stack);
+            exp2.setCurrentStack(stack);
+
             exp1.check();
             exp2.check();
 
@@ -2574,6 +2603,10 @@ public class AST {
 
         @Override
         public void check() {
+
+            exp1.setCurrentStack(stack);
+            exp2.setCurrentStack(stack);
+
             exp1.check();
             exp2.check();
 
@@ -2621,6 +2654,10 @@ public class AST {
 
         @Override
         public void check() {
+
+            exp1.setCurrentStack(stack);
+            exp2.setCurrentStack(stack);
+
             exp1.check();
             exp2.check();
 
@@ -2667,6 +2704,10 @@ public class AST {
 
         @Override
         public void check() {
+
+            exp1.setCurrentStack(stack);
+            exp2.setCurrentStack(stack);
+
             exp1.check();
             exp2.check();
 
@@ -2708,6 +2749,10 @@ public class AST {
 
         @Override
         public void check() {
+
+            exp1.setCurrentStack(stack);
+            exp2.setCurrentStack(stack);
+
             exp1.check();
             exp2.check();
 
@@ -2759,6 +2804,10 @@ public class AST {
 
         @Override
         public void check() {
+
+            exp1.setCurrentStack(stack);
+            exp2.setCurrentStack(stack);
+
             exp1.check();
             exp2.check();
             if (!exp1.getType().equals(exp2.getType())) {
