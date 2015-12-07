@@ -331,8 +331,8 @@ public class AST {
             return result;
         }
 
-        private Integer calculateStackOffset(ASTNode astNode) {
-            Integer stackOffset = null;
+        protected int getStackOffset() {
+            int stackOffset = 0;
             if (this instanceof DeclarationNode) {
                 stackOffset = stack.getStackElemOffset(((DeclarationNode) this).identNode.getIdent());
             } else if (this instanceof AssignmentNode) {
@@ -350,32 +350,55 @@ public class AST {
                 String ident = ((IdentNode) this).getIdent();
                 TypeNode typeNode = ((IdentNode) this).getTypeNode();
                 stackOffset = typeNode.stack.getStackElemOffset(ident);
-            } else if (this instanceof Array_elemNode) {
-                String ident = ((Array_elemNode) this).identNode.getTypeNode().getIdent();
-                TypeNode typeNode = ((Array_elemNode) this).identNode.getTypeNode();
-                stackOffset = stack.getStackElemOffsetArray(astNode, ident);
             }
             return stackOffset;
         }
 
-        protected int getStackOffset() {
-            ASTNode astNode = this;
-            int result = 0;
-            while(astNode != null) {
-                Integer offset = calculateStackOffset(astNode);
-                if(offset != null) {
-                    result += offset;
-                    return result;
-                } else {
-                    result += stack.getSize();
-                    astNode = astNode.getParent();
-                }
-            }
-            if(astNode == null) {
-                result = 0;
-            }
-            return result;
-        }
+//        private Integer calculateStackOffset(ASTNode astNode) {
+//            Integer stackOffset = null;
+//            if (this instanceof DeclarationNode) {
+//                stackOffset = stack.getStackElemOffset(((DeclarationNode) this).identNode.getIdent());
+//            } else if (this instanceof AssignmentNode) {
+//                ASTNode assignLHS = ((AssignmentNode) this).assign_lhsNode;
+//                String ident;
+//                if (assignLHS instanceof IdentNode) {
+//                    ident = ((IdentNode) assignLHS).getIdent();
+//                } else if (assignLHS instanceof Array_elemNode) {
+//                    ident = ((Array_elemNode) assignLHS).identNode.getIdent();
+//                } else {
+//                    ident = ((Pair_elemNode) assignLHS).getIdentNode().getIdent();
+//                }
+//                stackOffset = stack.getStackElemOffset(ident);
+//            } else if (this instanceof IdentNode) {
+//                String ident = ((IdentNode) this).getIdent();
+//                TypeNode typeNode = ((IdentNode) this).getTypeNode();
+//                stackOffset = typeNode.stack.getStackElemOffset(ident);
+//            } else if (this instanceof Array_elemNode) {
+//                String ident = ((Array_elemNode) this).identNode.getTypeNode().getIdent();
+//                TypeNode typeNode = ((Array_elemNode) this).identNode.getTypeNode();
+//                stackOffset = stack.getStackElemOffsetArray(astNode, ident);
+//            }
+//            return stackOffset;
+//        }
+//
+//        protected int getStackOffset() {
+//            ASTNode astNode = this;
+//            int result = 0;
+//            while(astNode != null) {
+//                Integer offset = calculateStackOffset(astNode);
+//                if(offset != null) {
+//                    result += offset;
+//                    return result;
+//                } else {
+//                    result += stack.getSize();
+//                    astNode = astNode.getParent();
+//                }
+//            }
+//            if(astNode == null) {
+//                result = 0;
+//            }
+//            return result;
+//        }
 
         public abstract String getValue();
 
@@ -587,6 +610,7 @@ public class AST {
             builder.getCurrent().append("LDR " + register4 + ", [" + register4 + "]\n");
             builder.getCurrent().append("MOV " + currentlyUsedRegister + ", " + register4 + "\n");
             builder.getCurrent().append("POP {" + register4 + "}\n");
+            stack.decSize(4);
             if (exprNode.getType().contains("Int")) {
                 builder.getCurrent().append("BL p_print_int\n");
                 if (!builder.getLabel().toString().contains("p_print_int:")) {
@@ -3440,7 +3464,7 @@ public class AST {
             Registers.Register currentlyUsedRegister = registers.getFirstEmptyRegister();
 
             builder.getCurrent().append("PUSH {" + currentlyUsedRegister + ", r4}\n");
-            stack.incSize(4);
+            stack.incSize(8);
             builder.getCurrent().append("LDR r4, [sp, #8]\n");
             builder.getCurrent().append("LDR " + currentlyUsedRegister + ", =" + getIndex() + "\n");
             currentlyUsedRegister.setValue(true);
@@ -3457,6 +3481,7 @@ public class AST {
             builder.getCurrent().append("MOV " + r1 + ", r4\n");
             r1.setValue(true);
             builder.getCurrent().append("POP {r0, r4}\n");
+            stack.decSize(8);
             r1.setValue(null);
         }
 

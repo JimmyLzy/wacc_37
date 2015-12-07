@@ -21,8 +21,8 @@ public class Stack {
         stackElem.setOffset(size);
     }
 
-    public Integer getStackElemOffset(String ident) {
-        Integer offset = null;
+    public int getStackElemOffset(String ident) {
+        Integer offset = 0;
         for(StackElem stackElem : stack) {
             if (ident.equals(stackElem.getIdent())) {
                 offset = size - stackElem.getOffset();
