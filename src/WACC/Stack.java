@@ -15,7 +15,7 @@ public class Stack {
     private List<StackElem> stack = new ArrayList<>();
 
     public void add(String ident, int sizeOfType) {
-        StackElem stackElem = new StackElem(ident, sizeOfType); 
+        StackElem stackElem = new StackElem(ident, sizeOfType);
         stack.add(stackElem);
         size += stackElem.getSize();
         stackElem.setOffset(size);

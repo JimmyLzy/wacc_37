@@ -121,6 +121,8 @@ public class AST {
             this.stack = stack;
         }
 
+
+
         public void addBackToStack(AssemblyBuilder builder) {
             int stackSize = stack.getSize();
             int num = stackSize / Stack.MAX_STACK_SIZE;
@@ -129,6 +131,10 @@ public class AST {
                 builder.getCurrent().append("ADD sp, sp, #" + Stack.MAX_STACK_SIZE + "\n");
             }
             builder.getCurrent().append("ADD sp, sp, #" + remainder + "\n");
+        }
+
+        public Stack getStack() {
+            return stack;
         }
     }
 
