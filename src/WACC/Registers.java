@@ -12,7 +12,7 @@ public class Registers {
 
     public Registers() {
         for (int i = 0; i < 15; i++) {
-            Register register =  new Register(null, "r" + String.valueOf(i));
+            Register register =  new Register(null, "r" + String.valueOf(i), i);
             registers.add(register);
         }
     }
@@ -42,11 +42,13 @@ public class Registers {
 
     class Register<T> {
         private T value;
+        private int index;
         private String registerNum;
 
-        public Register(T value, String registerNum) {
+        public Register(T value, String registerNum, int index) {
             this.value = value;
             this.registerNum = registerNum;
+            this.index = index;
         }
 
         public Register(T value) {
@@ -68,6 +70,10 @@ public class Registers {
         @Override
         public String toString() {
             return registerNum;
+        }
+
+        public Register getNext() {
+            return registers.get(index + 1);
         }
     }
 }

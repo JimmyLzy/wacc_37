@@ -21,9 +21,21 @@ public class Stack {
         stackElem.setOffset(size);
     }
 
-    public int getStackElemOffset(String ident) {
-        int offset = 0;
+    public Integer getStackElemOffset(String ident) {
+        Integer offset = null;
         for(StackElem stackElem : stack) {
+            if (ident.equals(stackElem.getIdent())) {
+                offset = size - stackElem.getOffset();
+                break;
+            }
+        }
+        return offset;
+    }
+
+    public Integer getStackElemOffsetArray(AST.ASTNode node, String ident) {
+        Integer offset = null;
+        Stack s = node.getStack();
+        for(StackElem stackElem : s.stack) {
             if (ident.equals(stackElem.getIdent())) {
                 offset = size - stackElem.getOffset();
                 break;
