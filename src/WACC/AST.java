@@ -999,6 +999,7 @@ public class AST {
 
             currentlyUsedRegister = registers.getFirstEmptyRegister();
             exprNode.generate(builder);
+            currentlyUsedRegister.setValue(null);
 
         }
 
@@ -3628,7 +3629,11 @@ public class AST {
                 }
 
                 int numOfByte = calculateNumOfByte(exprNode.getType());
-                currentStringBuilder.append("STR " + currentlyUsedRegister + getStackPointer(-numOfByte) + "!" + "\n");
+                if (getType().equals("Int") || getType().equals("String")) {
+                    currentStringBuilder.append("STR " + currentlyUsedRegister + getStackPointer(-numOfByte) + "!" + "\n");
+                } else {
+                    currentStringBuilder.append("STRB " + currentlyUsedRegister + getStackPointer(-numOfByte) + "!" + "\n");
+                }
                 currentlyUsedRegister.setValue(null);
             }
             currentStringBuilder.append("BL f_" + identNode.getIdent() + "\n");
