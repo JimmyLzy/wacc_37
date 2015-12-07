@@ -5,8 +5,7 @@ options {
 }
 
 //Binary operators
-binary_oper : PLUS | MINUS | MULT | DIV | MOD | GREATER | GREATER_OR_EQUAL | SMALLER |
-             SMALLER_OR_EQUAL | EQUAL | NOT_EQUAL | LOGICAL_AND |LOGICAL_OR;
+//binary_oper : PLUS | MINUS | MULT | DIV | MOD | GREATER | GREATER_OR_EQUAL | SMALLER | SMALLER_OR_EQUAL | EQUAL | NOT_EQUAL | LOGICAL_AND |LOGICAL_OR;
 
 //Program definition
 program: BEGIN (func)* stat END EOF;
@@ -127,6 +126,3 @@ str_liter: STR_LITER;
 array_liter: OPEN_SQUARE_BRACKET (expr (COMMA expr)*)? CLOSE_SQUARE_BRACKET ;
 
 pair_liter: NULL ;
-
-
-

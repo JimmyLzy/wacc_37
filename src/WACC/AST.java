@@ -120,6 +120,16 @@ public class AST {
         public void setCurrentStack(Stack stack) {
             this.stack = stack;
         }
+
+        public void addBackToStack(AssemblyBuilder builder) {
+            int stackSize = stack.getSize();
+            int num = stackSize / Stack.MAX_STACK_SIZE;
+            int remainder = stackSize % Stack.MAX_STACK_SIZE;
+            for (int i = 0; i < num; i++) {
+                builder.getCurrent().append("ADD sp, sp, #" + Stack.MAX_STACK_SIZE + "\n");
+            }
+            builder.getCurrent().append("ADD sp, sp, #" + remainder + "\n");
+        }
     }
 
     /*
@@ -189,6 +199,7 @@ public class AST {
             for (FuncNode funcNode : functionNodes) {
                 funcNode.generate(builder);
             }
+            builder.setCurrent(builder.getMain());
             statNode.generate(builder);
             statNode.setValue();
             builder.getMain().append("MOV " + resultReg + ", #0\n");
@@ -245,7 +256,15 @@ public class AST {
 
         @Override
         public void check() {
+
             stack = new Stack();
+            for (int i = paramNodes.size() - 1; i >= 0; i--) {
+                ParamNode paramNode = paramNodes.get(i);
+                paramNode.setCurrentStack(stack);
+                paramNode.check();
+            }
+            stack.add(identNode.getIdent(), 4);
+            typeNode.setCurrentStack(stack);
             statNode.setCurrentStack(stack);
 
             setScope(true);
@@ -264,9 +283,14 @@ public class AST {
         @Override
         public void generate(AssemblyBuilder builder) {
 
-            builder.setCurrent(builder.getFunction());
+            StringBuilder functionStringBuilder = builder.getFunction();
+            builder.setCurrent(functionStringBuilder);
+            functionStringBuilder.append("f_" + identNode.getIdent() + ": \n");
+            functionStringBuilder.append("PUSH {lr}  \n");
             statNode.generate(builder);
             statNode.setValue();
+            functionStringBuilder.append("POP {pc}\n");
+            functionStringBuilder.append(".ltorg\n");
         }
 
     }
@@ -301,16 +325,6 @@ public class AST {
                 result = (Pair_typeNode) node;
             }
             return result;
-        }
-
-        public void addBackToStack(AssemblyBuilder builder) {
-            int stackSize = stack.getSize();
-            int num = stackSize / Stack.MAX_STACK_SIZE;
-            int remainder = stackSize % Stack.MAX_STACK_SIZE;
-            for (int i = 0; i < num; i++) {
-                builder.getCurrent().append("ADD sp, sp, #" + Stack.MAX_STACK_SIZE + "\n");
-            }
-            builder.getCurrent().append("ADD sp, sp, #" + remainder + "\n");
         }
 
         protected int getStackOffset() {
@@ -955,6 +969,9 @@ public class AST {
 
         @Override
         public void check() {
+
+            exprNode.setCurrentStack(stack);
+
             exprNode.check();
             ASTNode parent = getParent();
             while (!(parent instanceof FuncNode)) {
@@ -971,6 +988,9 @@ public class AST {
 
         @Override
         public void generate(AssemblyBuilder builder) {
+
+            currentlyUsedRegister = registers.getFirstEmptyRegister();
+            exprNode.generate(builder);
 
         }
 
@@ -1780,6 +1800,10 @@ public class AST {
 
         @Override
         public void check() {
+
+            typeNode.setCurrentStack(stack);
+            stack.add(identNode.getIdent(), typeNode.getNumOfByte());
+
         }
 
         @Override
@@ -3495,6 +3519,7 @@ public class AST {
         private IdentNode identNode;
         private List<ExprNode> exprNodeList;
         private FuncNode funcNode;
+        private int stackSize = 0;
 
         public CallNode(IdentNode identNode, List<ExprNode> exprNodeList) {
 
@@ -3523,9 +3548,13 @@ public class AST {
         @Override
         public void check() {
 
-            for (ExprNode exprNode : exprNodeList) {
+            stack = new Stack();
+            for (int i = exprNodeList.size() - 1; i >= 0; i--) {
+                ExprNode exprNode = exprNodeList.get(i);
+                exprNode.setCurrentStack(stack);
                 exprNode.check();
             }
+
             if (!getRoot().getFunctionSymbolTable().containsKey(identNode.getIdent())) {
                 throwSemanticError("The function " + identNode.getIdent() + " has not been declared");
             }
@@ -3541,9 +3570,63 @@ public class AST {
             }
         }
 
+
+
         @Override
         public void generate(AssemblyBuilder builder) {
 
+            StringBuilder currentStringBuilder = builder.getCurrent();
+            for (int i = exprNodeList.size() - 1; i >= 0; i--) {
+                // black tech
+                ExprNode exprNode = exprNodeList.get(i);
+                currentlyUsedRegister = registers.getFirstEmptyRegister();
+                if (exprNode instanceof IdentNode) {
+                    if (getType().equals("Int") || getType().equals("String")) {
+                        builder.getCurrent().append("LDR " + currentlyUsedRegister + getStackPointer(stack.getSize()) + "\n");
+                    } else {
+                        builder.getCurrent().append("LDRSB " + currentlyUsedRegister + getStackPointer(stack.getSize()) + "\n");
+                    }
+                    currentlyUsedRegister.setValue(true);
+                    FuncNode func = (FuncNode) (getRoot().getFunctionSymbolTable().get(identNode.getIdent()));
+                    int typeByte = func.paramNodes.get(i).getTypeNode().getNumOfByte();
+                    stack.incSize(typeByte);
+                } else {
+                    exprNode.generate(builder);
+                    stack.incSize(calculateNumOfByte(exprNode.getType()));
+                }
+
+                int numOfByte = calculateNumOfByte(exprNode.getType());
+                currentStringBuilder.append("STR " + currentlyUsedRegister + getStackPointer(-numOfByte) + "!" + "\n");
+                currentlyUsedRegister.setValue(null);
+            }
+            currentStringBuilder.append("BL f_" + identNode.getIdent() + "\n");
+            addBackToStack(builder);
+
+        }
+
+        private int calculateNumOfByte(String type) {
+            switch (type) {
+                case "Int":
+                    return 4;
+                case "String":
+                    return 4;
+                case "Bool":
+                    return 1;
+                case "Char":
+                    return 1;
+                default:
+                    return 0;
+            }
+        }
+
+        private String getStackPointer(int offset) {
+            String result;
+            if (offset == 0) {
+                result = ", [sp";
+            } else {
+                result = ", [sp, #" + offset;
+            }
+            return result + "]";
         }
     }
 
