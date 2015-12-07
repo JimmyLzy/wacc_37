@@ -388,6 +388,7 @@ public class AST {
                 labelBuilder.append("p_print_int:\n");
                 labelBuilder.append("PUSH {lr}\n");
                 Registers.Register registerZero = currentlyUsedRegister;
+                registerZero.setValue(true);
                 currentlyUsedRegister = registers.getFirstEmptyRegister();
                 labelBuilder.append("MOV " + currentlyUsedRegister + ", " + registerZero + "\n");
                 currentlyUsedRegister.setValue(true);
@@ -587,7 +588,7 @@ public class AST {
 
         @Override
         public void check() {
-
+            setTypeNodeValue(typeNode, assign_rhsNode);
             typeNode.setCurrentStack(stack);
             assign_rhsNode.setCurrentStack(stack);
             stack.add(identNode.getIdent(), typeNode.getNumOfByte());
@@ -609,6 +610,9 @@ public class AST {
                     throwSemanticError("Need same type when declaring the variable");
                 }
             } else if (!typeNode.getType().equals(assign_rhsNode.getType())) {
+                if (typeNode.getType().contains("[]")) {
+                    return;
+                }
                 throwSemanticError("Need same type when declaring the variable");
             }
         }
@@ -618,7 +622,6 @@ public class AST {
             if (assign_rhsNode instanceof IdentNode) {
                 typeNode.setIdent(((IdentNode) assign_rhsNode).getIdent());
             }
-            setTypeNodeValue(typeNode, assign_rhsNode);
             if (typeNode.getType().equals("Int") && assign_rhsNode.getType().equals("Int")) {
                 try {
                     Integer.parseInt(assign_rhsNode.getValue());
@@ -650,7 +653,12 @@ public class AST {
         }
 
         private void setTypeNodeValue(TypeNode typeNode, ASTNode assign_rhsNode) {
-            typeNode.setValue((assign_rhsNode).getValue());
+            if (typeNode.getType().toString().contains("[]") && assign_rhsNode.getType().toString().contains("[]")) {
+                ((Array_typeNode) typeNode).setElems(((Array_literNode) assign_rhsNode).getArrayValue());
+            } else {
+                typeNode.setValue((assign_rhsNode).getValue());
+            }
+
         }
 
 
@@ -1734,6 +1742,7 @@ public class AST {
     public class Array_typeNode extends TypeNode {
 
         private TypeNode typeNode;
+        private List<ASTNode> elems;
 
         public Array_typeNode(TypeNode typeNode) {
 
@@ -1744,7 +1753,7 @@ public class AST {
 
         @Override
         public int getNumOfByte() {
-            return -1;
+            return 4;
         }
 
         @Override
@@ -1757,10 +1766,13 @@ public class AST {
 
         }
 
-        public String getElemType() {
-            return typeNode.getType();
+        public List<ASTNode> getArrayValue() {
+            return elems;
         }
 
+        public void setElems(List<ASTNode> elems) {
+            this.elems = elems;
+        }
 
     }
 
@@ -2261,7 +2273,7 @@ public class AST {
             stack.decSize(4);
             currentBuilder.append("CMP " + currentlyUsedRegister + ", " + registerFirst + "\n");
 
-            currentlyUsedRegister.setValue(null);
+//            currentlyUsedRegister.setValue(null);
             registerFirst.setValue(null);
 
         }
@@ -2396,7 +2408,6 @@ public class AST {
             }
 
             Registers.Register registerFirst = registers.getFirstEmptyRegister();
-
             currentBuilder.append("MOV " + registerFirst + ", " + currentlyUsedRegister + "\n");
             registerFirst.setValue(true);
             currentBuilder.append("POP {" + currentlyUsedRegister + "}\n");
@@ -2433,6 +2444,7 @@ public class AST {
                 case "MODS":
                     generateCheckDivideByZero(builder);
                     currentBuilder.append("BL __aeabi_idivmod" + "\n");
+                    currentBuilder.append("MOV " + currentlyUsedRegister + ", " + registerFirst + "\n");
                     break;
             }
         }
@@ -3179,7 +3191,8 @@ public class AST {
 
         @Override
         public String getValue() {
-            return null;
+            Array_typeNode array_typeNode = (Array_typeNode) identNode.getTypeNode();
+            return String.valueOf(array_typeNode.getArrayValue().get(Integer.valueOf(exprNodes.get(0).getValue())).getValue());
         }
 
         @Override
@@ -3420,7 +3433,9 @@ public class AST {
 
         @Override
         public String getType() {
-
+            if (exprNodeList.size() == 0) {
+                return "[]";
+            }
             return exprNodeList.get(0).getType() + "[]";
         }
 
@@ -3454,8 +3469,25 @@ public class AST {
 
         @Override
         public void generate(AssemblyBuilder builder) {
+            Registers.Register currentlyUsedRegister = registers.getFirstEmptyRegister();
+            Registers.Register register3 = registers.get(3);
+            builder.getCurrent().append("MOV " + currentlyUsedRegister + ", #" + (4 + 4 * exprNodeList.size()) + "\n");
+            builder.getCurrent().append("BL malloc\n");
+            builder.getCurrent().append("MOV " + register3 + ", " + currentlyUsedRegister +"\n");
+            for (int i = 0; i < exprNodeList.size(); i++) {
+                builder.getCurrent().append("LDR " + currentlyUsedRegister + ", =" + exprNodeList.get(i).getValue() + "\n");
+                builder.getCurrent().append("STR " + currentlyUsedRegister + ", [" + register3 + ", #" + (4 * i + 4) + "]\n");
+            }
 
+            builder.getCurrent().append("MOV " + currentlyUsedRegister + ", #" + exprNodeList.size() + "\n");
+            builder.getCurrent().append("STR " + currentlyUsedRegister + ", [" + register3 + "]\n");
+            builder.getCurrent().append("MOV " + currentlyUsedRegister + ", " + register3 + "\n");
         }
+
+        public List<ASTNode> getArrayValue() {
+            return exprNodeList;
+        }
+
     }
 
     public class Pair_literNode extends ExprNode {
