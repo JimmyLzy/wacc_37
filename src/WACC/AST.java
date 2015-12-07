@@ -192,8 +192,6 @@ public class AST {
         public void generate(AssemblyBuilder builder) {
             builder.setCurrent(builder.getMain());
             builder.getHeader().append(".data\n");
-            builder.getMain().append(".text\n");
-            builder.getMain().append(".global main\n");
             builder.getMain().append("main: \n");
             builder.getMain().append("PUSH {lr}  \n");
             for (FuncNode funcNode : functionNodes) {
@@ -202,6 +200,8 @@ public class AST {
             builder.setCurrent(builder.getMain());
             statNode.generate(builder);
             statNode.setValue();
+            builder.getHeader().append(".text\n");
+            builder.getHeader().append(".global main\n");
             builder.getMain().append("MOV " + resultReg + ", #0\n");
             registers.get(0).setValue(true);
             builder.getMain().append("POP {pc}\n");
