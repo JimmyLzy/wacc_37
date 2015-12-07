@@ -624,7 +624,9 @@ public class AST {
             }
             if (typeNode.getType().equals("Int") && assign_rhsNode.getType().equals("Int")) {
                 try {
-                    Integer.parseInt(assign_rhsNode.getValue());
+                    if (!(assign_rhsNode instanceof CallNode)) {
+                        Integer.parseInt(assign_rhsNode.getValue());
+                    }
                 } catch (NumberFormatException e) {
                     throwSyntaxError("Integer value is too large for a 32-bit signed integer");
                 }
