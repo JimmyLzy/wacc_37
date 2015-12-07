@@ -231,6 +231,7 @@ public class AST {
             this.paramNodes = paramNodes;
             for (ParamNode paramNode : paramNodes) {
                 paramNode.setParent(this);
+                paramNode.getTypeNode().setValue();
             }
             this.identNode = identNode;
             identNode.setParent(this);
@@ -622,15 +623,15 @@ public class AST {
             if (assign_rhsNode instanceof IdentNode) {
                 typeNode.setIdent(((IdentNode) assign_rhsNode).getIdent());
             }
-            if (typeNode.getType().equals("Int") && assign_rhsNode.getType().equals("Int")) {
-                try {
-                    if (!(assign_rhsNode instanceof CallNode)) {
-                        Integer.parseInt(assign_rhsNode.getValue());
-                    }
-                } catch (NumberFormatException e) {
-                    throwSyntaxError("Integer value is too large for a 32-bit signed integer");
-                }
-            }
+//            if (typeNode.getType().equals("Int") && assign_rhsNode.getType().equals("Int")) {
+//                try {
+//                    if (!((assign_rhsNode instanceof CallNode || assign_rhsNode instanceof IdentNode))) {
+//                        Integer.parseInt(assign_rhsNode.getValue());
+//                    }
+//                } catch (NumberFormatException e) {
+//                    throwSyntaxError("Integer value is too large for a 32-bit signed integer");
+//                }
+//            }
             int stackSize = stack.getSize();
             int num = stackSize / Stack.MAX_STACK_SIZE;
             int remainder = stackSize % Stack.MAX_STACK_SIZE;
@@ -771,10 +772,10 @@ public class AST {
             if (assign_lhsNode instanceof IdentNode) {
                 if (assign_rhsNode instanceof IdentNode) {
                     ((IdentNode) assign_lhsNode).getTypeNode().setIdent(((IdentNode) assign_rhsNode).getIdent());
-                }
-                if (assign_rhsNode instanceof Str_literNode) {
+                } else if (assign_rhsNode instanceof Str_literNode) {
                     getTypeNode((IdentNode) assign_lhsNode).setValue((assign_rhsNode).getValue());
                 } else if (assign_rhsNode.getType().equals("Int")) {
+                    System.out.println("=====" + assign_rhsNode.getValue());
                     getTypeNode((IdentNode) assign_lhsNode).setValue((assign_rhsNode.getValue()));
                 }
             }
@@ -1637,6 +1638,8 @@ public class AST {
         public void setValue(String value) {
             this.value = value;
         }
+
+        public abstract void setValue();
     }
 
 
@@ -1657,6 +1660,11 @@ public class AST {
         @Override
         public int getNumOfByte() {
             return 4;
+        }
+
+        @Override
+        public void setValue() {
+            setValue("0");
         }
 
         @Override
@@ -1683,6 +1691,12 @@ public class AST {
         }
 
         @Override
+        public void setValue() {
+            setValue("false");
+
+        }
+
+        @Override
         public String getType() {
             return "Bool";
         }
@@ -1703,6 +1717,11 @@ public class AST {
         @Override
         public int getNumOfByte() {
             return 1;
+        }
+
+        @Override
+        public void setValue() {
+            setValue(" ");
         }
 
         @Override
@@ -1727,6 +1746,11 @@ public class AST {
         @Override
         public int getNumOfByte() {
             return 4;
+        }
+
+        @Override
+        public void setValue() {
+            setValue(" ");
         }
 
         @Override
@@ -1757,6 +1781,11 @@ public class AST {
         @Override
         public int getNumOfByte() {
             return 4;
+        }
+
+        @Override
+        public void setValue() {
+
         }
 
         @Override
@@ -1855,6 +1884,11 @@ public class AST {
         }
 
         @Override
+        public void setValue() {
+
+        }
+
+        @Override
         public String getType() {
             return "Pair";
         }
@@ -1871,6 +1905,11 @@ public class AST {
         @Override
         public int getNumOfByte() {
             return -1;
+        }
+
+        @Override
+        public void setValue() {
+
         }
 
         @Override
@@ -2603,7 +2642,14 @@ public class AST {
 
         @Override
         public String getValue() {
-            return String.valueOf(Integer.valueOf(exp1.getValue()) + Integer.valueOf(exp2.getValue()));
+            String result = "";
+            try {
+                result = String.valueOf(Integer.valueOf(exp1.getValue()) + Integer.valueOf(exp2.getValue()));
+                return result;
+            } catch (NumberFormatException e) {
+                throwSemanticError("Expresission type mismatch");
+            }
+            return result;
         }
 
         @Override
@@ -2644,6 +2690,7 @@ public class AST {
 
         @Override
         public String getValue() {
+            System.out.println(exp1.getValue());
             return String.valueOf(Integer.valueOf(exp1.getValue()) - Integer.valueOf(exp2.getValue()));
         }
 
