@@ -8,12 +8,22 @@ import java.util.List;
  */
 public class Stack {
 
+    /*
+     * size is the total size of stack in the whole program generated.
+     */
     private int size;
     private boolean ifDeclarationCodeGenerated = false;
     public static final int MAX_STACK_SIZE = 1024;
+    /*
+     CurrentStackSize is the size of individual stack according to the scope
+     */
     private int currentStacksize;
 
     private List<StackElem> stack = new ArrayList<>();
+
+    /*create a stackElem using ident and sizeOfType and add this elem to
+     the list of stackElem
+     */
 
     public void add(String ident, int sizeOfType) {
         StackElem stackElem = new StackElem(ident, sizeOfType);
@@ -23,6 +33,9 @@ public class Stack {
         stackElem.setOffset(size);
     }
 
+    /*This method calculates the stack offset of this elem from the
+    stack pointer
+     */
     public int getStackElemOffset(String ident) {
         int offset = 0;
         for(StackElem stackElem : getStackElemList()) {
@@ -42,6 +55,9 @@ public class Stack {
         this.ifDeclarationCodeGenerated = ifDeclarationCodeGenerated;
     }
 
+    /*
+     * This method adds all the stackElems in the previous stack into the current stack.
+     */
     public void addPreviousStackElems(Stack previousStack) {
         List<StackElem> currentStackElems = getStackElemList();
         List<StackElem> previousStackElems = previousStack.getStackElemList();
@@ -74,6 +90,9 @@ public class Stack {
     }
 
 
+    /*
+     * The elem on the stack.
+     */
     private class StackElem {
 
         private String ident;
