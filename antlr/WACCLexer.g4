@@ -1,4 +1,4 @@
-lexer grammar BasicLexer;
+lexer grammar WACCLexer;
 
 //Skip comments
 COMMENT: SHARP ~('\n')* '\n' -> skip;

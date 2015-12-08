@@ -1,12 +1,14 @@
 package WACC;
 
-import java.util.*;
-
-import antlr.*;
+import antlr.WACCParser;
+import antlr.WACCParserBaseVisitor;
 import org.antlr.v4.runtime.misc.NotNull;
 import org.antlr.v4.runtime.tree.ParseTree;
 
-public class MyVisitor extends BasicParserBaseVisitor<AST.ASTNode> {
+import java.util.ArrayList;
+import java.util.List;
+
+public class TreeVisitor extends WACCParserBaseVisitor<AST.ASTNode> {
 
     AST ast = new AST();
 
@@ -17,10 +19,10 @@ public class MyVisitor extends BasicParserBaseVisitor<AST.ASTNode> {
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public AST.ASTNode visitProgram(@NotNull BasicParser.ProgramContext ctx) {
+    public AST.ASTNode visitProgram(@NotNull WACCParser.ProgramContext ctx) {
         AST.ProgramNode programNode = null;
         List<AST.FuncNode> functionNodes = new ArrayList<>();
-        for (BasicParser.FuncContext functionContext : ctx.func()) {
+        for (WACCParser.FuncContext functionContext : ctx.func()) {
             AST.FuncNode funcNode = (AST.FuncNode) visit(functionContext);
             functionNodes.add(funcNode);
         }
@@ -44,7 +46,7 @@ public class MyVisitor extends BasicParserBaseVisitor<AST.ASTNode> {
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public AST.ASTNode visitFunc(@NotNull BasicParser.FuncContext ctx) {
+    public AST.ASTNode visitFunc(@NotNull WACCParser.FuncContext ctx) {
 
         List<AST.ParamNode> paramNodeList = new ArrayList<>();
         List<ParseTree> paramContextList = new ArrayList<>();
@@ -76,7 +78,7 @@ public class MyVisitor extends BasicParserBaseVisitor<AST.ASTNode> {
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public AST.ASTNode visitFunc_return(@NotNull BasicParser.Func_returnContext ctx) {
+    public AST.ASTNode visitFunc_return(@NotNull WACCParser.Func_returnContext ctx) {
         if (ctx.IF() != null) {
             return ast.new IfNode((AST.ExprNode) visit(ctx.expr()), (AST.StatNode) visit(ctx.func_return(0)), (AST.StatNode) visit(ctx.func_return(1)));
         } else if (ctx.SEMICOLON() != null) {
@@ -96,7 +98,7 @@ public class MyVisitor extends BasicParserBaseVisitor<AST.ASTNode> {
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public AST.ASTNode visitIdent(@NotNull BasicParser.IdentContext ctx) {
+    public AST.ASTNode visitIdent(@NotNull WACCParser.IdentContext ctx) {
 
         return ast.new IdentNode(ctx.getText());
     }
@@ -109,7 +111,7 @@ public class MyVisitor extends BasicParserBaseVisitor<AST.ASTNode> {
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public AST.ASTNode visitPair_liter(@NotNull BasicParser.Pair_literContext ctx) {
+    public AST.ASTNode visitPair_liter(@NotNull WACCParser.Pair_literContext ctx) {
 
         return ast.new Pair_literNode();
     }
@@ -122,7 +124,7 @@ public class MyVisitor extends BasicParserBaseVisitor<AST.ASTNode> {
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public AST.ASTNode visitParam(@NotNull BasicParser.ParamContext ctx) {
+    public AST.ASTNode visitParam(@NotNull WACCParser.ParamContext ctx) {
 
         AST.TypeNode typeNode = (AST.TypeNode) visit(ctx.type());
 
@@ -141,7 +143,7 @@ public class MyVisitor extends BasicParserBaseVisitor<AST.ASTNode> {
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public AST.ASTNode visitExpr(@NotNull BasicParser.ExprContext ctx) {
+    public AST.ASTNode visitExpr(@NotNull WACCParser.ExprContext ctx) {
         if (ctx.OPEN_PARENTHESES() != null) {
             return visit(ctx.expr(0));
         } else if (ctx.GREATER() != null) {
@@ -218,7 +220,7 @@ public class MyVisitor extends BasicParserBaseVisitor<AST.ASTNode> {
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public AST.ASTNode visitType(@NotNull BasicParser.TypeContext ctx) {
+    public AST.ASTNode visitType(@NotNull WACCParser.TypeContext ctx) {
         if (ctx.base_type() != null) {
             visit(ctx.base_type());
         } else if (ctx.OPEN_SQUARE_BRACKET() != null) {
@@ -237,7 +239,7 @@ public class MyVisitor extends BasicParserBaseVisitor<AST.ASTNode> {
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public AST.ASTNode visitUnary_oper(@NotNull BasicParser.Unary_operContext ctx) {
+    public AST.ASTNode visitUnary_oper(@NotNull WACCParser.Unary_operContext ctx) {
         //TODO
         System.out.println("Not Implemented");
         return visitChildren(ctx);
@@ -251,7 +253,7 @@ public class MyVisitor extends BasicParserBaseVisitor<AST.ASTNode> {
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public AST.ASTNode visitPair_elem(@NotNull BasicParser.Pair_elemContext ctx) {
+    public AST.ASTNode visitPair_elem(@NotNull WACCParser.Pair_elemContext ctx) {
         if (ctx.FST() != null) {
 
             return ast.new FSTNode((AST.IdentNode) visit(ctx.expr()));
@@ -268,7 +270,7 @@ public class MyVisitor extends BasicParserBaseVisitor<AST.ASTNode> {
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public AST.ASTNode visitArray_type(@NotNull BasicParser.Array_typeContext ctx) {
+    public AST.ASTNode visitArray_type(@NotNull WACCParser.Array_typeContext ctx) {
 
         return ast.new Array_typeNode((AST.TypeNode) visit(ctx.type()));
     }
@@ -281,7 +283,7 @@ public class MyVisitor extends BasicParserBaseVisitor<AST.ASTNode> {
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public AST.ASTNode visitBase_type(@NotNull BasicParser.Base_typeContext ctx) {
+    public AST.ASTNode visitBase_type(@NotNull WACCParser.Base_typeContext ctx) {
         if (ctx.BOOL() != null) {
             return ast.new BoolTypeNode();
         } else if (ctx.CHAR() != null) {
@@ -301,7 +303,7 @@ public class MyVisitor extends BasicParserBaseVisitor<AST.ASTNode> {
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public AST.ASTNode visitPair_type(@NotNull BasicParser.Pair_typeContext ctx) {
+    public AST.ASTNode visitPair_type(@NotNull WACCParser.Pair_typeContext ctx) {
 
 
         return ast.new Pair_typeNode((AST.ASTNode) visit(ctx.pair_elem_type(0)),
@@ -316,7 +318,7 @@ public class MyVisitor extends BasicParserBaseVisitor<AST.ASTNode> {
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public AST.ASTNode visitStr_liter(@NotNull BasicParser.Str_literContext ctx) {
+    public AST.ASTNode visitStr_liter(@NotNull WACCParser.Str_literContext ctx) {
 
         return ast.new Str_literNode(ctx.STR_LITER().getText());
     }
@@ -329,7 +331,7 @@ public class MyVisitor extends BasicParserBaseVisitor<AST.ASTNode> {
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public AST.ASTNode visitInt_sign(@NotNull BasicParser.Int_signContext ctx) {
+    public AST.ASTNode visitInt_sign(@NotNull WACCParser.Int_signContext ctx) {
         //TODO
         System.out.println("Not Implemented");
         return visitChildren(ctx);
@@ -343,7 +345,7 @@ public class MyVisitor extends BasicParserBaseVisitor<AST.ASTNode> {
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public AST.ASTNode visitAssign_lhs(@NotNull BasicParser.Assign_lhsContext ctx) {
+    public AST.ASTNode visitAssign_lhs(@NotNull WACCParser.Assign_lhsContext ctx) {
         if (ctx.array_elem() != null) {
             return visit(ctx.array_elem());
         } else if (ctx.ident() != null) {
@@ -363,7 +365,7 @@ public class MyVisitor extends BasicParserBaseVisitor<AST.ASTNode> {
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public AST.ASTNode visitAssign_rhs(@NotNull BasicParser.Assign_rhsContext ctx) {
+    public AST.ASTNode visitAssign_rhs(@NotNull WACCParser.Assign_rhsContext ctx) {
         if (ctx.CALL() != null) {
             List<AST.ExprNode> argNodeList = new ArrayList<>();
             if (ctx.arg_list() != null) {
@@ -400,7 +402,7 @@ public class MyVisitor extends BasicParserBaseVisitor<AST.ASTNode> {
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public AST.ASTNode visitStat(@NotNull BasicParser.StatContext ctx) {
+    public AST.ASTNode visitStat(@NotNull WACCParser.StatContext ctx) {
         //TODO symbol table config
         if (ctx.SEMICOLON() != null) {
             return ast.new MultipleStatNode((AST.StatNode) visit(ctx.stat(0)), (AST.StatNode) visit(ctx.stat(1)));
@@ -444,7 +446,7 @@ public class MyVisitor extends BasicParserBaseVisitor<AST.ASTNode> {
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public AST.ASTNode visitBool_liter(@NotNull BasicParser.Bool_literContext ctx) {
+    public AST.ASTNode visitBool_liter(@NotNull WACCParser.Bool_literContext ctx) {
 
         return ast.new Bool_literNode(ctx.getText());
     }
@@ -457,7 +459,7 @@ public class MyVisitor extends BasicParserBaseVisitor<AST.ASTNode> {
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public AST.ASTNode visitParam_list(@NotNull BasicParser.Param_listContext ctx) {
+    public AST.ASTNode visitParam_list(@NotNull WACCParser.Param_listContext ctx) {
         //TODO
         System.out.println("Not Implemented");
         return visitChildren(ctx);
@@ -471,7 +473,7 @@ public class MyVisitor extends BasicParserBaseVisitor<AST.ASTNode> {
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public AST.ASTNode visitDigit(@NotNull BasicParser.DigitContext ctx) {
+    public AST.ASTNode visitDigit(@NotNull WACCParser.DigitContext ctx) {
         //TODO
         System.out.println("Error");
         return visitChildren(ctx);
@@ -485,7 +487,7 @@ public class MyVisitor extends BasicParserBaseVisitor<AST.ASTNode> {
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public AST.ASTNode visitArg_list(@NotNull BasicParser.Arg_listContext ctx) {
+    public AST.ASTNode visitArg_list(@NotNull WACCParser.Arg_listContext ctx) {
 
         //TODO
         System.out.println("Not Implemented");
@@ -500,10 +502,10 @@ public class MyVisitor extends BasicParserBaseVisitor<AST.ASTNode> {
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public AST.ASTNode visitArray_elem(@NotNull BasicParser.Array_elemContext ctx) {
+    public AST.ASTNode visitArray_elem(@NotNull WACCParser.Array_elemContext ctx) {
 
         List<AST.ExprNode> exprNodeList = new ArrayList<>();
-        for (BasicParser.ExprContext exprContext : ctx.expr()) {
+        for (WACCParser.ExprContext exprContext : ctx.expr()) {
             exprNodeList.add((AST.ExprNode) visit(exprContext));
         }
         return ast.new Array_elemNode((AST.IdentNode) visit(ctx.ident()), exprNodeList);
@@ -517,7 +519,7 @@ public class MyVisitor extends BasicParserBaseVisitor<AST.ASTNode> {
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public AST.ASTNode visitPair_elem_type(@NotNull BasicParser.Pair_elem_typeContext ctx) {
+    public AST.ASTNode visitPair_elem_type(@NotNull WACCParser.Pair_elem_typeContext ctx) {
         if (ctx.base_type() != null) {
             return visit(ctx.base_type());
         } else if (ctx.array_type() != null) {
@@ -537,7 +539,7 @@ public class MyVisitor extends BasicParserBaseVisitor<AST.ASTNode> {
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public AST.ASTNode visitChar_liter(@NotNull BasicParser.Char_literContext ctx) {
+    public AST.ASTNode visitChar_liter(@NotNull WACCParser.Char_literContext ctx) {
 
         return ast.new Char_literNode(ctx.CHAR_LITER().getText());
     }
@@ -550,7 +552,7 @@ public class MyVisitor extends BasicParserBaseVisitor<AST.ASTNode> {
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public AST.ASTNode visitArray_liter(@NotNull BasicParser.Array_literContext ctx) {
+    public AST.ASTNode visitArray_liter(@NotNull WACCParser.Array_literContext ctx) {
 
         //TODO
         System.out.println("Not Implemented");
@@ -566,7 +568,7 @@ public class MyVisitor extends BasicParserBaseVisitor<AST.ASTNode> {
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public AST.ASTNode visitInt_liter(@NotNull BasicParser.Int_literContext ctx) {
+    public AST.ASTNode visitInt_liter(@NotNull WACCParser.Int_literContext ctx) {
 
         String sign = "+";
         String number = "";

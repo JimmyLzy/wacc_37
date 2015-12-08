@@ -536,7 +536,7 @@ public class AST {
             builder.getCurrent().append("LDR " + r0 + exprNode.getStackPointer() + "\n");
             r0.setValue(true);
             builder.getCurrent().append("BL p_print_reference\n");
-            
+
             if (!builder.getLabel().toString().contains("p_print_reference:")) {
                 Registers.Register r1 = r0.getNext();
                 builder.getLabel().append("p_print_reference:\n");
@@ -1789,7 +1789,21 @@ public class AST {
 
         @Override
         public void generate(AssemblyBuilder builder) {
+            builder.getCurrent().append("LDR r0, [sp, #4]\n");
+            builder.getCurrent().append("BL p_check_null_pointer");
+            builder.getCurrent().append("LDR r0, [r0]\n");
+            if (getType().equals("Int") || getType().equals("String") || getType().contains("[]") || getType().contains("Pair")) {
+                builder.getCurrent().append("LDR r0, [r0]\n");
 
+                if (!builder.getLabel().toString().contains("p_check_null_pointer:")) {
+                    builder.getLabel().append("p_check_null_pointer:\n");
+                    builder.getLabel().append("PUSH {lr}\n");
+                    builder.getLabel().append("CMP r0, #0\n");
+                    builder.getLabel().append("LDREQ r0, =msg_0\n");
+                    builder.getLabel().append("BLEQ p_throw_runtime_error\n");
+                    builder.getLabel().append("POP {pc}\n");
+                }
+            }
         }
 
     }

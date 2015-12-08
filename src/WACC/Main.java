@@ -17,13 +17,13 @@ public class Main {
         ANTLRInputStream input = new ANTLRFileStream(args[0]);
 
         // create a lexer that feeds off of input CharStream
-        BasicLexer lexer = new BasicLexer(input);
+        WACCLexer lexer = new WACCLexer(input);
 
         // create a buffer of tokens pulled from the lexer
         CommonTokenStream tokens = new CommonTokenStream(lexer);
 
         // create a parser that feeds off the tokens buffer
-        BasicParser parser = new BasicParser(tokens);
+        WACCParser parser = new WACCParser(tokens);
 
         ParseTree tree = parser.program(); // begin parsing at program rule
 
@@ -33,7 +33,7 @@ public class Main {
         }
 
         // build and run my custom visitor
-        MyVisitor visitor = new MyVisitor();
+        TreeVisitor visitor = new TreeVisitor();
 
         AST.ASTNode astNode = visitor.visit(tree);
 
