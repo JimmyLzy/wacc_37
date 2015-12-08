@@ -940,7 +940,16 @@ public class AST {
                     builder.getCurrent().append("STR " + currentlyUsedRegister + getStackPointer() + "\n");
                 }
             } else {
-                builder.getCurrent().append("STRB " + currentlyUsedRegister + getStackPointer() + "\n");
+                if (assign_rhsNode.getType().equals("Char") && assign_lhsNode.getType().equals("String")) {
+                    assign_lhsNode.generate(builder);
+                    currentlyUsedRegister.setValue(true);
+                    Registers.Register r1 = currentlyUsedRegister.getNext();
+                    builder.getCurrent().append("STRB " + currentlyUsedRegister + ", [" + r1 + "]\n");
+                    currentlyUsedRegister.setValue(null);
+                } else {
+                    builder.getCurrent().append("STRB " + currentlyUsedRegister + getStackPointer() + "\n");
+                }
+
             }
 
         }
