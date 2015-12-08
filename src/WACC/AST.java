@@ -183,6 +183,7 @@ public class AST {
             }
 
             for (FuncNode funcNode : functionNodes) {
+                funcNode.setCurrentStack(stack);
                 funcNode.check();
             }
 
