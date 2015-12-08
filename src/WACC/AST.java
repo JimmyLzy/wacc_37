@@ -195,9 +195,11 @@ public class AST {
             builder.getHeader().append(".data\n");
             builder.getMain().append("main: \n");
             builder.getMain().append("PUSH {lr}  \n");
+            currentlyUsedRegister = registers.getFirstEmptyRegister();
             for (FuncNode funcNode : functionNodes) {
                 funcNode.generate(builder);
             }
+            currentlyUsedRegister.setValue(null);
             builder.setCurrent(builder.getMain());
             statNode.generate(builder);
             statNode.setValue();
