@@ -439,6 +439,7 @@ public class AST {
             }
         }
 
+        // generate code to print a array elem
         protected void generatePrintArrayElem(AssemblyBuilder builder, ExprNode exprNode) {
             Registers.Register currentlyUsedRegister = registers.getFirstEmptyRegister();
             Registers.Register register4 = registers.get(4);
@@ -527,6 +528,7 @@ public class AST {
 
         }
 
+        //generate assembly code to print a array address
         protected void generatePrintArrayAddress(AssemblyBuilder builder, ExprNode exprNode) {
             builder.getHeader().append("msg_" + messageCount +":\n");
             builder.getHeader().append(".word 3\n");
