@@ -1660,9 +1660,9 @@ public class AST {
 
         @Override
         public void check() {
-            Stack previousStack = stack;
+            //Stack previousStack = stack;
             stack = new Stack();
-            stack.addPreviousStackElems(previousStack);
+            //stack.addPreviousStackElems(previousStack);
             statNode.setCurrentStack(stack);
             setScope(true);
             statNode.check();
@@ -1671,7 +1671,7 @@ public class AST {
 
         @Override
         public void generate(AssemblyBuilder builder) {
-
+            statNode.generate(builder);
         }
 
     }
