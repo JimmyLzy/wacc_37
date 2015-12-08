@@ -3413,7 +3413,7 @@ public class AST {
 
         @Override
         public void generate(AssemblyBuilder builder) {
-            if (getType().equals("Int") || getType().equals("String")) {
+            if (getType().equals("Int") || getType().equals("String") || getType().contains("[]")) {
                 builder.getCurrent().append("LDR " + currentlyUsedRegister + getStackPointer() + "\n");
             } else {
                 builder.getCurrent().append("LDRSB " + currentlyUsedRegister + getStackPointer() + "\n");
