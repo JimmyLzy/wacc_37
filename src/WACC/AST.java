@@ -778,9 +778,11 @@ public class AST {
         @Override
         public void check() {
             setTypeNodeValue(typeNode, assign_rhsNode);
+
+            stack.add(identNode.getIdent(), typeNode.getNumOfByte());
             typeNode.setCurrentStack(stack);
             assign_rhsNode.setCurrentStack(stack);
-            stack.add(identNode.getIdent(), typeNode.getNumOfByte());
+
 
             putIntoSymbolTable(this, identNode.getIdent(), typeNode);
 
