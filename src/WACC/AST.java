@@ -778,9 +778,11 @@ public class AST {
         @Override
         public void check() {
             setTypeNodeValue(typeNode, assign_rhsNode);
+
+            stack.add(identNode.getIdent(), typeNode.getNumOfByte());
             typeNode.setCurrentStack(stack);
             assign_rhsNode.setCurrentStack(stack);
-            stack.add(identNode.getIdent(), typeNode.getNumOfByte());
+
 
             putIntoSymbolTable(this, identNode.getIdent(), typeNode);
 
@@ -813,7 +815,7 @@ public class AST {
             }
             if (typeNode.getType().equals("Int") && assign_rhsNode.getType().equals("Int")) {
                 try {
-                    if (!((assign_rhsNode instanceof CallNode || assign_rhsNode instanceof IdentNode))) {
+                    if (!((assign_rhsNode instanceof CallNode || assign_rhsNode instanceof IdentNode || assign_rhsNode instanceof Pair_elemNode))) {
                         Integer.parseInt(assign_rhsNode.getValue());
                     }
                 } catch (NumberFormatException e) {
@@ -832,7 +834,7 @@ public class AST {
                 stack.setIfDeclarationCodeGenerated(true);
             }
             assign_rhsNode.generate(builder);
-            if (assign_rhsNode.getType().contains("Int") || assign_rhsNode.getType().contains("String")) {
+            if (assign_rhsNode.getType().contains("Int") || assign_rhsNode.getType().contains("String") || assign_rhsNode.getType().contains("Pair")) {
                 builder.getCurrent().append("STR " + currentlyUsedRegister + getStackPointer() + "\n");
             } else {
                 builder.getCurrent().append("STRB " + currentlyUsedRegister + getStackPointer() + "\n");
@@ -1151,7 +1153,7 @@ public class AST {
             exprNode.check();
             String type = exprNode.getType();
 
-            if (!type.contains("Pair(") || type.contains("[]")) {
+            if (!type.contains("Pair") || type.contains("[]")) {
                 throwSemanticError("The free staement takes invalid arguments");
             }
 
@@ -1658,9 +1660,9 @@ public class AST {
 
         @Override
         public void check() {
-  //          Stack previousStack = stack;
+            //Stack previousStack = stack;
             stack = new Stack();
-  //          stack.addPreviousStackElems(previousStack);
+            //stack.addPreviousStackElems(previousStack);
             statNode.setCurrentStack(stack);
             setScope(true);
             statNode.check();
@@ -1779,11 +1781,11 @@ public class AST {
         @Override
         public void check() {
 
-            exprNode.check();
-
-            if (!exprNode.getType().contains("Pair")) {
-                throwSemanticError("The FST statement can only take argument of type pair");
-            }
+//            exprNode.check();
+//
+//            if (!exprNode.getType().contains("Pair")) {
+//                throwSemanticError("The FST statement can only take argument of type pair");
+//            }
 
         }
 
@@ -1819,11 +1821,11 @@ public class AST {
         @Override
         public void check() {
 
-            exprNode.check();
-
-            if (!exprNode.getType().contains("Pair")) {
-                throwSemanticError("The SND statement can only take argument of type pair");
-            }
+//            exprNode.check();
+//
+//            if (!exprNode.getType().contains("Pair")) {
+//                throwSemanticError("The SND statement can only take argument of type pair");
+//            }
 
         }
 
@@ -2116,7 +2118,7 @@ public class AST {
 
         @Override
         public int getNumOfByte() {
-            return -1;
+            return 4;
         }
 
         @Override
@@ -2140,7 +2142,7 @@ public class AST {
 
         @Override
         public int getNumOfByte() {
-            return -1;
+            return 4;
         }
 
         @Override
@@ -3842,6 +3844,55 @@ public class AST {
         public void check() {
             exprNode1.check();
             exprNode2.check();
+        }
+
+        public void generate(AssemblyBuilder builder) {
+            Registers.Register tempReg;
+
+            currentlyUsedRegister = registers.getFirstEmptyRegister();
+            exprNode1.generate(builder);
+            builder.getCurrent().append("PUSH {" + currentlyUsedRegister + "}\n");
+            if ((exprNode1.getType().contains("Int") || exprNode1.getType().contains("String") || exprNode1.getType().contains("Pair")) || exprNode1.getType().contains("[]")) {
+                builder.getCurrent().append("MOV " + currentlyUsedRegister + ", #4\n");
+            } else {
+                builder.getCurrent().append("MOV " + currentlyUsedRegister + ", #1\n");
+            }
+            builder.getCurrent().append("BL malloc\n");
+            tempReg = currentlyUsedRegister;
+            currentlyUsedRegister = registers.getFirstEmptyRegister();
+            builder.getCurrent().append("POP {" + currentlyUsedRegister + "}\n");
+            if (exprNode1.getType().contains("Int") || exprNode1.getType().contains("String") || exprNode1.getType().contains("Pair") || exprNode1.getType().contains("[]")) {
+                builder.getCurrent().append("STR " + currentlyUsedRegister + ", [" + tempReg + "]\n");
+            } else {
+                builder.getCurrent().append("STRB " + currentlyUsedRegister + ", [" + tempReg + "]\n");
+            }
+            tempReg.setValue(null);
+            builder.getCurrent().append("PUSH {" + tempReg + "}\n");
+            currentlyUsedRegister = registers.getFirstEmptyRegister();
+            exprNode2.generate(builder);
+            builder.getCurrent().append("PUSH {" + currentlyUsedRegister + "}\n");
+            if ((exprNode2.getType().contains("Int") || exprNode2.getType().contains("String") || exprNode2.getType().contains("Pair")) || exprNode2.getType().contains("[]")) {
+                builder.getCurrent().append("MOV " + currentlyUsedRegister + ", #4\n");
+            } else {
+                builder.getCurrent().append("MOV " + currentlyUsedRegister + ", #1\n");
+            }
+            builder.getCurrent().append("BL malloc\n");
+            tempReg = currentlyUsedRegister;
+            currentlyUsedRegister = registers.getFirstEmptyRegister();
+            builder.getCurrent().append("POP {" + currentlyUsedRegister + "}\n");
+            if (exprNode2.getType().contains("Int") || exprNode2.getType().contains("String") || exprNode2.getType().contains("Pair") || exprNode2.getType().contains("[]")) {
+                builder.getCurrent().append("STR " + currentlyUsedRegister + ", [" + tempReg + "]\n");
+            } else {
+                builder.getCurrent().append("STRB " + currentlyUsedRegister + ", [" + tempReg + "]\n");
+            }
+            builder.getCurrent().append("PUSH {" + tempReg + "}\n");
+            builder.getCurrent().append("MOV " + tempReg + ", #8\n");
+            builder.getCurrent().append("BL malloc\n");
+            builder.getCurrent().append("POP {" + currentlyUsedRegister + ", " + currentlyUsedRegister.getNext() + "}\n");
+            builder.getCurrent().append("STR " + currentlyUsedRegister.getNext() + ", [" + tempReg + "]\n");
+            builder.getCurrent().append("STR " + currentlyUsedRegister + ", [" + tempReg + ", #4]\n");
+            tempReg.setValue(null);
+            currentlyUsedRegister = registers.getFirstEmptyRegister();
         }
 
     }
