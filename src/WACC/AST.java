@@ -1660,9 +1660,7 @@ public class AST {
 
         @Override
         public void check() {
-            //Stack previousStack = stack;
             stack = new Stack();
-            //stack.addPreviousStackElems(previousStack);
             statNode.setCurrentStack(stack);
             setScope(true);
             statNode.check();
@@ -1780,12 +1778,12 @@ public class AST {
 
         @Override
         public void check() {
+            
+            exprNode.check();
 
-//            exprNode.check();
-//
-//            if (!exprNode.getType().contains("Pair")) {
-//                throwSemanticError("The FST statement can only take argument of type pair");
-//            }
+            if (!exprNode.getType().contains("Pair")) {
+                throwSemanticError("The FST statement can only take argument of type pair");
+            }
 
         }
 
@@ -1821,11 +1819,11 @@ public class AST {
         @Override
         public void check() {
 
-//            exprNode.check();
-//
-//            if (!exprNode.getType().contains("Pair")) {
-//                throwSemanticError("The SND statement can only take argument of type pair");
-//            }
+            exprNode.check();
+
+            if (!exprNode.getType().contains("Pair")) {
+                throwSemanticError("The SND statement can only take argument of type pair");
+            }
 
         }
 
