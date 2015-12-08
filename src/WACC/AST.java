@@ -1778,7 +1778,7 @@ public class AST {
 
         @Override
         public void check() {
-            
+
             exprNode.check();
 
             if (!exprNode.getType().contains("Pair")) {
@@ -3805,7 +3805,7 @@ public class AST {
 
         @Override
         public void generate(AssemblyBuilder builder) {
-
+            builder.getCurrent().append("MOV r0, #0\n");
         }
 
         @Override
