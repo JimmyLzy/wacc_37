@@ -536,8 +536,8 @@ public class AST {
             builder.getCurrent().append("LDR " + r0 + exprNode.getStackPointer() + "\n");
             r0.setValue(true);
             builder.getCurrent().append("BL p_print_reference\n");
-
-            if (!builder.getLabel().toString().contains("p_print_reference:")); {
+            
+            if (!builder.getLabel().toString().contains("p_print_reference:")) {
                 Registers.Register r1 = r0.getNext();
                 builder.getLabel().append("p_print_reference:\n");
                 builder.getLabel().append("PUSH {lr}\n");
