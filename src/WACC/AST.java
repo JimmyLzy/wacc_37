@@ -3919,12 +3919,13 @@ public class AST {
                 ExprNode exprNode = exprNodeList.get(i);
                 currentlyUsedRegister = registers.getFirstEmptyRegister();
                 if (exprNode instanceof IdentNode) {
-                    if (getType().equals("Int") || getType().equals("String")) {
-                        builder.getCurrent().append("LDR " + currentlyUsedRegister + getStackPointer(stack.getCurrentStacksize()) + "\n");
-                    } else {
-                        builder.getCurrent().append("LDRSB " + currentlyUsedRegister + getStackPointer(stack.getCurrentStacksize()) + "\n");
-                    }
-                    currentlyUsedRegister.setValue(true);
+                    exprNode.generate(builder);
+//                    if (getType().equals("Int") || getType().equals("String")) {
+//                        builder.getCurrent().append("LDR " + currentlyUsedRegister + getStackPointer(stack.getCurrentStacksize()) + "\n");
+//                    } else {
+//                        builder.getCurrent().append("LDRSB " + currentlyUsedRegister + getStackPointer(stack.getCurrentStacksize()) + "\n");
+//                    }
+//                    currentlyUsedRegister.setValue(true);
                     FuncNode func = (FuncNode) (getRoot().getFunctionSymbolTable().get(identNode.getIdent()));
                     int typeByte = func.paramNodes.get(i).getTypeNode().getNumOfByte();
                     stack.incSize(typeByte);
