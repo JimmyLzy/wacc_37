@@ -130,10 +130,6 @@ public class AST {
             }
             builder.getCurrent().append("ADD sp, sp, #" + remainder + "\n");
         }
-
-        public Stack getStack() {
-            return stack;
-        }
     }
 
     /*
@@ -235,6 +231,7 @@ public class AST {
             this.paramNodes = paramNodes;
             for (ParamNode paramNode : paramNodes) {
                 paramNode.setParent(this);
+                paramNode.getTypeNode().setValue();
             }
             this.identNode = identNode;
             identNode.setParent(this);
@@ -354,52 +351,6 @@ public class AST {
             return stackOffset;
         }
 
-//        private Integer calculateStackOffset(ASTNode astNode) {
-//            Integer stackOffset = null;
-//            if (this instanceof DeclarationNode) {
-//                stackOffset = stack.getStackElemOffset(((DeclarationNode) this).identNode.getIdent());
-//            } else if (this instanceof AssignmentNode) {
-//                ASTNode assignLHS = ((AssignmentNode) this).assign_lhsNode;
-//                String ident;
-//                if (assignLHS instanceof IdentNode) {
-//                    ident = ((IdentNode) assignLHS).getIdent();
-//                } else if (assignLHS instanceof Array_elemNode) {
-//                    ident = ((Array_elemNode) assignLHS).identNode.getIdent();
-//                } else {
-//                    ident = ((Pair_elemNode) assignLHS).getIdentNode().getIdent();
-//                }
-//                stackOffset = stack.getStackElemOffset(ident);
-//            } else if (this instanceof IdentNode) {
-//                String ident = ((IdentNode) this).getIdent();
-//                TypeNode typeNode = ((IdentNode) this).getTypeNode();
-//                stackOffset = typeNode.stack.getStackElemOffset(ident);
-//            } else if (this instanceof Array_elemNode) {
-//                String ident = ((Array_elemNode) this).identNode.getTypeNode().getIdent();
-//                TypeNode typeNode = ((Array_elemNode) this).identNode.getTypeNode();
-//                stackOffset = stack.getStackElemOffsetArray(astNode, ident);
-//            }
-//            return stackOffset;
-//        }
-//
-//        protected int getStackOffset() {
-//            ASTNode astNode = this;
-//            int result = 0;
-//            while(astNode != null) {
-//                Integer offset = calculateStackOffset(astNode);
-//                if(offset != null) {
-//                    result += offset;
-//                    return result;
-//                } else {
-//                    result += stack.getSize();
-//                    astNode = astNode.getParent();
-//                }
-//            }
-//            if(astNode == null) {
-//                result = 0;
-//            }
-//            return result;
-//        }
-
         public abstract String getValue();
 
         protected String getStackPointer() {
@@ -414,6 +365,161 @@ public class AST {
         }
 
         public abstract void setValue();
+
+
+        public void generateCheckArrayBounds(AssemblyBuilder builder) {
+            if (!builder.getLabel().toString().contains("p_check_array_bounds:")) {
+                builder.getLabel().append("p_check_array_bounds:\n");
+                builder.getLabel().append("PUSH {lr}\n");
+                builder.getLabel().append("CMP r0, #0\n");
+                builder.getLabel().append("LDRLT r0, =msg_" + messageCount + "\n");
+
+                builder.getHeader().append("msg_" + messageCount + ":\n");
+                builder.getHeader().append(".word 44\n");
+                builder.getHeader().append(".ascii\t\"ArrayIndexOutOfBoundsError: negative index\\n\\0\"\n");
+                messageCount++;
+
+                builder.getLabel().append("BLLT p_throw_runtime_error\n");
+                builder.getLabel().append("LDR r1, [r4]\n");
+                builder.getLabel().append("CMP r0, r1\n");
+                builder.getLabel().append("LDRCS r0, =msg_" + messageCount + "\n");
+
+                builder.getHeader().append("msg_" + messageCount + ":\n");
+                builder.getHeader().append(".word 45\n");
+                builder.getHeader().append(".ascii\t\"ArrayIndexOutOfBoundsError: index too large\\n\\0\"\n");
+                messageCount++;
+
+                builder.getLabel().append("BLCS p_throw_runtime_error\n");
+                builder.getLabel().append("POP {pc}\n");
+                if (!builder.getLabel().toString().contains("p_throw_runtime_error:")) {
+                    builder.getLabel().append("p_throw_runtime_error:\n");
+                    builder.getLabel().append("BL p_print_string\n");
+                    builder.getLabel().append("MOV r0, #-1\n");
+                    builder.getLabel().append("BL exit\n");
+
+                    if (!builder.getLabel().toString().contains("p_print_string:")) {
+                        builder.getLabel().append("p_print_string:\n");
+                        builder.getLabel().append("PUSH {lr}\n");
+                        Registers.Register registerZero = currentlyUsedRegister;
+                        currentlyUsedRegister = registers.getFirstEmptyRegister();
+                        builder.getLabel().append("LDR " + currentlyUsedRegister + ", [" + registerZero + "]\n");
+                        currentlyUsedRegister.setValue(registerZero.getValue());
+                        Registers.Register registerFirst = currentlyUsedRegister;
+                        currentlyUsedRegister = registers.getFirstEmptyRegister();
+                        builder.getLabel().append("ADD " + currentlyUsedRegister + ", " + registerZero + ", #4\n");
+
+                        registerZero.setValue(null);
+                        registerFirst.setValue(null);
+                        currentlyUsedRegister.setValue(null);
+
+                        currentlyUsedRegister = registers.getFirstEmptyRegister();
+
+                        builder.getLabel().append("LDR " + currentlyUsedRegister + ", =msg_" + messageCount + "\n");
+                        currentlyUsedRegister.setValue(true);
+                        builder.getLabel().append("ADD " + currentlyUsedRegister + ", " + currentlyUsedRegister + ", #4\n");
+                        builder.getLabel().append("BL printf\n");
+                        builder.getLabel().append("MOV " + currentlyUsedRegister + ", #0\n");
+                        builder.getLabel().append("BL fflush\n");
+                        builder.getLabel().append("POP {pc}\n");
+
+                        builder.getHeader().append("msg_" + messageCount + ":\n");
+                        messageCount++;
+                        builder.getHeader().append(".word 5\n");
+                        builder.getHeader().append(".ascii\t\"%.*s\\0\"\n");
+
+                        currentlyUsedRegister.setValue(null);
+                    }
+                }
+            }
+        }
+
+        protected void generatePrintArrayElem(AssemblyBuilder builder, ExprNode exprNode) {
+            Registers.Register currentlyUsedRegister = registers.getFirstEmptyRegister();
+            Registers.Register register4 = registers.get(4);
+
+            builder.getCurrent().append("LDR " + currentlyUsedRegister + exprNode.getStackPointer() + "\n");
+            currentlyUsedRegister.setValue(true);
+            builder.getCurrent().append("PUSH {"  + register4 + "}\n");
+            stack.incSize(4);
+            builder.getCurrent().append("MOV " + register4 + ", " + currentlyUsedRegister + "\n");
+            register4.setValue(true);
+            builder.getCurrent().append("LDR " + currentlyUsedRegister + exprNode.getStackPointer() + "\n");
+            //builder.getCurrent().append("LDR " + currentlyUsedRegister + ", =" + ((Array_elemNode)exprNode).getIndex() + "\n");
+            builder.getCurrent().append("BL p_check_array_bounds\n");
+            generateCheckArrayBounds(builder);
+            builder.getCurrent().append("ADD " + register4 + ", " + register4 + ", #4\n");
+            //LSL #2 special case
+            String lsl = "";
+            if (exprNode.getType().contains("Int")) {
+                lsl = ", LSL #2";
+            }
+            builder.getCurrent().append("ADD " + register4 + ", " + register4 + ", " + currentlyUsedRegister + lsl + "\n");
+            builder.getCurrent().append("LDR " + register4 + ", [" + register4 + "]\n");
+            builder.getCurrent().append("MOV " + currentlyUsedRegister + ", " + register4 + "\n");
+            builder.getCurrent().append("POP {" + register4 + "}\n");
+            stack.decSize(4);
+            if (exprNode.getType().contains("Int")) {
+                builder.getCurrent().append("BL p_print_int\n");
+                if (!builder.getLabel().toString().contains("p_print_int:")) {
+                    builder.getLabel().append("p_print_int:\n");
+                    builder.getLabel().append("PUSH {lr}\n");
+                    Registers.Register registerZero = currentlyUsedRegister;
+                    registerZero.setValue(true);
+                    currentlyUsedRegister = registerZero.getNext();
+                    builder.getLabel().append("MOV " + currentlyUsedRegister + ", " + registerZero + "\n");
+                    currentlyUsedRegister.setValue(true);
+
+                    registerZero.setValue(null);
+                    currentlyUsedRegister.setValue(null);
+                    currentlyUsedRegister = registers.getFirstEmptyRegister();
+
+                    builder.getLabel().append("LDR " + currentlyUsedRegister + ", =msg_" + messageCount + "\n");
+                    builder.getLabel().append("ADD " + currentlyUsedRegister + ", " + currentlyUsedRegister + ", #4\n");
+                    builder.getLabel().append("BL printf\n");
+                    builder.getLabel().append("MOV " + currentlyUsedRegister + ", #0\n");
+                    builder.getLabel().append("BL fflush\n");
+                    builder.getLabel().append("POP {pc}\n");
+
+                    builder.getHeader().append("msg_" + messageCount + ":\n");
+                    messageCount++;
+                    builder.getHeader().append(".word 3\n");
+                    builder.getHeader().append(".ascii\t\"%d\\0\"\n");
+                }
+            } else if (exprNode.getType().contains("Char")) {
+                generatePrintCharLiter(builder, exprNode);
+            } else if (exprNode.getType().contains("Bool")) {
+                generatePrintBoolLiter(builder, exprNode);
+            }
+
+            if (!builder.getLabel().toString().contains("p_print_int:")) {
+                builder.getLabel().append("p_print_int:\n");
+                builder.getLabel().append("PUSH {lr}\n");
+                Registers.Register registerZero = currentlyUsedRegister;
+                registerZero.setValue(true);
+                currentlyUsedRegister = registers.getFirstEmptyRegister();
+                builder.getLabel().append("MOV " + currentlyUsedRegister + ", " + registerZero + "\n");
+                currentlyUsedRegister.setValue(true);
+
+                registerZero.setValue(null);
+                currentlyUsedRegister.setValue(null);
+                currentlyUsedRegister = registers.getFirstEmptyRegister();
+
+                builder.getLabel().append("LDR " + currentlyUsedRegister + ", =msg_" + messageCount + "\n");
+                builder.getLabel().append("ADD " + currentlyUsedRegister + ", " + currentlyUsedRegister + ", #4\n");
+                builder.getLabel().append("BL printf\n");
+                builder.getLabel().append("MOV " + currentlyUsedRegister + ", #0\n");
+                builder.getLabel().append("BL fflush\n");
+                builder.getLabel().append("POP {pc}\n");
+
+                builder.getHeader().append("msg_" + messageCount + ":\n");
+                messageCount++;
+                builder.getHeader().append(".word 3\n");
+                builder.getHeader().append(".ascii\t\"%d\\0\"\n");
+            }
+
+            currentlyUsedRegister.setValue(null);
+
+        }
 
         protected void generatePrintArrayAddress(AssemblyBuilder builder, ExprNode exprNode) {
             builder.getHeader().append("msg_" + messageCount +":\n");
@@ -585,160 +691,6 @@ public class AST {
             currentlyUsedRegister.setValue(null);
 
         }
-
-        protected void generatePrintArrayElem(AssemblyBuilder builder, ExprNode exprNode) {
-            Registers.Register currentlyUsedRegister = registers.getFirstEmptyRegister();
-            Registers.Register register4 = registers.get(4);
-
-            builder.getCurrent().append("LDR " + currentlyUsedRegister + exprNode.getStackPointer() + "\n");
-            currentlyUsedRegister.setValue(true);
-            builder.getCurrent().append("PUSH {"  + register4 + "}\n");
-            stack.incSize(4);
-            builder.getCurrent().append("MOV " + register4 + ", " + currentlyUsedRegister + "\n");
-            register4.setValue(true);
-            builder.getCurrent().append("LDR " + currentlyUsedRegister + exprNode.getStackPointer() + "\n");
-            //builder.getCurrent().append("LDR " + currentlyUsedRegister + ", =" + ((Array_elemNode)exprNode).getIndex() + "\n");
-            builder.getCurrent().append("BL p_check_array_bounds\n");
-            generateCheckArrayBounds(builder);
-            builder.getCurrent().append("ADD " + register4 + ", " + register4 + ", #4\n");
-            //LSL #2 special case
-            String lsl = "";
-            if (exprNode.getType().contains("Int")) {
-                lsl = ", LSL #2";
-            }
-            builder.getCurrent().append("ADD " + register4 + ", " + register4 + ", " + currentlyUsedRegister + lsl + "\n");
-            builder.getCurrent().append("LDR " + register4 + ", [" + register4 + "]\n");
-            builder.getCurrent().append("MOV " + currentlyUsedRegister + ", " + register4 + "\n");
-            builder.getCurrent().append("POP {" + register4 + "}\n");
-            stack.decSize(4);
-            if (exprNode.getType().contains("Int")) {
-                builder.getCurrent().append("BL p_print_int\n");
-                if (!builder.getLabel().toString().contains("p_print_int:")) {
-                    builder.getLabel().append("p_print_int:\n");
-                    builder.getLabel().append("PUSH {lr}\n");
-                    Registers.Register registerZero = currentlyUsedRegister;
-                    registerZero.setValue(true);
-                    currentlyUsedRegister = registerZero.getNext();
-                    builder.getLabel().append("MOV " + currentlyUsedRegister + ", " + registerZero + "\n");
-                    currentlyUsedRegister.setValue(true);
-
-                    registerZero.setValue(null);
-                    currentlyUsedRegister.setValue(null);
-                    currentlyUsedRegister = registers.getFirstEmptyRegister();
-
-                    builder.getLabel().append("LDR " + currentlyUsedRegister + ", =msg_" + messageCount + "\n");
-                    builder.getLabel().append("ADD " + currentlyUsedRegister + ", " + currentlyUsedRegister + ", #4\n");
-                    builder.getLabel().append("BL printf\n");
-                    builder.getLabel().append("MOV " + currentlyUsedRegister + ", #0\n");
-                    builder.getLabel().append("BL fflush\n");
-                    builder.getLabel().append("POP {pc}\n");
-
-                    builder.getHeader().append("msg_" + messageCount + ":\n");
-                    messageCount++;
-                    builder.getHeader().append(".word 3\n");
-                    builder.getHeader().append(".ascii\t\"%d\\0\"\n");
-                }
-            } else if (exprNode.getType().contains("Char")) {
-                generatePrintCharLiter(builder, exprNode);
-            } else if (exprNode.getType().contains("Bool")) {
-                generatePrintBoolLiter(builder, exprNode);
-            }
-
-            if (!builder.getLabel().toString().contains("p_print_int:")) {
-                builder.getLabel().append("p_print_int:\n");
-                builder.getLabel().append("PUSH {lr}\n");
-                Registers.Register registerZero = currentlyUsedRegister;
-                registerZero.setValue(true);
-                currentlyUsedRegister = registers.getFirstEmptyRegister();
-                builder.getLabel().append("MOV " + currentlyUsedRegister + ", " + registerZero + "\n");
-                currentlyUsedRegister.setValue(true);
-
-                registerZero.setValue(null);
-                currentlyUsedRegister.setValue(null);
-                currentlyUsedRegister = registers.getFirstEmptyRegister();
-
-                builder.getLabel().append("LDR " + currentlyUsedRegister + ", =msg_" + messageCount + "\n");
-                builder.getLabel().append("ADD " + currentlyUsedRegister + ", " + currentlyUsedRegister + ", #4\n");
-                builder.getLabel().append("BL printf\n");
-                builder.getLabel().append("MOV " + currentlyUsedRegister + ", #0\n");
-                builder.getLabel().append("BL fflush\n");
-                builder.getLabel().append("POP {pc}\n");
-
-                builder.getHeader().append("msg_" + messageCount + ":\n");
-                messageCount++;
-                builder.getHeader().append(".word 3\n");
-                builder.getHeader().append(".ascii\t\"%d\\0\"\n");
-            }
-
-            currentlyUsedRegister.setValue(null);
-
-        }
-
-        public void generateCheckArrayBounds(AssemblyBuilder builder) {
-            if (!builder.getLabel().toString().contains("p_check_array_bounds:")) {
-                builder.getLabel().append("p_check_array_bounds:\n");
-                builder.getLabel().append("PUSH {lr}\n");
-                builder.getLabel().append("CMP r0, #0\n");
-                builder.getLabel().append("LDRLT r0, =msg_" + messageCount + "\n");
-
-                builder.getHeader().append("msg_" + messageCount + ":\n");
-                builder.getHeader().append(".word 44\n");
-                builder.getHeader().append(".ascii\t\"ArrayIndexOutOfBoundsError: negative index\\n\\0\"\n");
-                messageCount++;
-
-                builder.getLabel().append("BLLT p_throw_runtime_error\n");
-                builder.getLabel().append("LDR r1, [r4]\n");
-                builder.getLabel().append("CMP r0, r1\n");
-                builder.getLabel().append("LDRCS r0, =msg_" + messageCount + "\n");
-
-                builder.getHeader().append("msg_" + messageCount + ":\n");
-                builder.getHeader().append(".word 45\n");
-                builder.getHeader().append(".ascii\t\"ArrayIndexOutOfBoundsError: index too large\\n\\0\"\n");
-                messageCount++;
-
-                builder.getLabel().append("BLCS p_throw_runtime_error\n");
-                builder.getLabel().append("POP {pc}\n");
-                if (!builder.getLabel().toString().contains("p_throw_runtime_error:")) {
-                    builder.getLabel().append("p_throw_runtime_error:\n");
-                    builder.getLabel().append("BL p_print_string\n");
-                    builder.getLabel().append("MOV r0, #-1\n");
-                    builder.getLabel().append("BL exit\n");
-
-                    if (!builder.getLabel().toString().contains("p_print_string:")) {
-                        builder.getLabel().append("p_print_string:\n");
-                        builder.getLabel().append("PUSH {lr}\n");
-                        Registers.Register registerZero = currentlyUsedRegister;
-                        currentlyUsedRegister = registers.getFirstEmptyRegister();
-                        builder.getLabel().append("LDR " + currentlyUsedRegister + ", [" + registerZero + "]\n");
-                        currentlyUsedRegister.setValue(registerZero.getValue());
-                        Registers.Register registerFirst = currentlyUsedRegister;
-                        currentlyUsedRegister = registers.getFirstEmptyRegister();
-                        builder.getLabel().append("ADD " + currentlyUsedRegister + ", " + registerZero + ", #4\n");
-
-                        registerZero.setValue(null);
-                        registerFirst.setValue(null);
-                        currentlyUsedRegister.setValue(null);
-
-                        currentlyUsedRegister = registers.getFirstEmptyRegister();
-
-                        builder.getLabel().append("LDR " + currentlyUsedRegister + ", =msg_" + messageCount + "\n");
-                        currentlyUsedRegister.setValue(true);
-                        builder.getLabel().append("ADD " + currentlyUsedRegister + ", " + currentlyUsedRegister + ", #4\n");
-                        builder.getLabel().append("BL printf\n");
-                        builder.getLabel().append("MOV " + currentlyUsedRegister + ", #0\n");
-                        builder.getLabel().append("BL fflush\n");
-                        builder.getLabel().append("POP {pc}\n");
-
-                        builder.getHeader().append("msg_" + messageCount + ":\n");
-                        messageCount++;
-                        builder.getHeader().append(".word 5\n");
-                        builder.getHeader().append(".ascii\t\"%.*s\\0\"\n");
-
-                        currentlyUsedRegister.setValue(null);
-                    }
-                }
-            }
-        }
     }
 
     public class SkipNode extends StatNode {
@@ -853,15 +805,15 @@ public class AST {
             if (assign_rhsNode instanceof IdentNode) {
                 typeNode.setIdent(((IdentNode) assign_rhsNode).getIdent());
             }
-            if (typeNode.getType().equals("Int") && assign_rhsNode.getType().equals("Int")) {
-                try {
-                    if (!((assign_rhsNode instanceof CallNode || assign_rhsNode instanceof IdentNode))) {
-                        Integer.parseInt(assign_rhsNode.getValue());
-                    }
-                } catch (NumberFormatException e) {
-                    throwSyntaxError("Integer value is too large for a 32-bit signed integer");
-                }
-            }
+//            if (typeNode.getType().equals("Int") && assign_rhsNode.getType().equals("Int")) {
+//                try {
+//                    if (!((assign_rhsNode instanceof CallNode || assign_rhsNode instanceof IdentNode))) {
+//                        Integer.parseInt(assign_rhsNode.getValue());
+//                    }
+//                } catch (NumberFormatException e) {
+//                    throwSyntaxError("Integer value is too large for a 32-bit signed integer");
+//                }
+//            }
             int stackSize = stack.getSize();
             int num = stackSize / Stack.MAX_STACK_SIZE;
             int remainder = stackSize % Stack.MAX_STACK_SIZE;
@@ -939,7 +891,7 @@ public class AST {
         @Override
         public void check() {
             assign_rhsNode.setCurrentStack(stack);
-
+            assign_lhsNode.setCurrentStack(stack);
             assign_lhsNode.check();
             assign_rhsNode.check();
 
@@ -956,13 +908,26 @@ public class AST {
                     throwSemanticError("Need same type when assigning the variable");
                 }
             } else if (!assign_lhsNode.getType().contains(assign_rhsNode.getType())) {
-                throwSemanticError("Need same type when assigning the variable");
+                if (assign_lhsNode.getType().equals("String") && assign_rhsNode.getType().equals("Char")) {
+                    return;
+                } else {
+                    throwSemanticError("Need same type when assigning the variable");
+                }
             }
 
         }
 
         @Override
         public void generate(AssemblyBuilder builder) {
+
+//            currentlyUsedRegister = registers.getFirstEmptyRegister();
+//            assign_rhsNode.generate(builder);
+//            if (assign_rhsNode.getType().equals("Int") || assign_rhsNode.getType().equals("String")) {
+//                builder.getCurrent().append("STR " + currentlyUsedRegister + getStackPointer() + "\n");
+//            } else {
+//                builder.getCurrent().append("STRB " + currentlyUsedRegister + getStackPointer() + "\n");
+//            }
+//            currentlyUsedRegister.setValue(null);
 
             currentlyUsedRegister = registers.getFirstEmptyRegister();
             assign_rhsNode.generate(builder);
@@ -1016,10 +981,10 @@ public class AST {
             if (assign_lhsNode instanceof IdentNode) {
                 if (assign_rhsNode instanceof IdentNode) {
                     ((IdentNode) assign_lhsNode).getTypeNode().setIdent(((IdentNode) assign_rhsNode).getIdent());
-                }
-                if (assign_rhsNode instanceof Str_literNode) {
+                } else if (assign_rhsNode instanceof Str_literNode) {
                     getTypeNode((IdentNode) assign_lhsNode).setValue((assign_rhsNode).getValue());
                 } else if (assign_rhsNode.getType().equals("Int")) {
+                    System.out.println("=====" + assign_rhsNode.getValue());
                     getTypeNode((IdentNode) assign_lhsNode).setValue((assign_rhsNode.getValue()));
                 }
             }
@@ -1306,7 +1271,7 @@ public class AST {
 
             command = "print";
             this.exprNode = exprNode;
-            this.exprNode.setParent(this);
+            exprNode.setParent(this);
 
         }
 
@@ -1339,16 +1304,16 @@ public class AST {
             switch (type) {
                 case "String":
                     generatePrintStringLiter(builder, exprNode);
-                    break;
+                    return;
                 case "Bool":
                     generatePrintBoolLiter(builder, exprNode);
-                    break;
+                    return;
                 case "Int":
                     generatePrintIntLiter(builder, exprNode);
-                    break;
+                    return;
                 case "Char":
                     generatePrintCharLiter(builder, exprNode);
-                    break;
+                    return;
             }
             if (exprNode instanceof IdentNode) {
                 generatePrintArrayAddress(builder, exprNode);
@@ -1401,24 +1366,26 @@ public class AST {
             switch (type) {
                 case "String":
                     generatePrintStringLiter(builder, exprNode);
-                    break;
+                    generatePrintln(builder);
+                    return;
                 case "Bool":
                     generatePrintBoolLiter(builder, exprNode);
-                    break;
+                    generatePrintln(builder);
+                    return;
                 case "Int":
                     generatePrintIntLiter(builder, exprNode);
-                    break;
+                    generatePrintln(builder);
+                    return;
                 case "Char":
                     generatePrintCharLiter(builder, exprNode);
-                    break;
+                    generatePrintln(builder);
+                    return;
             }
             if (exprNode instanceof IdentNode) {
                 generatePrintArrayAddress(builder, exprNode);
             } else if (type.contains("[]")) {
                 generatePrintArrayElem(builder, exprNode);
             }
-
-
             generatePrintln(builder);
 
         }
@@ -1893,6 +1860,8 @@ public class AST {
         public void setValue(String value) {
             this.value = value;
         }
+
+        public abstract void setValue();
     }
 
 
@@ -1913,6 +1882,11 @@ public class AST {
         @Override
         public int getNumOfByte() {
             return 4;
+        }
+
+        @Override
+        public void setValue() {
+            setValue("0");
         }
 
         @Override
@@ -1939,6 +1913,12 @@ public class AST {
         }
 
         @Override
+        public void setValue() {
+            setValue("false");
+
+        }
+
+        @Override
         public String getType() {
             return "Bool";
         }
@@ -1959,6 +1939,11 @@ public class AST {
         @Override
         public int getNumOfByte() {
             return 1;
+        }
+
+        @Override
+        public void setValue() {
+            setValue(" ");
         }
 
         @Override
@@ -1983,6 +1968,11 @@ public class AST {
         @Override
         public int getNumOfByte() {
             return 4;
+        }
+
+        @Override
+        public void setValue() {
+            setValue(" ");
         }
 
         @Override
@@ -2013,6 +2003,11 @@ public class AST {
         @Override
         public int getNumOfByte() {
             return 4;
+        }
+
+        @Override
+        public void setValue() {
+
         }
 
         @Override
@@ -2111,6 +2106,11 @@ public class AST {
         }
 
         @Override
+        public void setValue() {
+
+        }
+
+        @Override
         public String getType() {
             return "Pair";
         }
@@ -2127,6 +2127,11 @@ public class AST {
         @Override
         public int getNumOfByte() {
             return -1;
+        }
+
+        @Override
+        public void setValue() {
+
         }
 
         @Override
@@ -2859,7 +2864,14 @@ public class AST {
 
         @Override
         public String getValue() {
-            return String.valueOf(Integer.valueOf(exp1.getValue()) + Integer.valueOf(exp2.getValue()));
+            String result = "";
+            try {
+                result = String.valueOf(Integer.valueOf(exp1.getValue()) + Integer.valueOf(exp2.getValue()));
+                return result;
+            } catch (NumberFormatException e) {
+                throwSemanticError("Expresission type mismatch");
+            }
+            return result;
         }
 
         @Override
@@ -2900,6 +2912,7 @@ public class AST {
 
         @Override
         public String getValue() {
+            System.out.println(exp1.getValue());
             return String.valueOf(Integer.valueOf(exp1.getValue()) - Integer.valueOf(exp2.getValue()));
         }
 
@@ -3464,7 +3477,7 @@ public class AST {
             Registers.Register currentlyUsedRegister = registers.getFirstEmptyRegister();
 
             builder.getCurrent().append("PUSH {" + currentlyUsedRegister + ", r4}\n");
-            stack.incSize(8);
+            stack.incSize(4);
             builder.getCurrent().append("LDR r4, [sp, #8]\n");
             builder.getCurrent().append("LDR " + currentlyUsedRegister + ", =" + getIndex() + "\n");
             currentlyUsedRegister.setValue(true);
@@ -3481,24 +3494,13 @@ public class AST {
             builder.getCurrent().append("MOV " + r1 + ", r4\n");
             r1.setValue(true);
             builder.getCurrent().append("POP {r0, r4}\n");
-            stack.decSize(8);
+            stack.decSize(4);
             r1.setValue(null);
         }
 
         @Override
         public String getType() {
-            Array_typeNode array_typeNode = (Array_typeNode) identNode.getTypeNode();
-
-//            String result = lookupSymbolTable(this, identNode.getIdent()).getType();
-////            if (result.equals("String")) {
-////                result = "Char";
-////            } else {
-////                result = result.replace("[]", "");
-////            }
-//            if (result.equals("String")) {
-//                result = "Char[]";
-//            }
-            return array_typeNode.getType();
+            return (identNode.getTypeNode()).getType();
         }
 
         private TypeNode lookupSymbolTable(ASTNode currentScope, String string) {
@@ -3954,4 +3956,5 @@ public class AST {
             return result + "]";
         }
     }
+
 }
