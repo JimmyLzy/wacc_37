@@ -7,6 +7,7 @@ public class AssemblyBuilder {
 
     //StringBuilder for main scope
     private StringBuilder main;
+    //StringBuilder for header scope
     private StringBuilder header;
     private StringBuilder function;
     private StringBuilder label;
