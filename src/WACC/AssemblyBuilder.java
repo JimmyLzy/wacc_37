@@ -5,6 +5,7 @@ package WACC;
  */
 public class AssemblyBuilder {
 
+    //StringBuilder for main scope
     private StringBuilder main;
     private StringBuilder header;
     private StringBuilder function;
