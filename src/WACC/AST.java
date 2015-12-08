@@ -122,7 +122,7 @@ public class AST {
         }
 
         public void addBackToStack(AssemblyBuilder builder) {
-            int stackSize = stack.getSize();
+            int stackSize = stack.getCurrentStacksize();
             int num = stackSize / Stack.MAX_STACK_SIZE;
             int remainder = stackSize % Stack.MAX_STACK_SIZE;
             for (int i = 0; i < num; i++) {
@@ -258,7 +258,10 @@ public class AST {
         @Override
         public void check() {
 
+            Stack previousStack = stack;
             stack = new Stack();
+            stack.addPreviousStackElems(previousStack);
+
             for (int i = paramNodes.size() - 1; i >= 0; i--) {
                 ParamNode paramNode = paramNodes.get(i);
                 paramNode.setCurrentStack(stack);
@@ -814,7 +817,7 @@ public class AST {
                     throwSyntaxError("Integer value is too large for a 32-bit signed integer");
                 }
             }
-            int stackSize = stack.getSize();
+            int stackSize = stack.getCurrentStacksize();
             int num = stackSize / Stack.MAX_STACK_SIZE;
             int remainder = stackSize % Stack.MAX_STACK_SIZE;
             currentlyUsedRegister = registers.getFirstEmptyRegister();
@@ -1479,8 +1482,12 @@ public class AST {
 
         @Override
         public void check() {
+            Stack previousStack = stack;
             Stack stackTrue = new Stack();
+            stackTrue.addPreviousStackElems(previousStack);
             Stack stackFalse = new Stack();
+            stackFalse.addPreviousStackElems(previousStack);
+
             exprNode.setCurrentStack(stack);
             statNodeTrue.setCurrentStack(stackTrue);
             statNodeFalse.setCurrentStack(stackFalse);
@@ -1575,8 +1582,10 @@ public class AST {
 
         @Override
         public void check() {
+            Stack previousStack = stack;
             exprNode.setCurrentStack(stack);
             Stack whileBodyStack = new Stack();
+            whileBodyStack.addPreviousStackElems(previousStack);
             statNode.setCurrentStack(whileBodyStack);
 
             setScope(true);
@@ -1646,7 +1655,9 @@ public class AST {
 
         @Override
         public void check() {
+            Stack previousStack = stack;
             stack = new Stack();
+            stack.addPreviousStackElems(previousStack);
             statNode.setCurrentStack(stack);
             setScope(true);
             statNode.check();
@@ -3871,7 +3882,10 @@ public class AST {
         @Override
         public void check() {
 
+            Stack previousStack = stack;
             stack = new Stack();
+            stack.addPreviousStackElems(previousStack);
+
             for (int i = exprNodeList.size() - 1; i >= 0; i--) {
                 ExprNode exprNode = exprNodeList.get(i);
                 exprNode.setCurrentStack(stack);

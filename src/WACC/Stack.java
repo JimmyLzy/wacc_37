@@ -11,19 +11,21 @@ public class Stack {
     private int size;
     private boolean ifDeclarationCodeGenerated = false;
     public static final int MAX_STACK_SIZE = 1024;
+    private int currentStacksize;
 
     private List<StackElem> stack = new ArrayList<>();
 
     public void add(String ident, int sizeOfType) {
-        StackElem stackElem = new StackElem(ident, sizeOfType); 
+        StackElem stackElem = new StackElem(ident, sizeOfType);
         stack.add(stackElem);
         size += stackElem.getSize();
+        currentStacksize += stackElem.getSize();
         stackElem.setOffset(size);
     }
 
     public int getStackElemOffset(String ident) {
         int offset = 0;
-        for(StackElem stackElem : stack) {
+        for(StackElem stackElem : getStackElemList()) {
             if (ident.equals(stackElem.getIdent())) {
                 offset = size - stackElem.getOffset();
                 break;
@@ -40,16 +42,35 @@ public class Stack {
         this.ifDeclarationCodeGenerated = ifDeclarationCodeGenerated;
     }
 
+    public void addPreviousStackElems(Stack previousStack) {
+        List<StackElem> currentStackElems = getStackElemList();
+        List<StackElem> previousStackElems = previousStack.getStackElemList();
+        for(StackElem stackElem: previousStackElems) {
+            currentStackElems.add(stackElem);
+            size += stackElem.getSize();
+        }
+    }
+
     public int getSize() {
         return size;
     }
 
     public void incSize(int sizeOfType) {
         size += sizeOfType;
+        currentStacksize += sizeOfType;
     }
 
     public void decSize(int sizeOfType) {
         size -= sizeOfType;
+        currentStacksize -= sizeOfType;
+    }
+
+    public List<StackElem> getStackElemList() {
+        return stack;
+    }
+
+    public int getCurrentStacksize() {
+        return currentStacksize;
     }
 
 
