@@ -805,15 +805,15 @@ public class AST {
             if (assign_rhsNode instanceof IdentNode) {
                 typeNode.setIdent(((IdentNode) assign_rhsNode).getIdent());
             }
-//            if (typeNode.getType().equals("Int") && assign_rhsNode.getType().equals("Int")) {
-//                try {
-//                    if (!((assign_rhsNode instanceof CallNode || assign_rhsNode instanceof IdentNode))) {
-//                        Integer.parseInt(assign_rhsNode.getValue());
-//                    }
-//                } catch (NumberFormatException e) {
-//                    throwSyntaxError("Integer value is too large for a 32-bit signed integer");
-//                }
-//            }
+            if (typeNode.getType().equals("Int") && assign_rhsNode.getType().equals("Int")) {
+                try {
+                    if (!((assign_rhsNode instanceof CallNode || assign_rhsNode instanceof IdentNode))) {
+                        Integer.parseInt(assign_rhsNode.getValue());
+                    }
+                } catch (NumberFormatException e) {
+                    throwSyntaxError("Integer value is too large for a 32-bit signed integer");
+                }
+            }
             int stackSize = stack.getSize();
             int num = stackSize / Stack.MAX_STACK_SIZE;
             int remainder = stackSize % Stack.MAX_STACK_SIZE;
@@ -920,20 +920,11 @@ public class AST {
         @Override
         public void generate(AssemblyBuilder builder) {
 
-//            currentlyUsedRegister = registers.getFirstEmptyRegister();
-//            assign_rhsNode.generate(builder);
-//            if (assign_rhsNode.getType().equals("Int") || assign_rhsNode.getType().equals("String")) {
-//                builder.getCurrent().append("STR " + currentlyUsedRegister + getStackPointer() + "\n");
-//            } else {
-//                builder.getCurrent().append("STRB " + currentlyUsedRegister + getStackPointer() + "\n");
-//            }
-//            currentlyUsedRegister.setValue(null);
-
             currentlyUsedRegister = registers.getFirstEmptyRegister();
             assign_rhsNode.generate(builder);
             currentlyUsedRegister.setValue(null);
 
-            if (assign_rhsNode.getType().equals("Int") || assign_rhsNode.getType().equals("String") || assign_rhsNode.getType().equals("Char")) {
+            if (assign_rhsNode.getType().equals("Int") || assign_rhsNode.getType().equals("String")) {
                 if (assign_lhsNode.getType().contains("[]")) {
                     assign_lhsNode.generate(builder);
                     currentlyUsedRegister.setValue(true);
