@@ -5,11 +5,14 @@ package WACC;
  */
 public class AssemblyBuilder {
 
+    //StringBuilder for main scope
     private StringBuilder main;
+    //StringBuilder for header scope
     private StringBuilder header;
     private StringBuilder function;
     private StringBuilder label;
     private StringBuilder current;
+    private StringBuilder affa;
 
     public AssemblyBuilder(StringBuilder main, StringBuilder header, StringBuilder function, StringBuilder label, StringBuilder current) {
         this.main = main;

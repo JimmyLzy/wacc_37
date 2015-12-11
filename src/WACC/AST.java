@@ -207,6 +207,7 @@ public class AST {
             currentlyUsedRegister.setValue(null);
             builder.setCurrent(builder.getMain());
             statNode.generate(builder);
+
             if((statNode instanceof MultipleStatNode) && isIfDeclarationCodeGenerated()) {
                 addBackToStack(builder);
             }
@@ -299,6 +300,7 @@ public class AST {
             functionStringBuilder.append("f_" + identNode.getIdent() + ": \n");
             functionStringBuilder.append("PUSH {lr}  \n");
             statNode.generate(builder);
+
             if((statNode instanceof MultipleStatNode) && isIfDeclarationCodeGenerated()) {
                 addBackToStack(builder);
             }
@@ -447,6 +449,7 @@ public class AST {
             }
         }
 
+        // generate code to print a array elem
         protected void generatePrintArrayElem(AssemblyBuilder builder, ExprNode exprNode) {
             Registers.Register currentlyUsedRegister = registers.getFirstEmptyRegister();
             Registers.Register register4 = registers.get(4);
@@ -535,6 +538,7 @@ public class AST {
 
         }
 
+        //generate assembly code to print a array address
         protected void generatePrintArrayAddress(AssemblyBuilder builder, ExprNode exprNode) {
             builder.getHeader().append("msg_" + messageCount +":\n");
             builder.getHeader().append(".word 3\n");
@@ -562,6 +566,7 @@ public class AST {
             r0.setValue(null);
         }
 
+        // generate code to print a char_liter
         protected void generatePrintCharLiter(AssemblyBuilder builder, ExprNode exprNode) {
 
             currentlyUsedRegister = registers.getFirstEmptyRegister();
@@ -570,6 +575,7 @@ public class AST {
             builder.getCurrent().append("BL putchar\n");
         }
 
+        // generate code to print a int_liter
         protected void generatePrintIntLiter(AssemblyBuilder builder, ExprNode exprNode) {
 
             StringBuilder currentBuilder = builder.getCurrent();

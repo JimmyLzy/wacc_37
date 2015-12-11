@@ -47,6 +47,7 @@ public class Stack {
         return offset;
     }
 
+
     public int getSize() {
         return size;
     }
