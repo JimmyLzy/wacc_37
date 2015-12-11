@@ -9,7 +9,7 @@ import java.util.List;
 public class Stack {
 
     private int size;
-    private boolean ifDeclarationCodeGenerated = false;
+
     public static final int MAX_STACK_SIZE = 1024;
     private int currentStacksize;
 
@@ -34,13 +34,6 @@ public class Stack {
         return offset;
     }
 
-    public boolean IfDeclarationCodeGenerated() {
-        return ifDeclarationCodeGenerated;
-    }
-
-    public void setIfDeclarationCodeGenerated(boolean ifDeclarationCodeGenerated) {
-        this.ifDeclarationCodeGenerated = ifDeclarationCodeGenerated;
-    }
 
     public void addPreviousStackElems(Stack previousStack) {
         List<StackElem> currentStackElems = getStackElemList();
