@@ -11,12 +11,19 @@ public class Registers {
     private List<Register> registers = new ArrayList<>();
 
     public Registers() {
+        /*
+         * Initialize fifteen registers and add them to the list of registers.
+         * (There are fifteen registers according to the arm spec)
+         */
         for (int i = 0; i < 15; i++) {
             Register register =  new Register(null, "r" + String.valueOf(i), i);
             registers.add(register);
         }
     }
 
+    /*
+     * This method returns a list of register that not being used.
+     */
     public List<Register> getEmptyRegisters() {
         List<Register> registersNotInUse = new ArrayList<>();
         for (Register register : registers) {
@@ -27,6 +34,9 @@ public class Registers {
         return registersNotInUse;
     }
 
+    /*
+     *This method returns the first register that not being used.
+     */
     public Register getFirstEmptyRegister() {
         for (Register register : registers) {
             if (register.isEmpty()) {
@@ -40,6 +50,9 @@ public class Registers {
         return registers.get(index);
     }
 
+    /*
+     * Individual register class.
+     */
     class Register<T> {
         private T value;
         private int index;

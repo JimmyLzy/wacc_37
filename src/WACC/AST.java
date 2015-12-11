@@ -572,6 +572,7 @@ public class AST {
             r0.setValue(null);
         }
 
+        // generate code to print a char_liter
         protected void generatePrintCharLiter(AssemblyBuilder builder, ExprNode exprNode) {
 
             currentlyUsedRegister = registers.getFirstEmptyRegister();
@@ -580,6 +581,7 @@ public class AST {
             builder.getCurrent().append("BL putchar\n");
         }
 
+        // generate code to print a int_liter
         protected void generatePrintIntLiter(AssemblyBuilder builder, ExprNode exprNode) {
 
             StringBuilder currentBuilder = builder.getCurrent();
