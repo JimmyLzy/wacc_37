@@ -210,7 +210,7 @@ public class AST {
             currentlyUsedRegister.setValue(null);
             builder.setCurrent(builder.getMain());
             statNode.generate(builder);
-            if (isIfDeclarationCodeGenerated()) {
+            if ((statNode instanceof MultipleStatNode) && isIfDeclarationCodeGenerated()) {
                 addBackToStack(builder);
             }
             setIfDeclarationCodeGenerated(false);
@@ -307,7 +307,7 @@ public class AST {
             functionStringBuilder.append("f_" + identNode.getIdent() + ": \n");
             functionStringBuilder.append("PUSH {lr}  \n");
             statNode.generate(builder);
-            if (isIfDeclarationCodeGenerated()) {
+            if ((statNode instanceof MultipleStatNode) && isIfDeclarationCodeGenerated()) {
                 addBackToStack(builder);
             }
             setIfDeclarationCodeGenerated(false);
