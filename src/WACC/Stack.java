@@ -12,7 +12,7 @@ public class Stack {
      * size is the total size of stack in the whole program generated.
      */
     private int size;
-    private boolean ifDeclarationCodeGenerated = false;
+
     public static final int MAX_STACK_SIZE = 1024;
     /*
      CurrentStackSize is the size of individual stack according to the scope
@@ -47,13 +47,6 @@ public class Stack {
         return offset;
     }
 
-    public boolean IfDeclarationCodeGenerated() {
-        return ifDeclarationCodeGenerated;
-    }
-
-    public void setIfDeclarationCodeGenerated(boolean ifDeclarationCodeGenerated) {
-        this.ifDeclarationCodeGenerated = ifDeclarationCodeGenerated;
-    }
 
     /*
      * This method adds all the stackElems in the previous stack into the current stack.
