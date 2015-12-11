@@ -48,18 +48,6 @@ public class Stack {
     }
 
 
-    /*
-     * This method adds all the stackElems in the previous stack into the current stack.
-     */
-    public void addPreviousStackElems(Stack previousStack) {
-        List<StackElem> currentStackElems = getStackElemList();
-        List<StackElem> previousStackElems = previousStack.getStackElemList();
-        for(StackElem stackElem: previousStackElems) {
-            currentStackElems.add(stackElem);
-            size += stackElem.getSize();
-        }
-    }
-
     public int getSize() {
         return size;
     }
@@ -81,6 +69,8 @@ public class Stack {
     public int getCurrentStacksize() {
         return currentStacksize;
     }
+
+
 
 
     /*
