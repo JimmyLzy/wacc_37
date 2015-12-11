@@ -17,7 +17,7 @@ public class AST {
 
     private ProgramNode root;
 
-    private boolean isLastState = true;
+    private boolean ifDeclarationCodeGenerated = false;
 
     private String resultReg = registers.get(0).toString();
 
@@ -46,6 +46,14 @@ public class AST {
             }
         }
         return count - 2;
+    }
+
+    public boolean isIfDeclarationCodeGenerated() {
+        return ifDeclarationCodeGenerated;
+    }
+
+    public void setIfDeclarationCodeGenerated(boolean ifDeclarationCodeGenerated) {
+        this.ifDeclarationCodeGenerated = ifDeclarationCodeGenerated;
     }
 
 
@@ -202,6 +210,10 @@ public class AST {
             currentlyUsedRegister.setValue(null);
             builder.setCurrent(builder.getMain());
             statNode.generate(builder);
+            if(isIfDeclarationCodeGenerated()) {
+                addBackToStack(builder);
+            }
+            setIfDeclarationCodeGenerated(false);
             statNode.setValue();
             builder.getHeader().append(".text\n");
             builder.getHeader().append(".global main\n");
@@ -295,6 +307,10 @@ public class AST {
             functionStringBuilder.append("f_" + identNode.getIdent() + ": \n");
             functionStringBuilder.append("PUSH {lr}  \n");
             statNode.generate(builder);
+            if(isIfDeclarationCodeGenerated()) {
+                addBackToStack(builder);
+            }
+            setIfDeclarationCodeGenerated(false);
             statNode.setValue();
             functionStringBuilder.append("POP {pc}\n");
             functionStringBuilder.append(".ltorg\n");
@@ -826,12 +842,12 @@ public class AST {
             int num = stackSize / Stack.MAX_STACK_SIZE;
             int remainder = stackSize % Stack.MAX_STACK_SIZE;
             currentlyUsedRegister = registers.getFirstEmptyRegister();
-            if (!stack.IfDeclarationCodeGenerated()) {
+            if (!isIfDeclarationCodeGenerated()) {
                 for (int i = 0; i < num; i++) {
                     builder.getCurrent().append("SUB sp, sp, #" + Stack.MAX_STACK_SIZE + "\n");
                 }
                 builder.getCurrent().append("SUB sp, sp, #" + remainder + "\n");
-                stack.setIfDeclarationCodeGenerated(true);
+                setIfDeclarationCodeGenerated(true);
             }
             assign_rhsNode.generate(builder);
             if (assign_rhsNode.getType().contains("Int") || assign_rhsNode.getType().contains("String") || assign_rhsNode.getType().contains("Pair")) {
@@ -1719,19 +1735,12 @@ public class AST {
         @Override
         public void generate(AssemblyBuilder builder) {
 
-            isLastState = false;
-
             statNodeFirst.generate(builder);
             statNodeFirst.setValue();
-            if (!(getParent() instanceof MultipleStatNode)) {
-                isLastState = true;
-            }
+
             statNodeSecond.generate(builder);
             statNodeSecond.setValue();
-            if (isLastState && statNodeSecond.stack.IfDeclarationCodeGenerated()) {
-                statNodeSecond.addBackToStack(builder);
-            }
-            isLastState = false;
+
         }
 
     }
