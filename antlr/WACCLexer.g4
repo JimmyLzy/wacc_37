@@ -17,10 +17,12 @@ ELSE : 'else' ;
 FI : 'fi' ;
 WHILE : 'while' ;
 DO : 'do' ;
+DOAGAINWHILE : 'doagainwhile' ;
 DONE : 'done' ;
 BEGIN : 'begin' ;
 END : 'end' ;
 IS : 'is' ;
+FOR: 'for' ;
 
 //Other keywords(from assign-rhs / pair-type)
 CALL : 'call' ;

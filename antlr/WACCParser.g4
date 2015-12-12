@@ -32,10 +32,17 @@ stat: SKIP
 | EXIT expr
 | PRINT expr
 | PRINTLN expr
+| FOR forcond stat DONE
 | IF expr THEN stat ELSE stat FI
+| DO stat DOAGAINWHILE expr
 | WHILE expr DO stat DONE
 | BEGIN stat END
 | stat SEMICOLON stat;
+
+//for loop
+forcond: OPEN_PARENTHESES forass1 SEMICOLON expr SEMICOLON forass2 CLOSE_PARENTHESES;
+forass1: type ident ASSIGN_EQUAL assign_rhs;
+forass2: ident ASSIGN_EQUAL assign_rhs;
 
 //Assignments
 assign_lhs: ident
