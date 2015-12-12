@@ -61,14 +61,14 @@ public class Main {
         testFileWriter.close();
         //===========================
 
-//
-//        System.out.println(builder.getHeader());
-//        System.out.println();
-//        System.out.println(builder.getFunction());
-//        System.out.println();
-//        System.out.println(builder.getMain());
-//        System.out.println();
-//        System.out.println(builder.getLabel());
+
+        System.out.println(builder.getHeader());
+        System.out.println();
+        System.out.println(builder.getFunction());
+        System.out.println();
+        System.out.println(builder.getMain());
+        System.out.println();
+        System.out.println(builder.getLabel());
 
         fileWriter.close();
     }
