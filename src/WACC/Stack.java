@@ -14,10 +14,6 @@ public class Stack {
     private int size;
 
     public static final int MAX_STACK_SIZE = 1024;
-    /*
-     CurrentStackSize is the size of individual stack according to the scope
-     */
-    private int currentStacksize;
 
     private List<StackElem> stack = new ArrayList<>();
 
@@ -29,7 +25,6 @@ public class Stack {
         StackElem stackElem = new StackElem(ident, sizeOfType);
         stack.add(stackElem);
         size += stackElem.getSize();
-        currentStacksize += stackElem.getSize();
         stackElem.setOffset(size);
     }
 
@@ -54,22 +49,15 @@ public class Stack {
 
     public void incSize(int sizeOfType) {
         size += sizeOfType;
-        currentStacksize += sizeOfType;
     }
 
     public void decSize(int sizeOfType) {
         size -= sizeOfType;
-        currentStacksize -= sizeOfType;
     }
 
     public List<StackElem> getStackElemList() {
         return stack;
     }
-
-    public int getCurrentStacksize() {
-        return currentStacksize;
-    }
-
 
 
 

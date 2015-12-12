@@ -19,7 +19,11 @@ public class AST {
 
     private boolean ifDeclarationCodeGenerated = false;
 
-    private Stack stack = new Stack();
+    private Stack currentStack;
+
+    private Stack funcStack = new Stack();
+
+    private Stack programStack = new Stack();
 
     private String resultReg = registers.get(0).toString();
 
@@ -28,6 +32,7 @@ public class AST {
     // label counters
     private int messageCount = 0;
     private int labelCount = 0;
+
 
     public ProgramNode getRoot() {
         return root;
@@ -130,13 +135,15 @@ public class AST {
 
 
         public void addBackToStack(AssemblyBuilder builder) {
-            int stackSize = stack.getCurrentStacksize();
-            int num = stackSize / Stack.MAX_STACK_SIZE;
-            int remainder = stackSize % Stack.MAX_STACK_SIZE;
-            for (int i = 0; i < num; i++) {
-                builder.getCurrent().append("ADD sp, sp, #" + Stack.MAX_STACK_SIZE + "\n");
+            int stackSize = currentStack.getSize();
+            if(stackSize > 0) {
+                int num = stackSize / Stack.MAX_STACK_SIZE;
+                int remainder = stackSize % Stack.MAX_STACK_SIZE;
+                for (int i = 0; i < num; i++) {
+                    builder.getCurrent().append("ADD sp, sp, #" + Stack.MAX_STACK_SIZE + "\n");
+                }
+                builder.getCurrent().append("ADD sp, sp, #" + remainder + "\n");
             }
-            builder.getCurrent().append("ADD sp, sp, #" + remainder + "\n");
         }
     }
 
@@ -179,6 +186,7 @@ public class AST {
 
             setScope(true);
 
+            currentStack = funcStack;
             for (FuncNode funcNode : functionNodes) {
                 if (getFunctionSymbolTable().containsKey(funcNode.getIdentNode().getIdent())) {
                     throwSemanticError("The function " + funcNode.getIdentNode().getIdent()
@@ -192,6 +200,8 @@ public class AST {
                 funcNode.check();
             }
 
+            currentStack = programStack;
+
             statNode.check();
         }
 
@@ -201,11 +211,17 @@ public class AST {
             builder.getMain().append("main: \n");
             builder.getMain().append("PUSH {lr}  \n");
             currentlyUsedRegister = registers.getFirstEmptyRegister();
+
+
+            currentStack = funcStack;
             for (FuncNode funcNode : functionNodes) {
                 funcNode.generate(builder);
             }
+
             currentlyUsedRegister.setValue(null);
             builder.setCurrent(builder.getMain());
+
+            currentStack = programStack;
             statNode.generate(builder);
 
             if((statNode instanceof MultipleStatNode) && isIfDeclarationCodeGenerated()) {
@@ -271,13 +287,10 @@ public class AST {
         @Override
         public void check() {
 
-
-
             for (int i = paramNodes.size() - 1; i >= 0; i--) {
                 ParamNode paramNode = paramNodes.get(i);
                 paramNode.check();
             }
-            stack.add(identNode.getIdent(), 4);
 
             setScope(true);
 
@@ -299,6 +312,14 @@ public class AST {
             builder.setCurrent(functionStringBuilder);
             functionStringBuilder.append("f_" + identNode.getIdent() + ": \n");
             functionStringBuilder.append("PUSH {lr}  \n");
+
+
+            for (int i = paramNodes.size() - 1; i >= 0; i--) {
+                ParamNode paramNode = paramNodes.get(i);
+                currentStack.add(paramNode.getIdentNode().getIdent(), paramNode.getTypeNode().getNumOfByte());
+            }
+
+            currentStack.add(identNode.getIdent(), typeNode.getNumOfByte());
             statNode.generate(builder);
 
             if((statNode instanceof MultipleStatNode) && isIfDeclarationCodeGenerated()) {
@@ -347,7 +368,7 @@ public class AST {
         protected int getStackOffset() {
             int stackOffset = 0;
             if (this instanceof DeclarationNode) {
-                stackOffset = stack.getStackElemOffset(((DeclarationNode) this).identNode.getIdent());
+                stackOffset = currentStack.getStackElemOffset(((DeclarationNode) this).identNode.getIdent());
             } else if (this instanceof AssignmentNode) {
                 ASTNode assignLHS = ((AssignmentNode) this).assign_lhsNode;
                 String ident;
@@ -358,11 +379,11 @@ public class AST {
                 } else {
                     ident = ((Pair_elemNode) assignLHS).getIdentNode().getIdent();
                 }
-                stackOffset = stack.getStackElemOffset(ident);
+                stackOffset = currentStack.getStackElemOffset(ident);
             } else if (this instanceof IdentNode) {
                 String ident = ((IdentNode) this).getIdent();
                 TypeNode typeNode = ((IdentNode) this).getTypeNode();
-                stackOffset = stack.getStackElemOffset(ident);
+                stackOffset = currentStack.getStackElemOffset(ident);
             }
             return stackOffset;
         }
@@ -457,7 +478,7 @@ public class AST {
             builder.getCurrent().append("LDR " + currentlyUsedRegister + exprNode.getStackPointer() + "\n");
             currentlyUsedRegister.setValue(true);
             builder.getCurrent().append("PUSH {"  + register4 + "}\n");
-            stack.incSize(4);
+            currentStack.incSize(4);
             builder.getCurrent().append("MOV " + register4 + ", " + currentlyUsedRegister + "\n");
             register4.setValue(true);
             builder.getCurrent().append("LDR " + currentlyUsedRegister + exprNode.getStackPointer() + "\n");
@@ -474,7 +495,7 @@ public class AST {
             builder.getCurrent().append("LDR " + register4 + ", [" + register4 + "]\n");
             builder.getCurrent().append("MOV " + currentlyUsedRegister + ", " + register4 + "\n");
             builder.getCurrent().append("POP {" + register4 + "}\n");
-            stack.decSize(4);
+            currentStack.decSize(4);
             if (exprNode.getType().contains("Int")) {
                 builder.getCurrent().append("BL p_print_int\n");
                 if (!builder.getLabel().toString().contains("p_print_int:")) {
@@ -793,7 +814,7 @@ public class AST {
         public void check() {
             setTypeNodeValue(typeNode, assign_rhsNode);
 
-            stack.add(identNode.getIdent(), typeNode.getNumOfByte());
+            currentStack.add(identNode.getIdent(), typeNode.getNumOfByte());
 
             putIntoSymbolTable(this, identNode.getIdent(), typeNode);
 
@@ -833,7 +854,7 @@ public class AST {
                     throwSyntaxError("Integer value is too large for a 32-bit signed integer");
                 }
             }
-            int stackSize = stack.getCurrentStacksize();
+            int stackSize = currentStack.getSize();
             int num = stackSize / Stack.MAX_STACK_SIZE;
             int remainder = stackSize % Stack.MAX_STACK_SIZE;
             currentlyUsedRegister = registers.getFirstEmptyRegister();
@@ -2074,8 +2095,6 @@ public class AST {
         @Override
         public void check() {
 
-            stack.add(identNode.getIdent(), typeNode.getNumOfByte());
-
         }
 
         @Override
@@ -2513,7 +2532,7 @@ public class AST {
             exp1.generate(builder);
             currentBuilder.append("PUSH {" + currentlyUsedRegister + "}\n");
             currentlyUsedRegister.setValue(null);
-            stack.incSize(4);
+            currentStack.incSize(4);
 
             currentlyUsedRegister = registers.getFirstEmptyRegister();
             exp2.generate(builder);
@@ -2527,7 +2546,7 @@ public class AST {
             registerFirst.setValue(true);
             currentBuilder.append("POP {" + currentlyUsedRegister + "}\n");
             // need to set value
-            stack.decSize(4);
+            currentStack.decSize(4);
             currentBuilder.append("CMP " + currentlyUsedRegister + ", " + registerFirst + "\n");
 
 //            currentlyUsedRegister.setValue(null);
@@ -2656,7 +2675,7 @@ public class AST {
 
             currentBuilder.append("PUSH {" + currentlyUsedRegister + "}\n");
             currentlyUsedRegister.setValue(null);
-            stack.incSize(4);
+            currentStack.incSize(4);
 
             currentlyUsedRegister = registers.getFirstEmptyRegister();
             exp2.generate(builder);
@@ -2669,7 +2688,7 @@ public class AST {
             registerFirst.setValue(true);
             currentBuilder.append("POP {" + currentlyUsedRegister + "}\n");
             //need to set value
-            stack.decSize(4);
+            currentStack.decSize(4);
 
             currentlyUsedRegister.setValue(null);
             registerFirst.setValue(null);
@@ -3434,8 +3453,8 @@ public class AST {
             Registers.Register currentlyUsedRegister = registers.getFirstEmptyRegister();
 
             builder.getCurrent().append("PUSH {" + currentlyUsedRegister + ", r4}\n");
-            stack.incSize(4);
-            builder.getCurrent().append("LDR r4, [sp, #8]\n");
+            currentStack.incSize(8);
+            builder.getCurrent().append("LDR r4" + identNode.getStackPointer() + "\n");
             builder.getCurrent().append("LDR " + currentlyUsedRegister + ", =" + getIndex() + "\n");
             currentlyUsedRegister.setValue(true);
             builder.getCurrent().append("BL p_check_array_bounds\n");
@@ -3451,7 +3470,7 @@ public class AST {
             builder.getCurrent().append("MOV " + r1 + ", r4\n");
             r1.setValue(true);
             builder.getCurrent().append("POP {r0, r4}\n");
-            stack.decSize(4);
+            currentStack.decSize(8);
             r1.setValue(null);
         }
 
@@ -3902,25 +3921,24 @@ public class AST {
         @Override
         public void generate(AssemblyBuilder builder) {
 
+            funcStack = new Stack();
+            currentStack = funcStack;
+
             StringBuilder currentStringBuilder = builder.getCurrent();
             for (int i = exprNodeList.size() - 1; i >= 0; i--) {
                 // black tech
                 ExprNode exprNode = exprNodeList.get(i);
                 currentlyUsedRegister = registers.getFirstEmptyRegister();
                 if (exprNode instanceof IdentNode) {
-                    exprNode.generate(builder);
-//                    if (getType().equals("Int") || getType().equals("String")) {
-//                        builder.getCurrent().append("LDR " + currentlyUsedRegister + getStackPointer(stack.getCurrentStacksize()) + "\n");
-//                    } else {
-//                        builder.getCurrent().append("LDRSB " + currentlyUsedRegister + getStackPointer(stack.getCurrentStacksize()) + "\n");
-//                    }
-//                    currentlyUsedRegister.setValue(true);
                     FuncNode func = (FuncNode) (getRoot().getFunctionSymbolTable().get(identNode.getIdent()));
                     int typeByte = func.paramNodes.get(i).getTypeNode().getNumOfByte();
-                    stack.incSize(typeByte);
-                } else {
+                    currentStack.add(((IdentNode) exprNode).getIdent(),
+                            ((IdentNode) exprNode).getTypeNode().getNumOfByte());
                     exprNode.generate(builder);
-                    stack.incSize(calculateNumOfByte(exprNode.getType()));
+
+                } else {
+                    currentStack.incSize(calculateNumOfByte(exprNode.getType()));
+                    exprNode.generate(builder);
                 }
 
                 int numOfByte = calculateNumOfByte(exprNode.getType());
@@ -3933,6 +3951,7 @@ public class AST {
             }
             currentStringBuilder.append("BL f_" + identNode.getIdent() + "\n");
             addBackToStack(builder);
+            currentStack = programStack;
 
         }
 
