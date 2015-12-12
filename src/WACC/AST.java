@@ -1002,7 +1002,6 @@ public class AST {
                 } else if (assign_rhsNode instanceof Str_literNode) {
                     getTypeNode((IdentNode) assign_lhsNode).setValue((assign_rhsNode).getValue());
                 } else if (assign_rhsNode.getType().equals("Int")) {
-                    System.out.println("=====" + assign_rhsNode.getValue());
                     getTypeNode((IdentNode) assign_lhsNode).setValue((assign_rhsNode.getValue()));
                 }
             }
@@ -1101,9 +1100,9 @@ public class AST {
 
         private void generateReadIntLiter(AssemblyBuilder builder) {
 
-            builder.getCurrent().append("ADD r0, sp, #0\n");
+            builder.getCurrent().append("ADD r0, sp, #" + ((IdentNode) assign_lhsNode).getStackOffset() + "\n");
             builder.getCurrent().append("BL p_read_int\n");
-            ((IdentNode) assign_lhsNode).getTypeNode().setValue("[sp]");
+            ((IdentNode) assign_lhsNode).getTypeNode().setValue("0");
             if (!builder.getLabel().toString().contains("p_read_int:")) {
                 builder.getLabel().append("p_read_int:\n");
                 builder.getLabel().append("PUSH {lr}\n");
@@ -2894,7 +2893,7 @@ public class AST {
 
         @Override
         public String getValue() {
-            System.out.println(exp1.getValue());
+            System.out.println(Integer.valueOf(exp1.getValue()));
             return String.valueOf(Integer.valueOf(exp1.getValue()) - Integer.valueOf(exp2.getValue()));
         }
 
@@ -3366,6 +3365,7 @@ public class AST {
 
         @Override
         public String getValue() {
+            ASTNode node = getTypeNode();
             return getTypeNode().getValue();
         }
 
