@@ -408,6 +408,8 @@ public class TreeVisitor extends WACCParserBaseVisitor<AST.ASTNode> {
             return ast.new MultipleStatNode((AST.StatNode) visit(ctx.stat(0)), (AST.StatNode) visit(ctx.stat(1)));
         } else if (ctx.BEGIN() != null) {
             return ast.new BeginNode((AST.StatNode) visit(ctx.stat(0)));
+        } else if (ctx.DOAGAINWHILE() != null) {
+            return ast.new MultipleStatNode((AST.StatNode) visit(ctx.stat(0)), ast.new WhileNode((AST.ExprNode) visit(ctx.expr()), (AST.StatNode) visit(ctx.stat(0))));
         } else if (ctx.WHILE() != null) {
             return ast.new WhileNode((AST.ExprNode) visit(ctx.expr()), (AST.StatNode) visit(ctx.stat(0)));
         } else if (ctx.IF() != null) {
@@ -433,6 +435,13 @@ public class TreeVisitor extends WACCParserBaseVisitor<AST.ASTNode> {
             AST.IdentNode identNode = (AST.IdentNode) visit(ctx.ident());
             AST.DeclarationNode declarationNode = ast.new DeclarationNode(typeNode, identNode, visit(ctx.assign_rhs()));
             return declarationNode;
+        } else if (ctx.FOR() != null) {
+            AST.TypeNode typeNode = (AST.TypeNode) visit(ctx.forcond().forass1().type());
+            AST.IdentNode identNode = (AST.IdentNode) visit(ctx.forcond().forass1().ident());
+            AST.DeclarationNode declarationNode = ast.new DeclarationNode(typeNode, identNode, visit(ctx.forcond().forass1().assign_rhs()));
+            AST.AssignmentNode assignmentNode = ast.new AssignmentNode(visit(ctx.forcond().forass2().ident()), visit(ctx.forcond().forass2().assign_rhs()));
+            AST.ForNode forNode = ast.new ForNode(declarationNode, visit(ctx.forcond().expr()), assignmentNode, visit(ctx.stat(0)));
+            return forNode;
         }
         System.out.println("Error");
         return visitChildren(ctx);

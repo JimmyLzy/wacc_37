@@ -872,7 +872,7 @@ public class AST {
                 builder.getCurrent().append("STRB " + currentlyUsedRegister + getStackPointer() + "\n");
             }
             currentlyUsedRegister.setValue(null);
-            if (!(getParent() instanceof MultipleStatNode)) {
+            if (!(getParent() instanceof MultipleStatNode || getParent() instanceof ForNode)) {
                 addBackToStack(builder);
             }
         }
@@ -1564,6 +1564,81 @@ public class AST {
             }
         }
 
+    }
+
+    public class ForNode extends StatNode{
+        private DeclarationNode declarationNode;
+        private ASTNode exprNode;
+        private AssignmentNode assignmentNode;
+        private ASTNode statNode;
+
+        public ForNode(DeclarationNode declarationNode, ASTNode exprNode, AssignmentNode assignmentNode, ASTNode statNode) {
+
+            this.declarationNode = declarationNode;
+            this.exprNode = exprNode;
+            this.assignmentNode = assignmentNode;
+            this.statNode = statNode;
+            declarationNode.setParent(this);
+            exprNode.setParent(this);
+            assignmentNode.setParent(this);
+            statNode.setParent(this);
+        }
+
+        @Override
+        public String getType() {
+            return null;
+        }
+
+        @Override
+        public String getValue() {
+            return null;
+        }
+
+        @Override
+        public void check() {
+            setScope(true);
+            declarationNode.check();
+        }
+
+        @Override
+        public void generate(AssemblyBuilder builder) {
+            declarationNode.generate(builder);
+
+            StringBuilder currentStringBuilder = builder.getCurrent();
+
+            String labelWhileBody = "L" + labelCount;
+            labelCount++;
+
+            String labelWhileEnd = "L" + labelCount;
+            labelCount++;
+
+            builder.getCurrent().append("B " + labelWhileEnd + "\n");
+
+            currentStringBuilder.append(labelWhileBody + ":\n");
+            statNode.generate(builder);
+            ((StatNode) statNode).setValue();
+            assignmentNode.generate(builder);
+
+            currentStringBuilder.append(labelWhileEnd + ":\n");
+
+
+            currentlyUsedRegister = registers.getFirstEmptyRegister();
+            exprNode.generate(builder);
+
+            currentStringBuilder.append("CMP " + currentlyUsedRegister + ", #1\n");
+            currentlyUsedRegister.setValue(null);
+
+            currentStringBuilder.append("BEQ " + labelWhileBody + "\n");
+
+            if (!(getParent() instanceof MultipleStatNode)) {
+                addBackToStack(builder);
+            }
+        }
+
+        @Override
+        public void setValue() {
+
+        }
     }
 
     /*
@@ -3991,5 +4066,4 @@ public class AST {
             return result + "]";
         }
     }
-
 }
