@@ -3932,35 +3932,22 @@ public class AST {
         public void generate(AssemblyBuilder builder) {
 
             funcStack = new Stack();
-            currentStack = funcStack;
-
+            
             StringBuilder currentStringBuilder = builder.getCurrent();
             for(ExprNode exprNode : exprNodeList) {
                 currentlyUsedRegister = registers.getFirstEmptyRegister();
                 if (exprNode instanceof IdentNode) {
-//                    FuncNode func = (FuncNode) (getRoot().getFunctionSymbolTable().get(identNode.getIdent()));
-//                    int typeByte = func.paramNodes.get(i).getTypeNode().getNumOfByte();
-                    currentStack.add(((IdentNode) exprNode).getIdent(),
+                    funcStack.add(((IdentNode) exprNode).getIdent(),
                             ((IdentNode) exprNode).getTypeNode().getNumOfByte());
                 } else {
-                    currentStack.incSize(calculateNumOfByte(exprNode.getType()));
+                    funcStack.incSize(calculateNumOfByte(exprNode.getType()));
                 }
             }
+
             for (int i = exprNodeList.size() - 1; i >= 0; i--) {
 
                 ExprNode exprNode = exprNodeList.get(i);
                 currentlyUsedRegister = registers.getFirstEmptyRegister();
-//                if (exprNode instanceof IdentNode) {
-//                    FuncNode func = (FuncNode) (getRoot().getFunctionSymbolTable().get(identNode.getIdent()));
-//                    int typeByte = func.paramNodes.get(i).getTypeNode().getNumOfByte();
-//                    currentStack.add(((IdentNode) exprNode).getIdent(),
-//                            ((IdentNode) exprNode).getTypeNode().getNumOfByte());
-//                    exprNode.generate(builder);
-//                } else {
-//
-//                    currentStack.incSize(calculateNumOfByte(exprNode.getType()));
-//                    exprNode.generate(builder);
-//                }
 
                 exprNode.generate(builder);
 
@@ -3972,6 +3959,8 @@ public class AST {
                 }
                 currentlyUsedRegister.setValue(null);
             }
+
+            currentStack = funcStack;
             currentStringBuilder.append("BL f_" + identNode.getIdent() + "\n");
             addBackToStack(builder);
             currentStack = programStack;
