@@ -3455,9 +3455,14 @@ public class AST {
             builder.getCurrent().append("PUSH {" + currentlyUsedRegister + ", r4}\n");
             currentStack.incSize(8);
             builder.getCurrent().append("LDR r4" + identNode.getStackPointer() + "\n");
+
             //not sure
-            builder.getCurrent().append("LDR " + currentlyUsedRegister + getStackPointer() + "\n");
-            //builder.getCurrent().append("LDR " + currentlyUsedRegister + ", =" + getIndex() + "\n");
+            if (((AssignmentNode) getParent()).assign_rhsNode instanceof IdentNode) {
+                builder.getCurrent().append("LDR " + currentlyUsedRegister + getStackPointer() + "\n");
+            } else {
+                builder.getCurrent().append("LDR " + currentlyUsedRegister + ", =" + getIndex() + "\n");
+            }
+
             currentlyUsedRegister.setValue(true);
             builder.getCurrent().append("BL p_check_array_bounds\n");
             generateCheckArrayBounds(builder);
