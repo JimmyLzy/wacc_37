@@ -2912,7 +2912,6 @@ public class AST {
 
         @Override
         public String getValue() {
-            System.out.println(Integer.valueOf(exp1.getValue()));
             return String.valueOf(Integer.valueOf(exp1.getValue()) - Integer.valueOf(exp2.getValue()));
         }
 
@@ -3936,21 +3935,34 @@ public class AST {
             currentStack = funcStack;
 
             StringBuilder currentStringBuilder = builder.getCurrent();
-            for (int i = exprNodeList.size() - 1; i >= 0; i--) {
-                // black tech
-                ExprNode exprNode = exprNodeList.get(i);
+            for(ExprNode exprNode : exprNodeList) {
                 currentlyUsedRegister = registers.getFirstEmptyRegister();
                 if (exprNode instanceof IdentNode) {
-                    FuncNode func = (FuncNode) (getRoot().getFunctionSymbolTable().get(identNode.getIdent()));
-                    int typeByte = func.paramNodes.get(i).getTypeNode().getNumOfByte();
+//                    FuncNode func = (FuncNode) (getRoot().getFunctionSymbolTable().get(identNode.getIdent()));
+//                    int typeByte = func.paramNodes.get(i).getTypeNode().getNumOfByte();
                     currentStack.add(((IdentNode) exprNode).getIdent(),
                             ((IdentNode) exprNode).getTypeNode().getNumOfByte());
-                    exprNode.generate(builder);
-
                 } else {
                     currentStack.incSize(calculateNumOfByte(exprNode.getType()));
-                    exprNode.generate(builder);
                 }
+            }
+            for (int i = exprNodeList.size() - 1; i >= 0; i--) {
+
+                ExprNode exprNode = exprNodeList.get(i);
+                currentlyUsedRegister = registers.getFirstEmptyRegister();
+//                if (exprNode instanceof IdentNode) {
+//                    FuncNode func = (FuncNode) (getRoot().getFunctionSymbolTable().get(identNode.getIdent()));
+//                    int typeByte = func.paramNodes.get(i).getTypeNode().getNumOfByte();
+//                    currentStack.add(((IdentNode) exprNode).getIdent(),
+//                            ((IdentNode) exprNode).getTypeNode().getNumOfByte());
+//                    exprNode.generate(builder);
+//                } else {
+//
+//                    currentStack.incSize(calculateNumOfByte(exprNode.getType()));
+//                    exprNode.generate(builder);
+//                }
+
+                exprNode.generate(builder);
 
                 int numOfByte = calculateNumOfByte(exprNode.getType());
                 if (getType().equals("Int") || getType().equals("String")) {

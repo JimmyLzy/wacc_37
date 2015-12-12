@@ -39,6 +39,7 @@ public class Stack {
                 break;
             }
         }
+
         return offset;
     }
 
