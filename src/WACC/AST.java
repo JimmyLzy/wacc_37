@@ -475,13 +475,13 @@ public class AST {
             Registers.Register currentlyUsedRegister = registers.getFirstEmptyRegister();
             Registers.Register register4 = registers.get(4);
 
-            builder.getCurrent().append("LDR " + currentlyUsedRegister + exprNode.getStackPointer() + "\n");
+            builder.getCurrent().append("LDR " + currentlyUsedRegister + ((Array_elemNode)exprNode).getIdentNode().getStackPointer() + "\n");
             currentlyUsedRegister.setValue(true);
             builder.getCurrent().append("PUSH {"  + register4 + "}\n");
-            currentStack.incSize(4);
             builder.getCurrent().append("MOV " + register4 + ", " + currentlyUsedRegister + "\n");
             register4.setValue(true);
-            builder.getCurrent().append("LDR " + currentlyUsedRegister + exprNode.getStackPointer() + "\n");
+            builder.getCurrent().append("LDR " + currentlyUsedRegister + ((Array_elemNode)exprNode).getIdentNode().getStackPointer() + "\n");
+            currentStack.incSize(4);
             //builder.getCurrent().append("LDR " + currentlyUsedRegister + ", =" + ((Array_elemNode)exprNode).getIndex() + "\n");
             builder.getCurrent().append("BL p_check_array_bounds\n");
             generateCheckArrayBounds(builder);
@@ -3383,6 +3383,7 @@ public class AST {
 
         @Override
         public String getValue() {
+            ASTNode node = getTypeNode();
             return getTypeNode().getValue();
         }
 
@@ -3453,7 +3454,14 @@ public class AST {
             builder.getCurrent().append("PUSH {" + currentlyUsedRegister + ", r4}\n");
             currentStack.incSize(8);
             builder.getCurrent().append("LDR r4" + identNode.getStackPointer() + "\n");
-            builder.getCurrent().append("LDR " + currentlyUsedRegister + ", =" + getIndex() + "\n");
+
+            //not sure
+            if (((AssignmentNode) getParent()).assign_rhsNode instanceof IdentNode) {
+                builder.getCurrent().append("LDR " + currentlyUsedRegister + getStackPointer() + "\n");
+            } else {
+                builder.getCurrent().append("LDR " + currentlyUsedRegister + ", =" + getIndex() + "\n");
+            }
+
             currentlyUsedRegister.setValue(true);
             builder.getCurrent().append("BL p_check_array_bounds\n");
             generateCheckArrayBounds(builder);
@@ -3486,6 +3494,10 @@ public class AST {
 
         public int getIndex() {
             return Integer.valueOf(exprNodes.get(0).getValue());
+        }
+
+        public IdentNode getIdentNode() {
+            return identNode;
         }
     }
 
