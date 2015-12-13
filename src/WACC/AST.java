@@ -145,6 +145,21 @@ public class AST {
                 builder.getCurrent().append("ADD sp, sp, #" + remainder + "\n");
             }
         }
+
+        protected int calculateNumOfByte(String type) {
+            switch (type) {
+                case "Int":
+                    return 4;
+                case "String":
+                    return 4;
+                case "Bool":
+                    return 1;
+                case "Char":
+                    return 1;
+                default:
+                    return 0;
+            }
+        }
     }
 
     /*
@@ -1598,6 +1613,16 @@ public class AST {
         public void check() {
             setScope(true);
             declarationNode.check();
+
+            if (!declarationNode.getTypeNode().getType().equals("Int")) {
+                throwSemanticError("The initialization part of for loop needs to declared an int variable!");
+            }
+            if (!exprNode.getType().equals("Bool")) {
+                throwSemanticError("The condition part of for loop has to have type bool!");
+            }
+            if (!assignmentNode.assign_lhsNode.getType().equals("Int")) {
+                throwSemanticError("Must assign an int type variable of for loop!");
+            }
         }
 
         @Override
@@ -4007,15 +4032,16 @@ public class AST {
         public void generate(AssemblyBuilder builder) {
 
             funcStack = new Stack();
-            
+            currentStack = funcStack;
+
             StringBuilder currentStringBuilder = builder.getCurrent();
-            for(ExprNode exprNode : exprNodeList) {
-                currentlyUsedRegister = registers.getFirstEmptyRegister();
+
+            for (ExprNode exprNode : exprNodeList) {
                 if (exprNode instanceof IdentNode) {
-                    funcStack.add(((IdentNode) exprNode).getIdent(),
-                            ((IdentNode) exprNode).getTypeNode().getNumOfByte());
+                    currentStack.add(((IdentNode) exprNode).getIdent(),
+                            calculateNumOfByte(((IdentNode) exprNode).getTypeNode().getType()));
                 } else {
-                    funcStack.incSize(calculateNumOfByte(exprNode.getType()));
+                    currentStack.incSize(calculateNumOfByte(exprNode.getType()));
                 }
             }
 
@@ -4025,7 +4051,6 @@ public class AST {
                 currentlyUsedRegister = registers.getFirstEmptyRegister();
 
                 exprNode.generate(builder);
-
                 int numOfByte = calculateNumOfByte(exprNode.getType());
                 if (getType().equals("Int") || getType().equals("String")) {
                     currentStringBuilder.append("STR " + currentlyUsedRegister + getStackPointer(-numOfByte) + "!" + "\n");
@@ -4034,27 +4059,11 @@ public class AST {
                 }
                 currentlyUsedRegister.setValue(null);
             }
-
-            currentStack = funcStack;
+            
             currentStringBuilder.append("BL f_" + identNode.getIdent() + "\n");
             addBackToStack(builder);
             currentStack = programStack;
 
-        }
-
-        private int calculateNumOfByte(String type) {
-            switch (type) {
-                case "Int":
-                    return 4;
-                case "String":
-                    return 4;
-                case "Bool":
-                    return 1;
-                case "Char":
-                    return 1;
-                default:
-                    return 0;
-            }
         }
 
         private String getStackPointer(int offset) {
