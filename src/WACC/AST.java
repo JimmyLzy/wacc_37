@@ -334,7 +334,7 @@ public class AST {
                 currentStack.add(paramNode.getIdentNode().getIdent(), paramNode.getTypeNode().getNumOfByte());
             }
 
-            currentStack.add(identNode.getIdent(), typeNode.getNumOfByte());
+            currentStack.add(identNode.getIdent(), 4);
             statNode.generate(builder);
 
             if((statNode instanceof MultipleStatNode) && isIfDeclarationCodeGenerated()) {
@@ -4032,16 +4032,15 @@ public class AST {
         public void generate(AssemblyBuilder builder) {
 
             funcStack = new Stack();
-            currentStack = funcStack;
 
             StringBuilder currentStringBuilder = builder.getCurrent();
 
             for (ExprNode exprNode : exprNodeList) {
                 if (exprNode instanceof IdentNode) {
-                    currentStack.add(((IdentNode) exprNode).getIdent(),
+                    funcStack.add(((IdentNode) exprNode).getIdent(),
                             calculateNumOfByte(((IdentNode) exprNode).getTypeNode().getType()));
                 } else {
-                    currentStack.incSize(calculateNumOfByte(exprNode.getType()));
+                    funcStack.incSize(calculateNumOfByte(exprNode.getType()));
                 }
             }
 
@@ -4059,7 +4058,8 @@ public class AST {
                 }
                 currentlyUsedRegister.setValue(null);
             }
-            
+
+            currentStack = funcStack;
             currentStringBuilder.append("BL f_" + identNode.getIdent() + "\n");
             addBackToStack(builder);
             currentStack = programStack;
