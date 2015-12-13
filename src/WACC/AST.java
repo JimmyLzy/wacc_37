@@ -3012,7 +3012,6 @@ public class AST {
 
         @Override
         public String getValue() {
-            System.out.println(Integer.valueOf(exp1.getValue()));
             return String.valueOf(Integer.valueOf(exp1.getValue()) - Integer.valueOf(exp2.getValue()));
         }
 
@@ -4060,6 +4059,7 @@ public class AST {
                 }
                 currentlyUsedRegister.setValue(null);
             }
+            
             currentStringBuilder.append("BL f_" + identNode.getIdent() + "\n");
             addBackToStack(builder);
             currentStack = programStack;
