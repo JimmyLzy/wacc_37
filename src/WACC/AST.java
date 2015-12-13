@@ -158,7 +158,7 @@ public class AST {
                 case "Char":
                     return 1;
                 default:
-                    return 0;
+                    return 4;
             }
         }
     }
@@ -1116,7 +1116,7 @@ public class AST {
         }
 
         private void generateReadCharLiter(AssemblyBuilder builder) {
-            builder.getCurrent().append("ADD r0, sp, #0\n");
+            builder.getCurrent().append("ADD r0, sp, #" + ((IdentNode) assign_lhsNode).getStackOffset() + "\n");
             builder.getCurrent().append("BL p_read_char\n");
             if (!builder.getLabel().toString().contains("p_read_char:")) {
                 builder.getLabel().append("p_read_char:\n");
