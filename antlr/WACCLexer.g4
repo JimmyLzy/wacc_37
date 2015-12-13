@@ -23,6 +23,8 @@ BEGIN : 'begin' ;
 END : 'end' ;
 IS : 'is' ;
 FOR: 'for' ;
+BREAK: 'break' ;
+CONTINUE: 'continue' ;
 
 //Other keywords(from assign-rhs / pair-type)
 CALL : 'call' ;

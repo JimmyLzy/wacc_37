@@ -32,6 +32,7 @@ public class AST {
     // label counters
     private int messageCount = 0;
     private int labelCount = 0;
+    private int loopCount = 0;
 
 
     public ProgramNode getRoot() {
@@ -334,7 +335,7 @@ public class AST {
                 currentStack.add(paramNode.getIdentNode().getIdent(), paramNode.getTypeNode().getNumOfByte());
             }
 
-            currentStack.add(identNode.getIdent(), typeNode.getNumOfByte());
+            currentStack.add(identNode.getIdent(), 4);
             statNode.generate(builder);
 
             if((statNode instanceof MultipleStatNode) && isIfDeclarationCodeGenerated()) {
@@ -1586,6 +1587,7 @@ public class AST {
         private ASTNode exprNode;
         private AssignmentNode assignmentNode;
         private ASTNode statNode;
+        private int labelNumber;
 
         public ForNode(DeclarationNode declarationNode, ASTNode exprNode, AssignmentNode assignmentNode, ASTNode statNode) {
 
@@ -1635,6 +1637,7 @@ public class AST {
             labelCount++;
 
             String labelWhileEnd = "L" + labelCount;
+            labelNumber = labelCount;
             labelCount++;
 
             builder.getCurrent().append("B " + labelWhileEnd + "\n");
@@ -1655,6 +1658,9 @@ public class AST {
 
             currentStringBuilder.append("BEQ " + labelWhileBody + "\n");
 
+            currentStringBuilder.append("END" + loopCount + ":\n");
+            loopCount++;
+
             if (!(getParent() instanceof MultipleStatNode)) {
                 addBackToStack(builder);
             }
@@ -1663,6 +1669,10 @@ public class AST {
         @Override
         public void setValue() {
 
+        }
+
+        public int getLabelNumber() {
+            return labelNumber;
         }
     }
 
@@ -1674,6 +1684,7 @@ public class AST {
 
         private ExprNode exprNode;
         private StatNode statNode;
+        private int labelNum;
 
         public WhileNode(ExprNode exprNode, StatNode statNode) {
 
@@ -1720,6 +1731,7 @@ public class AST {
             labelCount++;
 
             String labelWhileEnd = "L" + labelCount;
+            labelNum = labelCount;
             labelCount++;
 
             builder.getCurrent().append("B " + labelWhileEnd + "\n");
@@ -1737,8 +1749,14 @@ public class AST {
             currentlyUsedRegister.setValue(null);
 
             currentStringBuilder.append("BEQ " + labelWhileBody + "\n");
+
+            currentStringBuilder.append("END" + loopCount + ":\n");
+            loopCount++;
         }
 
+        public int getLabelNumber() {
+            return labelNum;
+        }
     }
 
     public class BeginNode extends StatNode {
@@ -4032,16 +4050,15 @@ public class AST {
         public void generate(AssemblyBuilder builder) {
 
             funcStack = new Stack();
-            currentStack = funcStack;
 
             StringBuilder currentStringBuilder = builder.getCurrent();
 
             for (ExprNode exprNode : exprNodeList) {
                 if (exprNode instanceof IdentNode) {
-                    currentStack.add(((IdentNode) exprNode).getIdent(),
+                    funcStack.add(((IdentNode) exprNode).getIdent(),
                             calculateNumOfByte(((IdentNode) exprNode).getTypeNode().getType()));
                 } else {
-                    currentStack.incSize(calculateNumOfByte(exprNode.getType()));
+                    funcStack.incSize(calculateNumOfByte(exprNode.getType()));
                 }
             }
 
@@ -4059,7 +4076,7 @@ public class AST {
                 }
                 currentlyUsedRegister.setValue(null);
             }
-            
+            currentStack = funcStack;
             currentStringBuilder.append("BL f_" + identNode.getIdent() + "\n");
             addBackToStack(builder);
             currentStack = programStack;
@@ -4074,6 +4091,91 @@ public class AST {
                 result = ", [sp, #" + offset;
             }
             return result + "]";
+        }
+    }
+
+    public class BreakNode extends StatNode{
+
+        @Override
+        public String getType() {
+            return null;
+        }
+
+        @Override
+        public String getValue() {
+            return null;
+        }
+
+        @Override
+        public void check() {
+            getLoopParent();
+        }
+
+        @Override
+        public void generate(AssemblyBuilder builder) {
+            builder.getCurrent().append("B END" + loopCount + "\n");
+        }
+
+        @Override
+        public void setValue() {
+
+        }
+        private ASTNode getLoopParent() {
+            ASTNode parent = getParent();
+            while (!(parent instanceof WhileNode || parent instanceof ForNode)) {
+                if (parent instanceof ProgramNode) {
+                    throwSemanticError("Break should only exist in loop body!");
+                } else {
+                    parent = parent.getParent();
+                }
+            }
+            return parent;
+        }
+    }
+
+    public class ContinueNode extends StatNode{
+
+        @Override
+        public String getType() {
+            return null;
+        }
+
+        @Override
+        public String getValue() {
+            return null;
+        }
+
+        @Override
+        public void check() {
+            getLoopParent();
+        }
+
+        @Override
+        public void generate(AssemblyBuilder builder) {
+            int labelNum = 0;
+            if (getLoopParent() instanceof WhileNode) {
+                labelNum = ((WhileNode) getLoopParent()).getLabelNumber();
+            } else if (getLoopParent() instanceof ForNode) {
+                labelNum= ((ForNode) getLoopParent()).getLabelNumber();
+            }
+            builder.getCurrent().append("B L" + labelNum + "\n");
+        }
+
+        @Override
+        public void setValue() {
+
+        }
+
+        private ASTNode getLoopParent() {
+            ASTNode parent = getParent();
+            while (!(parent instanceof WhileNode || parent instanceof ForNode)) {
+                if (parent instanceof ProgramNode) {
+                    throwSemanticError("Continue should only exist in loop body!");
+                } else {
+                    parent = parent.getParent();
+                }
+            }
+            return parent;
         }
     }
 }
