@@ -4076,6 +4076,7 @@ public class AST {
                 }
                 currentlyUsedRegister.setValue(null);
             }
+
             currentStack = funcStack;
             currentStringBuilder.append("BL f_" + identNode.getIdent() + "\n");
             addBackToStack(builder);
