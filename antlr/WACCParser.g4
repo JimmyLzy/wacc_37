@@ -37,7 +37,9 @@ stat: SKIP
 | DO stat DOAGAINWHILE expr
 | WHILE expr DO stat DONE
 | BEGIN stat END
-| stat SEMICOLON stat;
+| stat SEMICOLON stat
+| BREAK
+| CONTINUE;
 
 //for loop
 forcond: OPEN_PARENTHESES forass1 SEMICOLON expr SEMICOLON forass2 CLOSE_PARENTHESES;

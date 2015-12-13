@@ -442,6 +442,12 @@ public class TreeVisitor extends WACCParserBaseVisitor<AST.ASTNode> {
             AST.AssignmentNode assignmentNode = ast.new AssignmentNode(visit(ctx.forcond().forass2().ident()), visit(ctx.forcond().forass2().assign_rhs()));
             AST.ForNode forNode = ast.new ForNode(declarationNode, visit(ctx.forcond().expr()), assignmentNode, visit(ctx.stat(0)));
             return forNode;
+        } else if (ctx.BREAK() != null) {
+            AST.BreakNode breakNode = ast.new BreakNode();
+            return breakNode;
+        } else if (ctx.CONTINUE() != null) {
+            AST.ContinueNode continueNode = ast.new ContinueNode();
+            return continueNode;
         }
         System.out.println("Error");
         return visitChildren(ctx);
