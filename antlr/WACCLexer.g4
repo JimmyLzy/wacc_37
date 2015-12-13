@@ -24,7 +24,7 @@ END : 'end' ;
 IS : 'is' ;
 FOR: 'for' ;
 BREAK: 'break' ;
-CONTINUE: 'continue' ;
+CONTINUE: 'continues' ;
 
 //Other keywords(from assign-rhs / pair-type)
 CALL : 'call' ;
